@@ -1,10 +1,10 @@
 # Implementation Plan
 
-- [ ] 1. プロジェクト基盤とコア設定の構築
-  - Next.js 14プロジェクトの初期化とTypeScript設定
-  - Supabaseクライアント設定とデータベース接続
-  - TDD環境（Vitest, React Testing Library, Playwright）のセットアップ
-  - ESLint, Prettier, Code Hooksの設定
+- [x] 1. プロジェクト基盤とコア設定の構築
+  - Next.js 14プロジェクトの初期化とTypeScript設定 ✓
+  - Supabaseクライアント設定とデータベース接続 ✓
+  - TDD環境（Vitest, React Testing Library, Playwright）のセットアップ ✓
+  - ESLint, Prettier, Code Hooksの設定 ✓
   - _Requirements: 1.1, 1.2_
 
 - [ ] 2. 認証システムとユーザー管理の実装
