@@ -73,6 +73,94 @@ export interface Database {
           updated_at?: string;
         };
       };
+      customers: {
+        Row: {
+          id: string;
+          name: string;
+          name_kana: string | null;
+          phone_number: string | null;
+          line_id: string | null;
+          birthday: string | null;
+          memo: string | null;
+          status: "normal" | "vip" | "caution" | "blacklisted";
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          name_kana?: string | null;
+          phone_number?: string | null;
+          line_id?: string | null;
+          birthday?: string | null;
+          memo?: string | null;
+          status?: "normal" | "vip" | "caution" | "blacklisted";
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          name_kana?: string | null;
+          phone_number?: string | null;
+          line_id?: string | null;
+          birthday?: string | null;
+          memo?: string | null;
+          status?: "normal" | "vip" | "caution" | "blacklisted";
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      visits: {
+        Row: {
+          id: string;
+          customer_id: string;
+          table_id: number;
+          check_in_at: string;
+          check_out_at: string | null;
+          num_guests: number;
+          total_amount: number | null;
+          status: "active" | "completed" | "cancelled";
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          table_id: number;
+          check_in_at?: string;
+          check_out_at?: string | null;
+          num_guests?: number;
+          total_amount?: number | null;
+          status?: "active" | "completed" | "cancelled";
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          table_id?: number;
+          check_in_at?: string;
+          check_out_at?: string | null;
+          num_guests?: number;
+          total_amount?: number | null;
+          status?: "active" | "completed" | "cancelled";
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
