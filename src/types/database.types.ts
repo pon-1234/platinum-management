@@ -232,15 +232,140 @@ export interface Database {
           updated_at?: string;
         };
       };
+      tables: {
+        Row: {
+          id: string;
+          table_name: string;
+          capacity: number;
+          location: string | null;
+          is_vip: boolean;
+          is_active: boolean;
+          current_status: Database["public"]["Enums"]["table_status"];
+          current_visit_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          table_name: string;
+          capacity: number;
+          location?: string | null;
+          is_vip?: boolean;
+          is_active?: boolean;
+          current_status?: Database["public"]["Enums"]["table_status"];
+          current_visit_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          table_name?: string;
+          capacity?: number;
+          location?: string | null;
+          is_vip?: boolean;
+          is_active?: boolean;
+          current_status?: Database["public"]["Enums"]["table_status"];
+          current_visit_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      reservations: {
+        Row: {
+          id: string;
+          customer_id: string;
+          table_id: string | null;
+          reservation_date: string;
+          reservation_time: string;
+          number_of_guests: number;
+          assigned_cast_id: string | null;
+          special_requests: string | null;
+          status: Database["public"]["Enums"]["reservation_status"];
+          checked_in_at: string | null;
+          cancelled_at: string | null;
+          cancel_reason: string | null;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          table_id?: string | null;
+          reservation_date: string;
+          reservation_time: string;
+          number_of_guests: number;
+          assigned_cast_id?: string | null;
+          special_requests?: string | null;
+          status?: Database["public"]["Enums"]["reservation_status"];
+          checked_in_at?: string | null;
+          cancelled_at?: string | null;
+          cancel_reason?: string | null;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          table_id?: string | null;
+          reservation_date?: string;
+          reservation_time?: string;
+          number_of_guests?: number;
+          assigned_cast_id?: string | null;
+          special_requests?: string | null;
+          status?: Database["public"]["Enums"]["reservation_status"];
+          checked_in_at?: string | null;
+          cancelled_at?: string | null;
+          cancel_reason?: string | null;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      check_table_availability: {
+        Args: {
+          p_table_id: string;
+          p_reservation_date: string;
+          p_reservation_time: string;
+          p_exclude_reservation_id?: string;
+        };
+        Returns: boolean;
+      };
+      get_cast_ranking: {
+        Args: {
+          start_date: string;
+          end_date: string;
+          limit_count: number;
+        };
+        Returns: Array<{
+          cast_id: string;
+          cast_name: string;
+          total_shimei: number;
+          total_dohan: number;
+          total_sales: number;
+          total_drinks: number;
+          rank: number;
+        }>;
+      };
     };
     Enums: {
-      [_ in never]: never;
+      table_status: "available" | "reserved" | "occupied" | "cleaning";
+      reservation_status:
+        | "pending"
+        | "confirmed"
+        | "checked_in"
+        | "completed"
+        | "cancelled"
+        | "no_show";
     };
   };
 }
