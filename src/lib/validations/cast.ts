@@ -154,6 +154,24 @@ export const createCastPerformanceSchema = z.object({
     .default(0),
 });
 
+// キャスト成績記録フォーム用スキーマ（UIフォーム用）
+export const createCastPerformanceFormSchema = z.object({
+  castId: z.string().uuid("有効なキャストIDを指定してください"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD形式で入力してください"),
+  shimeiCount: z.number().int().nonnegative("指名数は0以上で入力してください"),
+  dohanCount: z.number().int().nonnegative("同伴数は0以上で入力してください"),
+  salesAmount: z
+    .number()
+    .int()
+    .nonnegative("売上金額は0以上で入力してください"),
+  drinkCount: z
+    .number()
+    .int()
+    .nonnegative("ドリンク数は0以上で入力してください"),
+});
+
 // キャスト成績更新用スキーマ
 export const updateCastPerformanceSchema = createCastPerformanceSchema
   .omit({ castId: true })
@@ -189,6 +207,9 @@ export type UpdateCastInput = z.infer<typeof updateCastSchema>;
 export type UpdateCastProfileInput = z.infer<typeof updateCastProfileSchema>;
 export type CreateCastPerformanceInput = z.infer<
   typeof createCastPerformanceSchema
+>;
+export type CreateCastPerformanceFormInput = z.infer<
+  typeof createCastPerformanceFormSchema
 >;
 export type UpdateCastPerformanceInput = z.infer<
   typeof updateCastPerformanceSchema
