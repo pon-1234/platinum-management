@@ -75,7 +75,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setIsSubmitting(true);
       setError(null);
 
-      await customerService.updateCustomer(params.id, data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await customerService.updateCustomer(params.id, data as any);
       await loadCustomerData();
       setIsEditing(false);
     } catch (err) {

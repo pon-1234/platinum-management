@@ -66,9 +66,11 @@ export default function CustomersPage() {
       setError(null);
 
       if (editingCustomer) {
-        await customerService.updateCustomer(editingCustomer.id, data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await customerService.updateCustomer(editingCustomer.id, data as any);
       } else {
-        await customerService.createCustomer(data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await customerService.createCustomer(data as any);
       }
 
       await loadCustomers();

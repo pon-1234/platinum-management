@@ -38,9 +38,8 @@ export function CustomerForm({
   } = useForm<CreateCustomerInput>({
     resolver: zodResolver(
       isEdit ? updateCustomerFormSchema : createCustomerFormSchema
-    ) as unknown as Parameters<
-      typeof useForm<CreateCustomerInput>
-    >[0]["resolver"],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ) as any,
     defaultValues: customer
       ? {
           name: customer.name,
