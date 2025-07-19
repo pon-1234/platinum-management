@@ -27,11 +27,11 @@ vi.mock("next/link", () => ({
 
 // Mock auth store
 const mockSignOut = vi.fn();
-const mockUser = vi.fn<[], User | null>();
+let mockUserValue: User | null = null;
 
 vi.mock("@/stores/auth.store", () => ({
   useAuthStore: vi.fn(() => ({
-    user: mockUser(),
+    user: mockUserValue,
     signOut: mockSignOut,
   })),
 }));
@@ -52,11 +52,11 @@ describe("RoleBasedNavigation", () => {
   });
 
   it("should render navigation items for admin", () => {
-    mockUser.mockReturnValue({
+    mockUserValue = {
       id: "1",
       email: "admin@test.com",
       role: "admin",
-    });
+    };
 
     render(<RoleBasedNavigation />);
 
@@ -71,11 +71,11 @@ describe("RoleBasedNavigation", () => {
   });
 
   it("should filter navigation items based on permissions", () => {
-    mockUser.mockReturnValue({
+    mockUserValue = {
       id: "2",
       email: "cast@test.com",
       role: "cast",
-    });
+    };
 
     mockCanAccessRoute.mockImplementation((path: string) => {
       const allowedPaths = ["/dashboard", "/profile"];
@@ -92,11 +92,11 @@ describe("RoleBasedNavigation", () => {
   });
 
   it("should display user info and logout button", () => {
-    mockUser.mockReturnValue({
+    mockUserValue = {
       id: "3",
       email: "manager@test.com",
       role: "manager",
-    });
+    };
 
     render(<RoleBasedNavigation />);
 
@@ -106,11 +106,11 @@ describe("RoleBasedNavigation", () => {
   });
 
   it("should call signOut when logout button is clicked", () => {
-    mockUser.mockReturnValue({
+    mockUserValue = {
       id: "4",
       email: "user@test.com",
       role: "hall",
-    });
+    };
 
     render(<RoleBasedNavigation />);
 
@@ -123,11 +123,11 @@ describe("RoleBasedNavigation", () => {
   it("should highlight active navigation item", () => {
     mockUsePathname.mockReturnValue("/customers");
 
-    mockUser.mockReturnValue({
+    mockUserValue = {
       id: "5",
       email: "admin@test.com",
       role: "admin",
-    });
+    };
 
     render(<RoleBasedNavigation />);
 
