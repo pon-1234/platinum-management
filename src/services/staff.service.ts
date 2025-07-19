@@ -205,13 +205,13 @@ export class StaffService {
   ): CastProfile {
     return {
       staffId: data.staff_id,
-      nickname: data.nickname,
+      nickname: data.stage_name,
       profileImageUrl: data.profile_image_url,
-      bio: data.bio,
-      hourlyWage: data.hourly_wage,
-      commissionRate: data.commission_rate as {
-        shimei: number;
-        bottlePercent: number;
+      bio: data.self_introduction,
+      hourlyWage: data.hourly_rate,
+      commissionRate: {
+        shimei: data.back_percentage,
+        bottlePercent: data.back_percentage,
       },
       createdAt: data.created_at,
       updatedAt: data.updated_at,

@@ -248,12 +248,22 @@ describe("StaffService", () => {
     describe("createCastProfile", () => {
       it("should create a new cast profile", async () => {
         const newProfile = {
+          id: "cast-1",
           staff_id: "staff-1",
-          nickname: "まりあ",
+          stage_name: "まりあ",
+          birthday: null,
+          blood_type: null,
+          height: null,
+          three_size: null,
+          hobby: null,
+          special_skill: null,
+          self_introduction: "よろしくお願いします",
           profile_image_url: "https://example.com/maria.jpg",
-          bio: "よろしくお願いします",
-          hourly_wage: 3000,
-          commission_rate: { shimei: 50, bottlePercent: 10 },
+          hourly_rate: 3000,
+          back_percentage: 50,
+          is_active: true,
+          created_by: null,
+          updated_by: null,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
         };
@@ -278,7 +288,7 @@ describe("StaffService", () => {
           profileImageUrl: "https://example.com/maria.jpg",
           bio: "よろしくお願いします",
           hourlyWage: 3000,
-          commissionRate: { shimei: 50, bottlePercent: 10 },
+          commissionRate: { shimei: 50, bottlePercent: 50 }, // Both values come from back_percentage
           createdAt: "2024-01-01T00:00:00Z",
           updatedAt: "2024-01-01T00:00:00Z",
         });
@@ -290,12 +300,22 @@ describe("StaffService", () => {
     describe("getCastProfile", () => {
       it("should return cast profile by staff ID", async () => {
         const mockProfile = {
+          id: "cast-1",
           staff_id: "staff-1",
-          nickname: "まりあ",
+          stage_name: "まりあ",
+          birthday: null,
+          blood_type: null,
+          height: null,
+          three_size: null,
+          hobby: null,
+          special_skill: null,
+          self_introduction: null,
           profile_image_url: null,
-          bio: null,
-          hourly_wage: 3000,
-          commission_rate: { shimei: 50, bottlePercent: 10 },
+          hourly_rate: 3000,
+          back_percentage: 50,
+          is_active: true,
+          created_by: null,
+          updated_by: null,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
         };
@@ -310,6 +330,10 @@ describe("StaffService", () => {
         expect(result).toBeTruthy();
         expect(result?.nickname).toBe("まりあ");
         expect(result?.hourlyWage).toBe(3000);
+        expect(result?.commissionRate).toEqual({
+          shimei: 50,
+          bottlePercent: 50,
+        });
       });
 
       it("should return null when profile not found", async () => {
@@ -327,12 +351,22 @@ describe("StaffService", () => {
     describe("updateCastProfile", () => {
       it("should update cast profile", async () => {
         const updatedProfile = {
+          id: "cast-1",
           staff_id: "staff-1",
-          nickname: "まりあ（新）",
+          stage_name: "まりあ（新）",
+          birthday: null,
+          blood_type: null,
+          height: null,
+          three_size: null,
+          hobby: null,
+          special_skill: null,
+          self_introduction: "新しい自己紹介",
           profile_image_url: "https://example.com/maria-new.jpg",
-          bio: "新しい自己紹介",
-          hourly_wage: 3500,
-          commission_rate: { shimei: 60, bottlePercent: 15 },
+          hourly_rate: 3500,
+          back_percentage: 60,
+          is_active: true,
+          created_by: null,
+          updated_by: null,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-15T00:00:00Z",
         };
@@ -354,7 +388,7 @@ describe("StaffService", () => {
         expect(result.hourlyWage).toBe(3500);
         expect(result.commissionRate).toEqual({
           shimei: 60,
-          bottlePercent: 15,
+          bottlePercent: 60, // Both values are set to back_percentage in the new schema
         });
       });
     });
