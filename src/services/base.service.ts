@@ -23,7 +23,7 @@ export abstract class BaseService {
     const { data: staff } = await this.supabase
       .from("staffs")
       .select("id")
-      .eq("auth_user_id", user.id)
+      .eq("user_id", user.id)
       .single();
 
     return staff?.id || null;

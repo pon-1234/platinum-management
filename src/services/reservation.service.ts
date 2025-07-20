@@ -152,7 +152,6 @@ export class ReservationService {
     const updateData: Record<string, unknown> = {
       ...validatedData,
       updated_by: staffId,
-      updated_at: new Date().toISOString(),
     };
 
     // Map camelCase to snake_case

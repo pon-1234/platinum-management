@@ -141,7 +141,7 @@ describe("CustomerService", () => {
           name: "田中太郎",
           phoneNumber: "090-1234-5678",
         })
-      ).rejects.toThrow("この電話番号は既に登録されています");
+      ).rejects.toThrow("既に同じデータが存在します");
     });
   });
 

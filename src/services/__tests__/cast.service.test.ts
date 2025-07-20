@@ -100,7 +100,7 @@ describe("CastService", () => {
       });
 
       await expect(castService.createCast(createData)).rejects.toThrow(
-        "このスタッフIDは既にキャストとして登録されています"
+        "既に同じデータが存在します"
       );
     });
   });

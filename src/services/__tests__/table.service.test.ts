@@ -95,7 +95,7 @@ describe("TableService", () => {
       });
 
       await expect(tableService.createTable(createData)).rejects.toThrow(
-        "このテーブル名は既に使用されています"
+        "既に同じデータが存在します"
       );
     });
   });

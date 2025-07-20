@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
+import { BaseService } from "./base.service";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
   Table,
@@ -16,12 +16,11 @@ import {
   tableSearchSchema,
 } from "@/lib/validations/reservation";
 
-export class TableService {
-  private supabase: SupabaseClient<Database>;
+export class TableService extends BaseService {
   private realtimeChannel: RealtimeChannel | null = null;
 
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   // Table CRUD operations
@@ -42,10 +41,9 @@ export class TableService {
       .single();
 
     if (error) {
-      if (error.code === "23505") {
-        throw new Error("このテーブル名は既に使用されています");
-      }
-      throw new Error(`テーブルの作成に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "テーブルの作成に失敗しました")
+      );
     }
 
     return this.mapToTable(table);
@@ -62,7 +60,9 @@ export class TableService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`テーブル情報の取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "テーブル情報の取得に失敗しました")
+      );
     }
 
     return this.mapToTable(data);
@@ -128,7 +128,6 @@ export class TableService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: Record<string, unknown> = {
       ...validatedData,
-      updated_at: new Date().toISOString(),
     };
 
     // Map camelCase to snake_case
@@ -158,7 +157,9 @@ export class TableService {
       .single();
 
     if (error) {
-      throw new Error(`テーブル情報の更新に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "テーブル情報の更新に失敗しました")
+      );
     }
 
     return this.mapToTable(table);
@@ -168,7 +169,9 @@ export class TableService {
     const { error } = await this.supabase.from("tables").delete().eq("id", id);
 
     if (error) {
-      throw new Error(`テーブルの削除に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "テーブルの削除に失敗しました")
+      );
     }
   }
 
@@ -201,7 +204,9 @@ export class TableService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`テーブル検索に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "テーブル検索に失敗しました")
+      );
     }
 
     return data?.map(this.mapToTable) || [];

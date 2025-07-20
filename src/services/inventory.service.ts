@@ -107,7 +107,7 @@ export class InventoryService {
   async updateProduct(id: number, data: UpdateProductData): Promise<Product> {
     const { data: product, error } = await this.supabase
       .from("products")
-      .update({ ...data, updated_at: new Date().toISOString() })
+      .update({ ...data })
       .eq("id", id)
       .select()
       .single();

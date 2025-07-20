@@ -201,7 +201,7 @@ export class BottleKeepService {
   ): Promise<BottleKeep> {
     const { data: bottle, error } = await this.supabase
       .from("bottle_keeps")
-      .update({ ...data, updated_at: new Date().toISOString() })
+      .update({ ...data })
       .eq("id", id)
       .select()
       .single();

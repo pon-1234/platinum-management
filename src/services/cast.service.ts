@@ -60,10 +60,9 @@ export class CastService extends BaseService {
       .single();
 
     if (error) {
-      if (error.code === "23505") {
-        throw new Error("このスタッフIDは既にキャストとして登録されています");
-      }
-      throw new Error(`キャストの作成に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "キャストの作成に失敗しました")
+      );
     }
 
     return this.mapToCast(cast);
@@ -80,7 +79,9 @@ export class CastService extends BaseService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`キャスト情報の取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "キャスト情報の取得に失敗しました")
+      );
     }
 
     return this.mapToCast(data);
@@ -97,7 +98,9 @@ export class CastService extends BaseService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`キャスト情報の取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "キャスト情報の取得に失敗しました")
+      );
     }
 
     return this.mapToCast(data);
@@ -114,7 +117,6 @@ export class CastService extends BaseService {
     const updateData: Record<string, unknown> = {
       ...transformedData,
       updated_by: staffId,
-      updated_at: new Date().toISOString(),
     };
 
     const { data: cast, error } = await this.supabase
@@ -125,7 +127,9 @@ export class CastService extends BaseService {
       .single();
 
     if (error) {
-      throw new Error(`キャスト情報の更新に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "キャスト情報の更新に失敗しました")
+      );
     }
 
     return this.mapToCast(cast);
@@ -141,7 +145,6 @@ export class CastService extends BaseService {
     const transformedData = removeUndefined(camelToSnake(validatedData));
     const updateData: Record<string, unknown> = {
       ...transformedData,
-      updated_at: new Date().toISOString(),
     };
 
     const { data: cast, error } = await this.supabase
@@ -188,7 +191,9 @@ export class CastService extends BaseService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`キャスト検索に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "キャスト検索に失敗しました")
+      );
     }
 
     return data.map(this.mapToCast);
@@ -220,10 +225,9 @@ export class CastService extends BaseService {
       .single();
 
     if (error) {
-      if (error.code === "23505") {
-        throw new Error("この日付の成績は既に登録されています");
-      }
-      throw new Error(`成績の記録に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "成績の記録に失敗しました")
+      );
     }
 
     return this.mapToCastPerformance(performance);
@@ -239,28 +243,11 @@ export class CastService extends BaseService {
     // Get current user's staff ID
     const staffId = await this.getCurrentStaffId();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transformedData = removeUndefined(camelToSnake(validatedData));
     const updateData: Record<string, unknown> = {
-      ...validatedData,
+      ...transformedData,
       updated_by: staffId,
-      updated_at: new Date().toISOString(),
     };
-
-    // Map camelCase to snake_case
-    if (validatedData.shimeiCount !== undefined)
-      updateData.shimei_count = validatedData.shimeiCount;
-    if (validatedData.dohanCount !== undefined)
-      updateData.dohan_count = validatedData.dohanCount;
-    if (validatedData.salesAmount !== undefined)
-      updateData.sales_amount = validatedData.salesAmount;
-    if (validatedData.drinkCount !== undefined)
-      updateData.drink_count = validatedData.drinkCount;
-
-    // Remove camelCase properties
-    delete updateData.shimeiCount;
-    delete updateData.dohanCount;
-    delete updateData.salesAmount;
-    delete updateData.drinkCount;
 
     const { data: performance, error } = await this.supabase
       .from("cast_performances")
@@ -270,7 +257,9 @@ export class CastService extends BaseService {
       .single();
 
     if (error) {
-      throw new Error(`成績の更新に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "成績の更新に失敗しました")
+      );
     }
 
     return this.mapToCastPerformance(performance);
@@ -309,7 +298,9 @@ export class CastService extends BaseService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`成績の取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "成績の取得に失敗しました")
+      );
     }
 
     return data.map(this.mapToCastPerformance);
@@ -327,7 +318,9 @@ export class CastService extends BaseService {
     });
 
     if (error) {
-      throw new Error(`ランキングの取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "ランキングの取得に失敗しました")
+      );
     }
 
     return data || [];

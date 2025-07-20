@@ -47,10 +47,9 @@ export class CustomerService extends BaseService {
       .single();
 
     if (error) {
-      if (error.code === "23505") {
-        throw new Error("この電話番号は既に登録されています");
-      }
-      throw new Error(`顧客の作成に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "顧客の作成に失敗しました")
+      );
     }
 
     return this.mapToCustomer(customer);
@@ -67,7 +66,9 @@ export class CustomerService extends BaseService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`顧客情報の取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "顧客情報の取得に失敗しました")
+      );
     }
 
     return this.mapToCustomer(data);
@@ -89,7 +90,6 @@ export class CustomerService extends BaseService {
       .update({
         ...transformedData,
         updated_by: staffId,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", id)
       .select()
@@ -153,7 +153,9 @@ export class CustomerService extends BaseService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`顧客検索に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "顧客検索に失敗しました")
+      );
     }
 
     return data.map(this.mapToCustomer);
@@ -167,7 +169,9 @@ export class CustomerService extends BaseService {
       .order("check_in_at", { ascending: false });
 
     if (error) {
-      throw new Error(`来店履歴の取得に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "来店履歴の取得に失敗しました")
+      );
     }
 
     return data.map(this.mapToVisit);
@@ -194,7 +198,9 @@ export class CustomerService extends BaseService {
       .single();
 
     if (error) {
-      throw new Error(`来店記録の作成に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "来店記録の作成に失敗しました")
+      );
     }
 
     return this.mapToVisit(visit);
@@ -222,7 +228,9 @@ export class CustomerService extends BaseService {
       .single();
 
     if (error) {
-      throw new Error(`来店情報の更新に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "来店情報の更新に失敗しました")
+      );
     }
 
     return this.mapToVisit(visit);
@@ -237,7 +245,10 @@ export class CustomerService extends BaseService {
 
     if (error) {
       throw new Error(
-        `アクティブな来店情報の取得に失敗しました: ${error.message}`
+        this.handleDatabaseError(
+          error,
+          "アクティブな来店情報の取得に失敗しました"
+        )
       );
     }
 

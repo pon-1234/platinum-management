@@ -13,8 +13,8 @@ export function camelToSnake(
     );
 
     if (
-      value !== undefined &&
       value !== null &&
+      value !== undefined &&
       typeof value === "object" &&
       !Array.isArray(value) &&
       !(value instanceof Date)
@@ -42,8 +42,8 @@ export function snakeToCamel(
     );
 
     if (
-      value !== undefined &&
       value !== null &&
+      value !== undefined &&
       typeof value === "object" &&
       !Array.isArray(value) &&
       !(value instanceof Date)
