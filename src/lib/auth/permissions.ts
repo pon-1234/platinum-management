@@ -37,6 +37,11 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     redirectTo: "/dashboard",
   },
   {
+    path: "/attendance",
+    allowedRoles: ["admin", "manager", "hall", "cast"],
+    redirectTo: "/dashboard",
+  },
+  {
     path: "/inventory",
     allowedRoles: ["admin", "manager"],
     redirectTo: "/dashboard",
@@ -142,6 +147,9 @@ export function hasPermission(
       { resource: "inventory", action: "manage" },
       { resource: "inventory", action: "view" },
       { resource: "inventory", action: "edit" },
+      { resource: "attendance", action: "manage" },
+      { resource: "attendance", action: "view" },
+      { resource: "attendance", action: "edit" },
     ],
     hall: [
       { resource: "customers", action: "view" },
@@ -151,6 +159,8 @@ export function hasPermission(
       { resource: "bookings", action: "edit" },
       { resource: "tables", action: "manage" },
       { resource: "tables", action: "view" },
+      { resource: "attendance", action: "view" },
+      { resource: "attendance", action: "clock" },
     ],
     cashier: [
       { resource: "billing", action: "manage" },
@@ -165,6 +175,8 @@ export function hasPermission(
       { resource: "schedule", action: "view" },
       { resource: "schedule", action: "submit" },
       { resource: "performance", action: "view" },
+      { resource: "attendance", action: "view" },
+      { resource: "attendance", action: "clock" },
     ],
   };
 

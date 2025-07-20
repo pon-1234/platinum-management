@@ -424,6 +424,188 @@ export interface Database {
           created_at?: string;
         };
       };
+      shift_templates: {
+        Row: {
+          id: string;
+          name: string;
+          start_time: string;
+          end_time: string;
+          days_of_week: number[];
+          is_active: boolean;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          start_time: string;
+          end_time: string;
+          days_of_week: number[];
+          is_active?: boolean;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          start_time?: string;
+          end_time?: string;
+          days_of_week?: number[];
+          is_active?: boolean;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      shift_requests: {
+        Row: {
+          id: string;
+          cast_id: string;
+          request_date: string;
+          start_time: string;
+          end_time: string;
+          status: "pending" | "approved" | "rejected";
+          notes: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          rejection_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          cast_id: string;
+          request_date: string;
+          start_time: string;
+          end_time: string;
+          status?: "pending" | "approved" | "rejected";
+          notes?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          rejection_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          cast_id?: string;
+          request_date?: string;
+          start_time?: string;
+          end_time?: string;
+          status?: "pending" | "approved" | "rejected";
+          notes?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          rejection_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      confirmed_shifts: {
+        Row: {
+          id: string;
+          staff_id: string;
+          shift_date: string;
+          start_time: string;
+          end_time: string;
+          shift_type: "regular" | "overtime" | "holiday";
+          notes: string | null;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          staff_id: string;
+          shift_date: string;
+          start_time: string;
+          end_time: string;
+          shift_type?: "regular" | "overtime" | "holiday";
+          notes?: string | null;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          staff_id?: string;
+          shift_date?: string;
+          start_time?: string;
+          end_time?: string;
+          shift_type?: "regular" | "overtime" | "holiday";
+          notes?: string | null;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      attendance_records: {
+        Row: {
+          id: string;
+          staff_id: string;
+          attendance_date: string;
+          clock_in_time: string | null;
+          clock_out_time: string | null;
+          scheduled_start_time: string | null;
+          scheduled_end_time: string | null;
+          break_start_time: string | null;
+          break_end_time: string | null;
+          total_work_minutes: number | null;
+          overtime_minutes: number | null;
+          status: "present" | "absent" | "late" | "early_leave";
+          notes: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          staff_id: string;
+          attendance_date: string;
+          clock_in_time?: string | null;
+          clock_out_time?: string | null;
+          scheduled_start_time?: string | null;
+          scheduled_end_time?: string | null;
+          break_start_time?: string | null;
+          break_end_time?: string | null;
+          total_work_minutes?: number | null;
+          overtime_minutes?: number | null;
+          status?: "present" | "absent" | "late" | "early_leave";
+          notes?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          staff_id?: string;
+          attendance_date?: string;
+          clock_in_time?: string | null;
+          clock_out_time?: string | null;
+          scheduled_start_time?: string | null;
+          scheduled_end_time?: string | null;
+          break_start_time?: string | null;
+          break_end_time?: string | null;
+          total_work_minutes?: number | null;
+          overtime_minutes?: number | null;
+          status?: "present" | "absent" | "late" | "early_leave";
+          notes?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

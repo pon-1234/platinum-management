@@ -12,6 +12,7 @@ import {
   CreditCardIcon,
   CubeIcon,
   ChartBarIcon,
+  ClockIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
@@ -48,6 +49,12 @@ const navigationItems: NavigationItem[] = [
     href: "/billing",
     icon: CreditCardIcon,
     resource: "billing",
+  },
+  {
+    name: "勤怠管理",
+    href: "/attendance",
+    icon: ClockIcon,
+    resource: "attendance",
   },
   {
     name: "在庫管理",
