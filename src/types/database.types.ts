@@ -196,8 +196,14 @@ export interface Database {
           check_in_at: string;
           check_out_at: string | null;
           num_guests: number;
+          subtotal: number | null;
+          service_charge: number | null;
+          tax_amount: number | null;
           total_amount: number | null;
+          payment_method: string | null;
+          payment_status: "pending" | "completed" | "cancelled";
           status: "active" | "completed" | "cancelled";
+          notes: string | null;
           created_by: string | null;
           updated_by: string | null;
           created_at: string;
@@ -209,9 +215,15 @@ export interface Database {
           table_id: number;
           check_in_at?: string;
           check_out_at?: string | null;
-          num_guests?: number;
+          num_guests: number;
+          subtotal?: number | null;
+          service_charge?: number | null;
+          tax_amount?: number | null;
           total_amount?: number | null;
+          payment_method?: string | null;
+          payment_status?: "pending" | "completed" | "cancelled";
           status?: "active" | "completed" | "cancelled";
+          notes?: string | null;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -224,8 +236,14 @@ export interface Database {
           check_in_at?: string;
           check_out_at?: string | null;
           num_guests?: number;
+          subtotal?: number | null;
+          service_charge?: number | null;
+          tax_amount?: number | null;
           total_amount?: number | null;
+          payment_method?: string | null;
+          payment_status?: "pending" | "completed" | "cancelled";
           status?: "active" | "completed" | "cancelled";
+          notes?: string | null;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -326,6 +344,86 @@ export interface Database {
           updated_at?: string;
         };
       };
+      products: {
+        Row: {
+          id: number;
+          name: string;
+          category: string;
+          price: number;
+          cost: number;
+          stock_quantity: number;
+          low_stock_threshold: number;
+          is_active: boolean;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          category: string;
+          price: number;
+          cost?: number;
+          stock_quantity?: number;
+          low_stock_threshold?: number;
+          is_active?: boolean;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          category?: string;
+          price?: number;
+          cost?: number;
+          stock_quantity?: number;
+          low_stock_threshold?: number;
+          is_active?: boolean;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      order_items: {
+        Row: {
+          id: number;
+          visit_id: string;
+          product_id: number;
+          cast_id: string | null;
+          quantity: number;
+          unit_price: number;
+          total_price: number;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          visit_id: string;
+          product_id: number;
+          cast_id?: string | null;
+          quantity: number;
+          unit_price: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          visit_id?: string;
+          product_id?: number;
+          cast_id?: string | null;
+          quantity?: number;
+          unit_price?: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -354,6 +452,17 @@ export interface Database {
           total_sales: number;
           total_drinks: number;
           rank: number;
+        }>;
+      };
+      calculate_visit_totals: {
+        Args: {
+          visit_id_param: string;
+        };
+        Returns: Array<{
+          subtotal: number;
+          service_charge: number;
+          tax_amount: number;
+          total_amount: number;
         }>;
       };
     };

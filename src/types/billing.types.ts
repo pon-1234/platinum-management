@@ -81,6 +81,10 @@ export interface UpdateVisitData {
   tableId?: number;
   numGuests?: number;
   checkOutAt?: string;
+  subtotal?: number;
+  serviceCharge?: number;
+  taxAmount?: number;
+  totalAmount?: number;
   paymentMethod?: PaymentMethod;
   paymentStatus?: PaymentStatus;
   status?: VisitStatus;
@@ -196,10 +200,10 @@ export interface DailyReport {
 // Product categories (can be extended)
 export const PRODUCT_CATEGORIES = [
   "alcoholic_beverages",
-  "non_alcoholic_beverages", 
+  "non_alcoholic_beverages",
   "food",
   "tobacco",
-  "other"
+  "other",
 ] as const;
 
-export type ProductCategory = typeof PRODUCT_CATEGORIES[number];
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];

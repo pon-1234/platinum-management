@@ -30,7 +30,9 @@ export class BillingService {
 
   // Helper method to get current staff ID
   private async getCurrentStaffId(): Promise<string> {
-    const { data: { user } } = await this.supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
     if (!user) {
       throw new Error("認証が必要です");
     }
@@ -120,7 +122,10 @@ export class BillingService {
     }
 
     if (params.offset) {
-      query = query.range(params.offset, params.offset + (params.limit || 50) - 1);
+      query = query.range(
+        params.offset,
+        params.offset + (params.limit || 50) - 1
+      );
     }
 
     const { data, error } = await query;
@@ -143,8 +148,10 @@ export class BillingService {
     if (data.category !== undefined) updateData.category = data.category;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.cost !== undefined) updateData.cost = data.cost;
-    if (data.stockQuantity !== undefined) updateData.stock_quantity = data.stockQuantity;
-    if (data.lowStockThreshold !== undefined) updateData.low_stock_threshold = data.lowStockThreshold;
+    if (data.stockQuantity !== undefined)
+      updateData.stock_quantity = data.stockQuantity;
+    if (data.lowStockThreshold !== undefined)
+      updateData.low_stock_threshold = data.lowStockThreshold;
     if (data.isActive !== undefined) updateData.is_active = data.isActive;
 
     const { data: product, error } = await this.supabase
@@ -218,7 +225,8 @@ export class BillingService {
   async getVisitWithDetails(id: string): Promise<VisitWithDetails | null> {
     const { data, error } = await this.supabase
       .from("visits")
-      .select(`
+      .select(
+        `
         *,
         customer:customers(id, name, phone_number),
         order_items(
@@ -226,7 +234,8 @@ export class BillingService {
           product:products(*),
           cast:staffs!cast_id(id, full_name)
         )
-      `)
+      `
+      )
       .eq("id", id)
       .single();
 
@@ -275,7 +284,10 @@ export class BillingService {
     }
 
     if (params.offset) {
-      query = query.range(params.offset, params.offset + (params.limit || 50) - 1);
+      query = query.range(
+        params.offset,
+        params.offset + (params.limit || 50) - 1
+      );
     }
 
     const { data, error } = await query;
@@ -296,9 +308,18 @@ export class BillingService {
 
     if (data.tableId !== undefined) updateData.table_id = data.tableId;
     if (data.numGuests !== undefined) updateData.num_guests = data.numGuests;
-    if (data.checkOutAt !== undefined) updateData.check_out_at = data.checkOutAt;
-    if (data.paymentMethod !== undefined) updateData.payment_method = data.paymentMethod;
-    if (data.paymentStatus !== undefined) updateData.payment_status = data.paymentStatus;
+    if (data.checkOutAt !== undefined)
+      updateData.check_out_at = data.checkOutAt;
+    if (data.subtotal !== undefined) updateData.subtotal = data.subtotal;
+    if (data.serviceCharge !== undefined)
+      updateData.service_charge = data.serviceCharge;
+    if (data.taxAmount !== undefined) updateData.tax_amount = data.taxAmount;
+    if (data.totalAmount !== undefined)
+      updateData.total_amount = data.totalAmount;
+    if (data.paymentMethod !== undefined)
+      updateData.payment_method = data.paymentMethod;
+    if (data.paymentStatus !== undefined)
+      updateData.payment_status = data.paymentStatus;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
@@ -369,7 +390,9 @@ export class BillingService {
     return this.mapToOrderItem(data);
   }
 
-  async searchOrderItems(params: OrderItemSearchParams = {}): Promise<OrderItem[]> {
+  async searchOrderItems(
+    params: OrderItemSearchParams = {}
+  ): Promise<OrderItem[]> {
     let query = this.supabase
       .from("order_items")
       .select("*")
@@ -400,7 +423,10 @@ export class BillingService {
     }
 
     if (params.offset) {
-      query = query.range(params.offset, params.offset + (params.limit || 50) - 1);
+      query = query.range(
+        params.offset,
+        params.offset + (params.limit || 50) - 1
+      );
     }
 
     const { data, error } = await query;
@@ -412,7 +438,10 @@ export class BillingService {
     return data.map(this.mapToOrderItem);
   }
 
-  async updateOrderItem(id: number, data: UpdateOrderItemData): Promise<OrderItem> {
+  async updateOrderItem(
+    id: number,
+    data: UpdateOrderItemData
+  ): Promise<OrderItem> {
     const updateData: Record<string, unknown> = {};
 
     if (data.quantity !== undefined) updateData.quantity = data.quantity;
@@ -448,8 +477,9 @@ export class BillingService {
   // ============= BILLING CALCULATIONS =============
 
   async calculateBill(visitId: string): Promise<BillCalculation> {
-    const { data, error } = await this.supabase
-      .rpc("calculate_visit_totals", { visit_id_param: visitId });
+    const { data, error } = await this.supabase.rpc("calculate_visit_totals", {
+      visit_id_param: visitId,
+    });
 
     if (error) {
       throw new Error(`料金計算に失敗しました: ${error.message}`);
@@ -467,7 +497,10 @@ export class BillingService {
     return data[0];
   }
 
-  async processPayment(visitId: string, paymentData: PaymentData): Promise<Visit> {
+  async processPayment(
+    visitId: string,
+    paymentData: PaymentData
+  ): Promise<Visit> {
     // First calculate and update totals
     const billCalculation = await this.calculateBill(visitId);
 
@@ -501,12 +534,15 @@ export class BillingService {
     });
 
     const totalVisits = visits.length;
-    const totalSales = visits.reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
+    const totalSales = visits.reduce(
+      (sum, visit) => sum + (visit.totalAmount || 0),
+      0
+    );
     const totalCash = visits
-      .filter(v => v.paymentMethod === "cash")
+      .filter((v) => v.paymentMethod === "cash")
       .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
     const totalCard = visits
-      .filter(v => v.paymentMethod === "card")
+      .filter((v) => v.paymentMethod === "card")
       .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
 
     // Get order items for the day
@@ -530,7 +566,9 @@ export class BillingService {
 
   // ============= MAPPING FUNCTIONS =============
 
-  private mapToProduct(data: Database["public"]["Tables"]["products"]["Row"]): Product {
+  private mapToProduct(
+    data: Database["public"]["Tables"]["products"]["Row"]
+  ): Product {
     return {
       id: data.id,
       name: data.name,
@@ -547,7 +585,9 @@ export class BillingService {
     };
   }
 
-  private mapToVisit(data: Database["public"]["Tables"]["visits"]["Row"]): Visit {
+  private mapToVisit(
+    data: Database["public"]["Tables"]["visits"]["Row"]
+  ): Visit {
     return {
       id: data.id,
       customerId: data.customer_id,
@@ -570,7 +610,9 @@ export class BillingService {
     };
   }
 
-  private mapToOrderItem(data: Database["public"]["Tables"]["order_items"]["Row"]): OrderItem {
+  private mapToOrderItem(
+    data: Database["public"]["Tables"]["order_items"]["Row"]
+  ): OrderItem {
     return {
       id: data.id,
       visitId: data.visit_id,
@@ -589,19 +631,24 @@ export class BillingService {
     const visit = this.mapToVisit(data);
     return {
       ...visit,
-      customer: data.customer ? {
-        id: data.customer.id,
-        name: data.customer.name,
-        phoneNumber: data.customer.phone_number,
-      } : undefined,
-      orderItems: data.order_items?.map((item: any) => ({
-        ...this.mapToOrderItem(item),
-        product: item.product ? this.mapToProduct(item.product) : undefined,
-        cast: item.cast ? {
-          id: item.cast.id,
-          fullName: item.cast.full_name,
-        } : undefined,
-      })) || [],
+      customer: data.customer
+        ? {
+            id: data.customer.id,
+            name: data.customer.name,
+            phoneNumber: data.customer.phone_number,
+          }
+        : undefined,
+      orderItems:
+        data.order_items?.map((item: any) => ({
+          ...this.mapToOrderItem(item),
+          product: item.product ? this.mapToProduct(item.product) : undefined,
+          cast: item.cast
+            ? {
+                id: item.cast.id,
+                fullName: item.cast.full_name,
+              }
+            : undefined,
+        })) || [],
     };
   }
 }

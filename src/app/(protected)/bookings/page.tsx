@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, List, Plus } from "lucide-react";
+import {
+  CalendarIcon,
+  ListBulletIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import { ReservationList } from "@/components/reservation/ReservationList";
 import { ReservationCalendar } from "@/components/reservation/ReservationCalendar";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -47,7 +51,7 @@ export default function BookingsPage() {
               }}
               className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <PlusIcon className="w-5 h-5 mr-2" />
               新規予約
             </button>
           </div>
@@ -65,7 +69,7 @@ export default function BookingsPage() {
                   : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
               }`}
             >
-              <List className="w-4 h-4 inline-block mr-2" />
+              <ListBulletIcon className="w-4 h-4 inline-block mr-2" />
               リスト表示
             </button>
             <button
@@ -77,7 +81,7 @@ export default function BookingsPage() {
                   : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
               }`}
             >
-              <Calendar className="w-4 h-4 inline-block mr-2" />
+              <CalendarIcon className="w-4 h-4 inline-block mr-2" />
               カレンダー表示
             </button>
           </div>
