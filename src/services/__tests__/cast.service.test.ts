@@ -341,4 +341,92 @@ describe("CastService", () => {
       expect(result.totalAmount).toBe(161000); // 36000 + 125000
     });
   });
+
+  describe("calculateMultipleCastsCompensation", () => {
+    it("should calculate compensation for multiple casts", async () => {
+      const castIds = ["cast-1", "cast-2"];
+      const startDate = "2024-01-01";
+      const endDate = "2024-01-31";
+
+      // Mock for cast 1
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          hourly_wage: 2000,
+          commission_rate: { bottle_percent: 0.2 },
+        },
+        error: null,
+      });
+
+      // Mock getCastPerformances for cast 1
+      vi.spyOn(castService, "getCastPerformances").mockResolvedValueOnce([
+        {
+          id: "perf-1",
+          castId: "cast-1",
+          date: "2024-01-15",
+          shimeiCount: 3,
+          dohanCount: 1,
+          salesAmount: 50000,
+          drinkCount: 5,
+          createdBy: null,
+          updatedBy: null,
+          createdAt: "2024-01-15T00:00:00Z",
+          updatedAt: "2024-01-15T00:00:00Z",
+        },
+      ]);
+
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          nickname: "Alice",
+          staffs: { full_name: "Alice Smith" },
+        },
+        error: null,
+      });
+
+      // Mock for cast 2
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          hourly_wage: 1500,
+          commission_rate: { bottle_percent: 0.15 },
+        },
+        error: null,
+      });
+
+      // Mock getCastPerformances for cast 2
+      vi.spyOn(castService, "getCastPerformances").mockResolvedValueOnce([
+        {
+          id: "perf-2",
+          castId: "cast-2",
+          date: "2024-01-20",
+          shimeiCount: 2,
+          dohanCount: 0,
+          salesAmount: 30000,
+          drinkCount: 3,
+          createdBy: null,
+          updatedBy: null,
+          createdAt: "2024-01-20T00:00:00Z",
+          updatedAt: "2024-01-20T00:00:00Z",
+        },
+      ]);
+
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          nickname: "Bob",
+          staffs: { full_name: "Bob Johnson" },
+        },
+        error: null,
+      });
+
+      const result = await castService.calculateMultipleCastsCompensation(
+        castIds,
+        startDate,
+        endDate
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0].castName).toBe("Alice");
+      expect(result[0].totalSales).toBe(50000);
+      expect(result[1].castName).toBe("Bob");
+      expect(result[1].totalSales).toBe(30000);
+    });
+  });
 });

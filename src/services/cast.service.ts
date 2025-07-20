@@ -432,6 +432,39 @@ export class CastService {
     };
   }
 
+  // Batch calculate compensation for multiple casts
+  async calculateMultipleCastsCompensation(
+    castIds: string[],
+    startDate: string,
+    endDate: string
+  ): Promise<(CastCompensation & { castName: string })[]> {
+    const compensations = await Promise.all(
+      castIds.map(async (castId) => {
+        const compensation = await this.calculateCastCompensation(
+          castId,
+          startDate,
+          endDate
+        );
+
+        // Get cast name
+        const { data: cast } = await this.supabase
+          .from("casts_profile")
+          .select("nickname, staffs!inner(full_name)")
+          .eq("staff_id", castId)
+          .single();
+
+        const castName = cast?.nickname || cast?.staffs?.full_name || "Unknown";
+
+        return {
+          ...compensation,
+          castName,
+        };
+      })
+    );
+
+    return compensations;
+  }
+
   // Helper methods
   private async getCurrentStaffId(): Promise<string | null> {
     const {
