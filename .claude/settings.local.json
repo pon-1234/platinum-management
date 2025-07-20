@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app:*)",
+      "Bash(mkdir:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(npx husky:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm test:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Bash(mv:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:*)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit.*\\.(spec|test)\\.(ts|tsx)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Test file created/updated'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit.*\\.(ts|tsx)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'TypeScript file created/updated'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm lint && pnpm typecheck"
+          }
+        ]
+      }
+    ]
+  }
+}

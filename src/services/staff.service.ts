@@ -115,11 +115,11 @@ export class StaffService {
       .from("casts_profile")
       .insert({
         staff_id: data.staffId,
-        nickname: data.nickname,
+        stage_name: data.nickname,
         profile_image_url: data.profileImageUrl || null,
-        bio: data.bio || null,
-        hourly_wage: data.hourlyWage || 0,
-        commission_rate: data.commissionRate || { shimei: 0, bottlePercent: 0 },
+        self_introduction: data.bio || null,
+        hourly_rate: data.hourlyWage || 0,
+        back_percentage: data.commissionRate?.shimei || 0,
       })
       .select()
       .single();
@@ -165,15 +165,17 @@ export class StaffService {
     staffId: string,
     data: UpdateCastProfileData
   ): Promise<CastProfile> {
+    const updateData: Record<string, unknown> = {};
+    
+    if (data.nickname !== undefined) updateData.stage_name = data.nickname;
+    if (data.profileImageUrl !== undefined) updateData.profile_image_url = data.profileImageUrl;
+    if (data.bio !== undefined) updateData.self_introduction = data.bio;
+    if (data.hourlyWage !== undefined) updateData.hourly_rate = data.hourlyWage;
+    if (data.commissionRate !== undefined) updateData.back_percentage = data.commissionRate.shimei;
+
     const { data: profile, error } = await this.supabase
       .from("casts_profile")
-      .update({
-        nickname: data.nickname,
-        profile_image_url: data.profileImageUrl,
-        bio: data.bio,
-        hourly_wage: data.hourlyWage,
-        commission_rate: data.commissionRate,
-      })
+      .update(updateData)
       .eq("staff_id", staffId)
       .select()
       .single();
