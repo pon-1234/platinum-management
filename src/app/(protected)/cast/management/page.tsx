@@ -58,22 +58,22 @@ export default function CastManagementPage() {
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={cast.profileImageUrl}
-                        alt={cast.nickname}
+                        alt={cast.stageName}
                         className="h-12 w-12 rounded-full object-cover"
                       />
                     ) : (
                       <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                         <span className="text-gray-600 dark:text-gray-300 font-medium">
-                          {cast.nickname.charAt(0)}
+                          {cast.stageName.charAt(0)}
                         </span>
                       </div>
                     )}
                     <div>
                       <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {cast.nickname}
+                        {cast.stageName}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        時給: ¥{cast.hourlyWage?.toLocaleString() || "-"}
+                        時給: ¥{cast.hourlyRate?.toLocaleString() || "-"}
                       </p>
                     </div>
                   </div>

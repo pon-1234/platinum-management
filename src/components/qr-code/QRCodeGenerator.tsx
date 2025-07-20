@@ -38,7 +38,7 @@ export function QRCodeGenerator({
 
   const qrCodeService = new QRCodeService();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadQRInfo();
@@ -62,7 +62,7 @@ export function QRCodeGenerator({
       setQrInfo(info);
 
       if (info.qrCode) {
-        await generateQRImage(info.qrCode.qr_data);
+        await generateQRImage();
         calculateTimeLeft(info.qrCode.expires_at);
       }
     } catch (err) {
@@ -85,7 +85,7 @@ export function QRCodeGenerator({
       };
 
       const qrCode = await qrCodeService.generateQRCode(request);
-      await generateQRImage(qrCode.qr_data);
+      await generateQRImage();
       await loadQRInfo(); // 情報を再読み込み
 
       onGenerated?.(qrCode);

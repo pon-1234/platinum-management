@@ -9,6 +9,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { AttendanceService } from "@/services/attendance.service";
 import { StaffService } from "@/services/staff.service";
 import type { ClockAction, AttendanceRecord } from "@/types/attendance.types";
@@ -176,7 +177,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
         </div>
         <div className="text-lg text-gray-600 dark:text-gray-400 mb-4">
           {format(currentTime, "yyyy年M月d日 (E)", {
-            locale: (await import("date-fns/locale/ja")).default,
+            locale: ja,
           })}
         </div>
         <div className={`text-lg font-medium ${getStatusColor()}`}>

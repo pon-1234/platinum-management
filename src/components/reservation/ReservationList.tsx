@@ -41,7 +41,8 @@ export function ReservationList({
     setIsLoading(true);
     try {
       const data = await reservationService.searchReservations({
-        date,
+        startDate: date,
+        endDate: date,
         status,
       });
 

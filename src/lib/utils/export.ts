@@ -73,14 +73,17 @@ export function formatCastCompensationForExport(
   return compensations.map((comp) => ({
     キャスト名: comp.castName,
     期間: comp.period,
-    勤務日数: comp.workDays,
+    勤務日数: Math.ceil(comp.workHours / 6), // Estimate workDays from workHours
     推定勤務時間: comp.workHours,
-    時給: comp.hourlyRate,
+    時給: comp.cast.hourlyRate,
     時給総額: comp.hourlyWage,
-    売上総額: comp.totalSales,
-    バック率: `${(comp.backPercentage * 100).toFixed(1)}%`,
+    売上総額: comp.performances.reduce(
+      (sum, p) => sum + (p.salesAmount || 0),
+      0
+    ),
+    バック率: `${comp.cast.backPercentage}%`,
     バック額: comp.backAmount,
-    支給総額: comp.totalCompensation,
+    支給総額: comp.totalAmount,
   }));
 }
 

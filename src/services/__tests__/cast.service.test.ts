@@ -351,8 +351,22 @@ describe("CastService", () => {
       // Mock for cast 1
       mockSupabase.single.mockResolvedValueOnce({
         data: {
-          hourly_wage: 2000,
-          commission_rate: { bottle_percent: 0.2 },
+          id: "cast-1",
+          staff_id: "staff-1",
+          stage_name: "Alice",
+          birthday: null,
+          blood_type: null,
+          height: null,
+          three_size: null,
+          hobby: null,
+          special_skill: null,
+          self_introduction: null,
+          profile_image_url: null,
+          hourly_rate: 2000,
+          back_percentage: 20,
+          is_active: true,
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
         },
         error: null,
       });
@@ -377,8 +391,22 @@ describe("CastService", () => {
       // Mock for cast 2
       mockSupabase.single.mockResolvedValueOnce({
         data: {
-          hourly_wage: 1500,
-          commission_rate: { bottle_percent: 0.15 },
+          id: "cast-2",
+          staff_id: "staff-2",
+          stage_name: "Bob",
+          birthday: null,
+          blood_type: null,
+          height: null,
+          three_size: null,
+          hobby: null,
+          special_skill: null,
+          self_introduction: null,
+          profile_image_url: null,
+          hourly_rate: 1500,
+          back_percentage: 15,
+          is_active: true,
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
         },
         error: null,
       });
@@ -403,16 +431,16 @@ describe("CastService", () => {
       // Mock cast names after calculations
       mockSupabase.single.mockResolvedValueOnce({
         data: {
-          nickname: "Alice",
-          staffs: { full_name: "Alice Smith" },
+          stage_name: "Alice",
+          staffs: [{ full_name: "Alice Smith" }],
         },
         error: null,
       });
 
       mockSupabase.single.mockResolvedValueOnce({
         data: {
-          nickname: "Bob",
-          staffs: { full_name: "Bob Johnson" },
+          stage_name: "Bob",
+          staffs: [{ full_name: "Bob Johnson" }],
         },
         error: null,
       });

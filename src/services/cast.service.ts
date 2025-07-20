@@ -163,6 +163,11 @@ export class CastService extends BaseService {
     return this.mapToCast(cast);
   }
 
+  // Alias method for easier usage
+  async getCasts(params: CastSearchParams = {}): Promise<Cast[]> {
+    return this.searchCasts(params);
+  }
+
   async searchCasts(params: CastSearchParams = {}): Promise<Cast[]> {
     // Validate search parameters
     const validatedParams = castSearchSchema.parse(params);
@@ -350,12 +355,17 @@ export class CastService extends BaseService {
     const averageHoursPerDay = 6; // Placeholder
     const workHours = workDays * averageHoursPerDay;
 
-    // Calculate hourly wage
-    const hourlyWage = cast.hourlyRate * workHours;
+    // Calculate hourly wage - ensure values are valid numbers
+    const hourlyRate = cast.hourlyRate || 0;
+    const hourlyWage = hourlyRate * workHours;
 
     // Calculate back amount
-    const totalSales = performances.reduce((sum, p) => sum + p.salesAmount, 0);
-    const backAmount = (totalSales * cast.backPercentage) / 100;
+    const totalSales = performances.reduce(
+      (sum, p) => sum + (p.salesAmount || 0),
+      0
+    );
+    const backPercentage = cast.backPercentage || 0;
+    const backAmount = (totalSales * backPercentage) / 100;
 
     // Total compensation
     const totalAmount = hourlyWage + backAmount;
@@ -389,11 +399,16 @@ export class CastService extends BaseService {
         // Get cast name
         const { data: cast } = await this.supabase
           .from("casts_profile")
-          .select("nickname, staffs!inner(full_name)")
+          .select("stage_name, staffs!inner(full_name)")
           .eq("staff_id", castId)
           .single();
 
-        const castName = cast?.nickname || cast?.staffs?.full_name || "Unknown";
+        const castName =
+          cast?.stage_name ||
+          (Array.isArray(cast?.staffs)
+            ? cast.staffs[0]?.full_name
+            : undefined) ||
+          "Unknown";
 
         return {
           ...compensation,
