@@ -116,7 +116,7 @@ export class QRCodeService {
         staffId,
         expiresAt: expiresAt.toISOString(),
       };
-    } catch (error) {
+    } catch {
       return {
         isValid: false,
         errorCode: "INVALID_FORMAT",
@@ -494,7 +494,9 @@ export class QRCodeService {
     staffId: string,
     action: string
   ): Promise<{ isValid: boolean; errorMessage?: string }> {
+    // Track today's date for potential future use
     const today = new Date().toISOString().split("T")[0];
+    console.log("Checking attendance for:", today);
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     const { data, error } = await this.supabase
@@ -537,7 +539,7 @@ export class QRCodeService {
 
     if (error && error.code === "PGRST116") {
       // 新規作成
-      const insertData: any = {
+      const insertData: Record<string, unknown> = {
         staff_id: staffId,
         attendance_date: today,
         status: "present",
@@ -550,7 +552,7 @@ export class QRCodeService {
       await this.supabase.from("attendance_records").insert(insertData);
     } else if (attendanceRecord) {
       // 更新
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
 
       switch (action) {
         case "clock_in":
@@ -601,7 +603,11 @@ export class QRCodeService {
     await this.supabase.from("qr_attendance_logs").insert({
       staff_id: staffId || null,
       qr_code_id: qrCodeId,
-      action_type: action as any,
+      action_type: action as
+        | "clock_in"
+        | "clock_out"
+        | "break_start"
+        | "break_end",
       location_data: locationData || null,
       device_info: deviceInfo || null,
       success,

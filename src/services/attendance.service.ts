@@ -6,21 +6,15 @@ import type {
   ShiftRequest,
   ConfirmedShift,
   AttendanceRecord,
-  AttendanceCorrection,
   CreateShiftTemplateData,
   UpdateShiftTemplateData,
   CreateShiftRequestData,
-  UpdateShiftRequestData,
   ApproveShiftRequestData,
   ShiftRequestSearchParams,
   CreateConfirmedShiftData,
-  UpdateConfirmedShiftData,
   ConfirmedShiftSearchParams,
   CreateAttendanceRecordData,
-  UpdateAttendanceRecordData,
   AttendanceSearchParams,
-  CreateAttendanceCorrectionData,
-  ApproveCorrectionData,
   ClockAction,
   AttendanceDashboard,
   MonthlyAttendanceSummary,
@@ -470,7 +464,7 @@ export class AttendanceService {
     const today = new Date().toISOString().split("T")[0];
 
     // Get or create today's attendance record
-    let { data: record, error } = await this.supabase
+    const { data: record, error } = await this.supabase
       .from("attendance_records")
       .select("*")
       .eq("staff_id", staffId)
@@ -660,7 +654,7 @@ export class AttendanceService {
       requestDate: data.request_date,
       startTime: data.start_time,
       endTime: data.end_time,
-      status: data.status as any,
+      status: data.status as "pending" | "approved" | "rejected",
       notes: data.notes,
       approvedBy: data.approved_by,
       approvedAt: data.approved_at,
@@ -679,7 +673,7 @@ export class AttendanceService {
       shiftDate: data.shift_date,
       startTime: data.start_time,
       endTime: data.end_time,
-      shiftType: data.shift_type as any,
+      shiftType: data.shift_type as "regular" | "overtime" | "holiday",
       notes: data.notes,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
@@ -703,7 +697,7 @@ export class AttendanceService {
       breakEndTime: data.break_end_time,
       totalWorkMinutes: data.total_work_minutes,
       overtimeMinutes: data.overtime_minutes,
-      status: data.status as any,
+      status: data.status as "present" | "absent" | "late" | "early_leave",
       notes: data.notes,
       approvedBy: data.approved_by,
       approvedAt: data.approved_at,

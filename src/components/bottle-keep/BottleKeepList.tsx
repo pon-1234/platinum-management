@@ -31,8 +31,6 @@ export function BottleKeepList({
   onView,
   onUse,
   onFilterChange,
-  customers: _customers = [],
-  products: _products = [],
   storageLocations = [],
   loading = false,
 }: BottleKeepListProps) {

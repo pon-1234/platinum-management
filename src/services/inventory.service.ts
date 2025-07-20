@@ -380,9 +380,7 @@ export class InventoryService {
       .sort((a, b) => b[1].quantity - a[1].quantity)
       .slice(0, 5)
       .map(([productId, stats]) => {
-        const productMovement = movements.find(
-          (m) => m.product_id === productId
-        );
+        movements.find((m) => m.product_id === productId);
         // Placeholder for product data - in real implementation, fetch from products table
         const product = {
           id: productId,

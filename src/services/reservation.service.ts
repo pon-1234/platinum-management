@@ -149,7 +149,7 @@ export class ReservationService {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...validatedData,
       updated_by: staffId,
       updated_at: new Date().toISOString(),
@@ -446,7 +446,9 @@ export class ReservationService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapToReservationWithDetails(data: any): ReservationWithDetails {
+  private mapToReservationWithDetails(
+    data: Record<string, unknown>
+  ): ReservationWithDetails {
     const reservation = this.mapToReservation(data);
     return {
       ...reservation,

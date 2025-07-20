@@ -176,7 +176,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
         </div>
         <div className="text-lg text-gray-600 dark:text-gray-400 mb-4">
           {format(currentTime, "yyyy年M月d日 (E)", {
-            locale: require("date-fns/locale/ja"),
+            locale: (await import("date-fns/locale/ja")).default,
           })}
         </div>
         <div className={`text-lg font-medium ${getStatusColor()}`}>

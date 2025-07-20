@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { BaseService } from "./base.service";
+import { camelToSnake, removeUndefined } from "@/lib/utils/transform";
 import type { Database } from "@/types/database.types";
 import type {
   Cast,
@@ -24,11 +24,9 @@ import {
   castPerformanceSearchSchema,
 } from "@/lib/validations/cast";
 
-export class CastService {
-  private supabase: SupabaseClient<Database>;
-
+export class CastService extends BaseService {
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   // Cast CRUD operations
@@ -112,43 +110,12 @@ export class CastService {
     // Get current user's staff ID
     const staffId = await this.getCurrentStaffId();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {
-      ...validatedData,
+    const transformedData = removeUndefined(camelToSnake(validatedData));
+    const updateData: Record<string, unknown> = {
+      ...transformedData,
       updated_by: staffId,
       updated_at: new Date().toISOString(),
     };
-
-    // Map camelCase to snake_case
-    if (validatedData.stageName !== undefined)
-      updateData.stage_name = validatedData.stageName;
-    if (validatedData.bloodType !== undefined)
-      updateData.blood_type = validatedData.bloodType;
-    if (validatedData.threeSize !== undefined)
-      updateData.three_size = validatedData.threeSize;
-    if (validatedData.specialSkill !== undefined)
-      updateData.special_skill = validatedData.specialSkill;
-    if (validatedData.selfIntroduction !== undefined)
-      updateData.self_introduction = validatedData.selfIntroduction;
-    if (validatedData.profileImageUrl !== undefined)
-      updateData.profile_image_url = validatedData.profileImageUrl;
-    if (validatedData.hourlyRate !== undefined)
-      updateData.hourly_rate = validatedData.hourlyRate;
-    if (validatedData.backPercentage !== undefined)
-      updateData.back_percentage = validatedData.backPercentage;
-    if (validatedData.isActive !== undefined)
-      updateData.is_active = validatedData.isActive;
-
-    // Remove camelCase properties
-    delete updateData.stageName;
-    delete updateData.bloodType;
-    delete updateData.threeSize;
-    delete updateData.specialSkill;
-    delete updateData.selfIntroduction;
-    delete updateData.profileImageUrl;
-    delete updateData.hourlyRate;
-    delete updateData.backPercentage;
-    delete updateData.isActive;
 
     const { data: cast, error } = await this.supabase
       .from("casts_profile")
@@ -171,33 +138,11 @@ export class CastService {
     // Validate input
     const validatedData = updateCastProfileSchema.parse(data);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {
-      ...validatedData,
+    const transformedData = removeUndefined(camelToSnake(validatedData));
+    const updateData: Record<string, unknown> = {
+      ...transformedData,
       updated_at: new Date().toISOString(),
     };
-
-    // Map camelCase to snake_case
-    if (validatedData.stageName !== undefined)
-      updateData.stage_name = validatedData.stageName;
-    if (validatedData.bloodType !== undefined)
-      updateData.blood_type = validatedData.bloodType;
-    if (validatedData.threeSize !== undefined)
-      updateData.three_size = validatedData.threeSize;
-    if (validatedData.specialSkill !== undefined)
-      updateData.special_skill = validatedData.specialSkill;
-    if (validatedData.selfIntroduction !== undefined)
-      updateData.self_introduction = validatedData.selfIntroduction;
-    if (validatedData.profileImageUrl !== undefined)
-      updateData.profile_image_url = validatedData.profileImageUrl;
-
-    // Remove camelCase properties
-    delete updateData.stageName;
-    delete updateData.bloodType;
-    delete updateData.threeSize;
-    delete updateData.specialSkill;
-    delete updateData.selfIntroduction;
-    delete updateData.profileImageUrl;
 
     const { data: cast, error } = await this.supabase
       .from("casts_profile")
@@ -207,7 +152,9 @@ export class CastService {
       .single();
 
     if (error) {
-      throw new Error(`プロフィールの更新に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "プロフィールの更新に失敗しました")
+      );
     }
 
     return this.mapToCast(cast);
@@ -293,7 +240,7 @@ export class CastService {
     const staffId = await this.getCurrentStaffId();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...validatedData,
       updated_by: staffId,
       updated_at: new Date().toISOString(),
@@ -466,21 +413,6 @@ export class CastService {
   }
 
   // Helper methods
-  private async getCurrentStaffId(): Promise<string | null> {
-    const {
-      data: { user },
-    } = await this.supabase.auth.getUser();
-
-    if (!user) return null;
-
-    const { data: staff } = await this.supabase
-      .from("staffs")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    return staff?.id || null;
-  }
 
   private mapToCast(
     data: Database["public"]["Tables"]["casts_profile"]["Row"]

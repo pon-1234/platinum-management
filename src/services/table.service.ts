@@ -126,7 +126,7 @@ export class TableService {
     const validatedData = updateTableSchema.parse(data);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...validatedData,
       updated_at: new Date().toISOString(),
     };
@@ -204,7 +204,7 @@ export class TableService {
       throw new Error(`テーブル検索に失敗しました: ${error.message}`);
     }
 
-    return data.map(this.mapToTable);
+    return data?.map(this.mapToTable) || [];
   }
 
   // Table status management

@@ -6,7 +6,6 @@ import type {
   Visit,
   OrderItem,
   VisitWithDetails,
-  OrderItemWithDetails,
   CreateProductData,
   UpdateProductData,
   ProductSearchParams,
@@ -546,7 +545,7 @@ export class BillingService {
       .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
 
     // Get order items for the day
-    const orderItems = await this.searchOrderItems({
+    await this.searchOrderItems({
       startDate,
       endDate,
     });
@@ -600,8 +599,8 @@ export class BillingService {
       taxAmount: data.tax_amount,
       totalAmount: data.total_amount,
       paymentMethod: data.payment_method,
-      paymentStatus: data.payment_status as any,
-      status: data.status as any,
+      paymentStatus: data.payment_status as "pending" | "paid" | "cancelled",
+      status: data.status as "active" | "completed" | "cancelled",
       notes: data.notes,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
@@ -627,7 +626,9 @@ export class BillingService {
     };
   }
 
-  private mapToVisitWithDetails(data: any): VisitWithDetails {
+  private mapToVisitWithDetails(
+    data: Record<string, unknown>
+  ): VisitWithDetails {
     const visit = this.mapToVisit(data);
     return {
       ...visit,
@@ -639,7 +640,7 @@ export class BillingService {
           }
         : undefined,
       orderItems:
-        data.order_items?.map((item: any) => ({
+        data.order_items?.map((item: Record<string, unknown>) => ({
           ...this.mapToOrderItem(item),
           product: item.product ? this.mapToProduct(item.product) : undefined,
           cast: item.cast

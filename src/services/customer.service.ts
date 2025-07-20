@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { BaseService } from "./base.service";
+import { camelToSnake, removeUndefined } from "@/lib/utils/transform";
 import type { Database } from "@/types/database.types";
 import type {
   Customer,
@@ -18,11 +18,9 @@ import {
   updateVisitSchema,
 } from "@/lib/validations/customer";
 
-export class CustomerService {
-  private supabase: SupabaseClient<Database>;
-
+export class CustomerService extends BaseService {
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   async createCustomer(data: CreateCustomerData): Promise<Customer> {
@@ -85,24 +83,22 @@ export class CustomerService {
     // Get current user's staff ID
     const staffId = await this.getCurrentStaffId();
 
+    const transformedData = removeUndefined(camelToSnake(validatedData));
     const { data: customer, error } = await this.supabase
       .from("customers")
       .update({
-        ...validatedData,
-        name_kana: validatedData.nameKana,
-        phone_number: validatedData.phoneNumber,
-        line_id: validatedData.lineId,
+        ...transformedData,
         updated_by: staffId,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      if (error.code === "23505") {
-        throw new Error("この電話番号は既に登録されています");
-      }
-      throw new Error(`顧客情報の更新に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "顧客情報の更新に失敗しました")
+      );
     }
 
     return this.mapToCustomer(customer);
@@ -115,7 +111,9 @@ export class CustomerService {
       .eq("id", id);
 
     if (error) {
-      throw new Error(`顧客の削除に失敗しました: ${error.message}`);
+      throw new Error(
+        this.handleDatabaseError(error, "顧客の削除に失敗しました")
+      );
     }
   }
 
@@ -244,22 +242,6 @@ export class CustomerService {
     }
 
     return data.map(this.mapToVisit);
-  }
-
-  private async getCurrentStaffId(): Promise<string | null> {
-    const {
-      data: { user },
-    } = await this.supabase.auth.getUser();
-
-    if (!user) return null;
-
-    const { data: staff } = await this.supabase
-      .from("staffs")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    return staff?.id || null;
   }
 
   private mapToCustomer(

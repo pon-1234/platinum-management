@@ -238,10 +238,10 @@ describe("TableService", () => {
       ];
 
       // Mock searchTables - need to mock the full chain
+      mockSupabase.select.mockReturnThis();
       mockSupabase.order.mockReturnThis();
       mockSupabase.eq.mockReturnThis();
-      mockSupabase.gte.mockReturnThis();
-      mockSupabase.lte.mockResolvedValue({
+      mockSupabase.gte.mockResolvedValue({
         data: mockTables,
         error: null,
       });
@@ -270,10 +270,10 @@ describe("TableService", () => {
       ];
 
       // Mock searchTables - need to mock the full chain
+      mockSupabase.select.mockReturnThis();
       mockSupabase.order.mockReturnThis();
       mockSupabase.eq.mockReturnThis();
-      mockSupabase.gte.mockReturnThis();
-      mockSupabase.lte.mockResolvedValue({
+      mockSupabase.gte.mockResolvedValue({
         data: mockTables,
         error: null,
       });

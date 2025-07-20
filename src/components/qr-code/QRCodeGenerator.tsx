@@ -27,7 +27,7 @@ export function QRCodeGenerator({
   staffName,
   onGenerated,
   autoRefresh = true,
-  refreshInterval: _refreshInterval = 30,
+  // refreshInterval = 30,
 }: QRCodeGeneratorProps) {
   const [qrInfo, setQrInfo] = useState<StaffQRInfo | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -98,7 +98,7 @@ export function QRCodeGenerator({
     }
   };
 
-  const generateQRImage = async (_qrData: string) => {
+  const generateQRImage = async () => {
     try {
       // QRコード生成ライブラリを使用（実際の実装では qrcode ライブラリを使用）
       const canvas = canvasRef.current;
@@ -450,7 +450,7 @@ export function QRCodeGenerator({
               <input
                 type="checkbox"
                 checked={autoRefresh}
-                onChange={(_e) => {
+                onChange={() => {
                   // setAutoRefresh(e.target.checked);
                 }}
                 className="sr-only peer"
