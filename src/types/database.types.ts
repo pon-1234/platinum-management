@@ -353,6 +353,9 @@ export interface Database {
           cost: number;
           stock_quantity: number;
           low_stock_threshold: number;
+          supplier_info: Json | null;
+          reorder_point: number;
+          max_stock: number;
           is_active: boolean;
           created_by: string | null;
           updated_by: string | null;
@@ -367,6 +370,9 @@ export interface Database {
           cost?: number;
           stock_quantity?: number;
           low_stock_threshold?: number;
+          supplier_info?: Json | null;
+          reorder_point?: number;
+          max_stock?: number;
           is_active?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
@@ -381,6 +387,9 @@ export interface Database {
           cost?: number;
           stock_quantity?: number;
           low_stock_threshold?: number;
+          supplier_info?: Json | null;
+          reorder_point?: number;
+          max_stock?: number;
           is_active?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
@@ -604,6 +613,272 @@ export interface Database {
           approved_at?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      inventory_movements: {
+        Row: {
+          id: number;
+          product_id: number;
+          movement_type: "in" | "out" | "adjustment";
+          quantity: number;
+          unit_cost: number | null;
+          reason: string | null;
+          reference_id: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          product_id: number;
+          movement_type: "in" | "out" | "adjustment";
+          quantity: number;
+          unit_cost?: number | null;
+          reason?: string | null;
+          reference_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          product_id?: number;
+          movement_type?: "in" | "out" | "adjustment";
+          quantity?: number;
+          unit_cost?: number | null;
+          reason?: string | null;
+          reference_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
+      bottle_keeps: {
+        Row: {
+          id: string;
+          customer_id: string;
+          product_id: number;
+          opened_date: string;
+          expiry_date: string | null;
+          remaining_amount: number;
+          bottle_number: string | null;
+          storage_location: string | null;
+          notes: string | null;
+          status: "active" | "consumed" | "expired";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          product_id: number;
+          opened_date: string;
+          expiry_date?: string | null;
+          remaining_amount?: number;
+          bottle_number?: string | null;
+          storage_location?: string | null;
+          notes?: string | null;
+          status?: "active" | "consumed" | "expired";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          product_id?: number;
+          opened_date?: string;
+          expiry_date?: string | null;
+          remaining_amount?: number;
+          bottle_number?: string | null;
+          storage_location?: string | null;
+          notes?: string | null;
+          status?: "active" | "consumed" | "expired";
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bottle_keep_usage: {
+        Row: {
+          id: string;
+          bottle_keep_id: string;
+          visit_id: string;
+          amount_used: number;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          bottle_keep_id: string;
+          visit_id: string;
+          amount_used: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          bottle_keep_id?: string;
+          visit_id?: string;
+          amount_used?: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
+      id_verifications: {
+        Row: {
+          id: string;
+          customer_id: string;
+          id_type: "license" | "passport" | "mynumber" | "residence_card";
+          id_image_url: string | null;
+          birth_date: string | null;
+          verification_date: string;
+          verified_by: string | null;
+          ocr_result: Json | null;
+          is_verified: boolean;
+          expiry_date: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          id_type: "license" | "passport" | "mynumber" | "residence_card";
+          id_image_url?: string | null;
+          birth_date?: string | null;
+          verification_date?: string;
+          verified_by?: string | null;
+          ocr_result?: Json | null;
+          is_verified?: boolean;
+          expiry_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          id_type?: "license" | "passport" | "mynumber" | "residence_card";
+          id_image_url?: string | null;
+          birth_date?: string | null;
+          verification_date?: string;
+          verified_by?: string | null;
+          ocr_result?: Json | null;
+          is_verified?: boolean;
+          expiry_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      compliance_reports: {
+        Row: {
+          id: string;
+          report_type:
+            | "employee_list"
+            | "complaint_log"
+            | "business_report"
+            | "tax_report";
+          generated_by: string | null;
+          file_path: string | null;
+          period_start: string | null;
+          period_end: string | null;
+          status: "generated" | "submitted" | "approved";
+          notes: string | null;
+          generated_at: string;
+        };
+        Insert: {
+          id?: string;
+          report_type:
+            | "employee_list"
+            | "complaint_log"
+            | "business_report"
+            | "tax_report";
+          generated_by?: string | null;
+          file_path?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          status?: "generated" | "submitted" | "approved";
+          notes?: string | null;
+          generated_at?: string;
+        };
+        Update: {
+          id?: string;
+          report_type?:
+            | "employee_list"
+            | "complaint_log"
+            | "business_report"
+            | "tax_report";
+          generated_by?: string | null;
+          file_path?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          status?: "generated" | "submitted" | "approved";
+          notes?: string | null;
+          generated_at?: string;
+        };
+      };
+      qr_codes: {
+        Row: {
+          id: string;
+          staff_id: string;
+          qr_data: string;
+          signature: string;
+          expires_at: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          staff_id: string;
+          qr_data: string;
+          signature: string;
+          expires_at: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          staff_id?: string;
+          qr_data?: string;
+          signature?: string;
+          expires_at?: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+      };
+      qr_attendance_logs: {
+        Row: {
+          id: string;
+          staff_id: string;
+          qr_code_id: string | null;
+          action_type: "clock_in" | "clock_out" | "break_start" | "break_end";
+          location_data: Json | null;
+          device_info: Json | null;
+          success: boolean;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          staff_id: string;
+          qr_code_id?: string | null;
+          action_type: "clock_in" | "clock_out" | "break_start" | "break_end";
+          location_data?: Json | null;
+          device_info?: Json | null;
+          success?: boolean;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          staff_id?: string;
+          qr_code_id?: string | null;
+          action_type?: "clock_in" | "clock_out" | "break_start" | "break_end";
+          location_data?: Json | null;
+          device_info?: Json | null;
+          success?: boolean;
+          error_message?: string | null;
+          created_at?: string;
         };
       };
     };
