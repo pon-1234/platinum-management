@@ -19,7 +19,7 @@ export function camelToSnake(
       !Array.isArray(value) &&
       !(value instanceof Date)
     ) {
-      result[snakeKey] = camelToSnake(value);
+      result[snakeKey] = camelToSnake(value as Record<string, unknown>);
     } else {
       result[snakeKey] = value;
     }
@@ -48,7 +48,7 @@ export function snakeToCamel(
       !Array.isArray(value) &&
       !(value instanceof Date)
     ) {
-      result[camelKey] = snakeToCamel(value);
+      result[camelKey] = snakeToCamel(value as Record<string, unknown>);
     } else {
       result[camelKey] = value;
     }
@@ -67,7 +67,7 @@ export function removeUndefined<T extends Record<string, unknown>>(
 
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
-      result[key as keyof T] = value;
+      result[key as keyof T] = value as T[keyof T];
     }
   }
 
@@ -106,4 +106,42 @@ export function omit<T extends Record<string, unknown>, K extends keyof T>(
   }
 
   return result as Omit<T, K>;
+}
+
+/**
+ * Convert any type to snake_case - more flexible version
+ */
+export function toSnakeCase<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(toSnakeCase) as unknown as T;
+  }
+
+  if (typeof data === "object" && !(data instanceof Date)) {
+    return camelToSnake(data as Record<string, unknown>) as unknown as T;
+  }
+
+  return data;
+}
+
+/**
+ * Convert any type to camelCase - more flexible version
+ */
+export function toCamelCase<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(toCamelCase) as unknown as T;
+  }
+
+  if (typeof data === "object" && !(data instanceof Date)) {
+    return snakeToCamel(data as Record<string, unknown>) as unknown as T;
+  }
+
+  return data;
 }

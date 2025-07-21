@@ -3,11 +3,28 @@
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IdVerificationInput,
-  idVerificationSchema,
-  IdTypes,
-} from "@/types/compliance.types";
+import { IdTypes } from "@/types/compliance.types";
+import { z } from "zod";
+
+// Form-specific schema that matches the component's needs
+const idVerificationFormSchema = z.object({
+  customerId: z.string().uuid("顧客IDが無効です"),
+  idType: z.enum(IdTypes, { message: "身分証明書の種類を選択してください" }),
+  idImageUrl: z.string().url("画像URLが無効です").optional(),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "生年月日の形式が正しくありません")
+    .optional(),
+  expiryDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "有効期限の形式が正しくありません")
+    .optional(),
+  ocrResult: z.record(z.string(), z.unknown()).optional(),
+  isVerified: z.boolean(),
+  notes: z.string().optional(),
+});
+
+type IdVerificationFormData = z.infer<typeof idVerificationFormSchema>;
 import { complianceService } from "@/services/compliance.service";
 import { createClient } from "@/lib/supabase/client";
 
@@ -27,8 +44,8 @@ export function IdVerificationForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
-  const form = useForm<IdVerificationInput>({
-    resolver: zodResolver(idVerificationSchema),
+  const form = useForm<IdVerificationFormData>({
+    resolver: zodResolver(idVerificationFormSchema),
     defaultValues: {
       customerId,
       isVerified: false,
@@ -78,22 +95,24 @@ export function IdVerificationForm({
     setValue("idImageUrl", publicUrl);
   };
 
-  const onSubmit = async (data: IdVerificationInput) => {
+  const onSubmit = async (data: IdVerificationFormData) => {
     try {
       setIsSubmitting(true);
-      // Convert to snake_case for API
-      const apiData = {
+      // Convert camelCase to snake_case for the database
+      const serviceData = {
         customer_id: data.customerId,
         id_type: data.idType,
         id_image_url: data.idImageUrl,
         birth_date: data.birthDate,
         expiry_date: data.expiryDate,
-        ocr_result: data.ocrResult,
-        is_verified: data.isVerified || false,
+        ocr_result: data.ocrResult as
+          | Record<string, unknown>
+          | null
+          | undefined,
+        is_verified: data.isVerified,
         notes: data.notes,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await complianceService.createIdVerification(apiData as any);
+      await complianceService.createIdVerification(serviceData);
       alert("身分証確認情報を登録しました");
       onSuccess?.();
     } catch (error) {

@@ -21,9 +21,7 @@ export type ReportStatus = (typeof ReportStatuses)[number];
 
 export const idVerificationSchema = z.object({
   customerId: z.string().uuid("顧客IDが無効です"),
-  idType: z.enum(IdTypes, {
-    errorMap: () => ({ message: "身分証明書の種類を選択してください" }),
-  }),
+  idType: z.enum(IdTypes, { message: "身分証明書の種類を選択してください" }),
   idImageUrl: z.string().url("画像URLが無効です").optional(),
   birthDate: z
     .string()
@@ -33,14 +31,14 @@ export const idVerificationSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "有効期限の形式が正しくありません")
     .optional(),
-  ocrResult: z.record(z.any()).optional(),
+  ocrResult: z.record(z.unknown()).optional(),
   isVerified: z.boolean().default(false),
   notes: z.string().optional(),
 });
 
 export const complianceReportSchema = z.object({
   reportType: z.enum(ReportTypes, {
-    errorMap: () => ({ message: "レポート種別を選択してください" }),
+    message: "レポート種別を選択してください",
   }),
   periodStart: z
     .string()

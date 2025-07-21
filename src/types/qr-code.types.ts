@@ -119,26 +119,19 @@ export interface QRScanHistory {
 // QR管理データ
 export interface QRManagementData {
   stats: QRCodeStats;
-  staffQRCodes: {
-    staffId: string;
-    staffName: string;
-    qrCode?: {
-      id: string;
-      expiresAt: string;
-      isActive: boolean;
-    };
-    todayScans: number;
-    lastScan?: QRScanHistory;
-  }[];
+  recentLogs: QRAttendanceHistory[];
+  activeQRCodes: StaffQRInfo[];
+  failedAttempts: QRAttendanceHistory[];
 }
 
 // スタッフQR情報
 export interface StaffQRInfo {
-  staffId: string;
-  staffName: string;
+  staff: Staff;
   qrCode?: QRCode;
+  hasActiveQR: boolean;
+  lastGenerated?: string;
+  scanHistory: QRAttendanceLog[];
   todayScans: number;
-  lastScan?: QRScanHistory;
 }
 
 // QRコード履歴
@@ -188,24 +181,6 @@ export interface QRDisplaySettings {
   margin: number;
   darkColor: string;
   lightColor: string;
-}
-
-// スタッフQRコード情報
-export interface StaffQRInfo {
-  staff: Staff;
-  qrCode?: QRCode;
-  hasActiveQR: boolean;
-  lastGenerated?: string;
-  scanHistory: QRAttendanceLog[];
-  todayScans: number;
-}
-
-// QRコード管理ダッシュボード用データ
-export interface QRManagementData {
-  stats: QRCodeStats;
-  recentLogs: QRAttendanceHistory[];
-  activeQRCodes: StaffQRInfo[];
-  failedAttempts: QRAttendanceHistory[];
 }
 
 // QRコード設定

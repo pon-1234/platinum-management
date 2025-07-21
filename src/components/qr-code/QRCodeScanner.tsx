@@ -104,14 +104,14 @@ export function QRCodeScanner({
         try {
           const result = await qrCodeService.recordAttendance({
             qrData: JSON.stringify(mockQRData),
-            actionType: "clock_in",
-            location: {
+            action: "clock_in",
+            locationData: {
               latitude: 35.6762,
               longitude: 139.6503,
             },
           });
 
-          onScanSuccess?.(result);
+          onScanSuccess?.({ actionType: result.action });
           stopCamera();
         } catch (err) {
           const errorMessage =

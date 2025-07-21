@@ -1,6 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database.types";
+import { BaseService } from "./base.service";
 import type {
   QRCode,
   // QRAttendanceLog,
@@ -18,12 +16,11 @@ import type {
   // LocationData,
 } from "@/types/qr-code.types";
 
-export class QRCodeService {
-  private supabase: SupabaseClient<Database>;
+export class QRCodeService extends BaseService {
   private readonly secretKey = "PLATINUM_QR_SECRET_2024"; // 本番では環境変数から取得
 
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   // QRコード生成
@@ -298,7 +295,9 @@ export class QRCodeService {
         (totalScansResult.count || 0) - (successfulScansResult.count || 0),
       activeQRCodes: activeQRCodesResult.count || 0,
       todayScans: todayScansResult.count || 0,
+      monthlyScans: totalScansResult.count || 0, // For now, using total scans
       uniqueUsers,
+      totalStaff: uniqueUsers, // For now, using unique users as staff count
     };
   }
 
@@ -644,7 +643,7 @@ export class QRCodeService {
   async getScanHistory(params: {
     staffId?: string;
     limit?: number;
-  }): Promise<QRScanHistory[]> {
+  }): Promise<QRAttendanceHistory[]> {
     let query = this.supabase.from("qr_attendance_logs").select(`
         *,
         staff:staffs!staff_id (
@@ -666,6 +665,12 @@ export class QRCodeService {
     });
 
     if (error) this.handleError(error);
-    return this.toCamelCase(data || []);
+
+    return (data || []).map((log) => ({
+      log,
+      staff: log.staff,
+      success: log.success,
+      errorMessage: log.error_message,
+    })) as QRAttendanceHistory[];
   }
 }

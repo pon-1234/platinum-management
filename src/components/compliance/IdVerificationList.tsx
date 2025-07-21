@@ -49,7 +49,7 @@ export function IdVerificationList({ customerId }: IdVerificationListProps) {
   const loadVerifications = async () => {
     try {
       setLoading(true);
-      let data: any[];
+      let data: IdVerificationData[];
 
       if (customerId) {
         data = await complianceService.getIdVerificationsByCustomer(customerId);
@@ -60,7 +60,7 @@ export function IdVerificationList({ customerId }: IdVerificationListProps) {
         });
       }
 
-      setVerifications(data as IdVerificationData[]);
+      setVerifications(data);
     } catch (error) {
       console.error(error);
       alert("データの取得に失敗しました");

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
 
 export abstract class BaseService {
   protected supabase: SupabaseClient<Database>;
@@ -53,5 +54,37 @@ export abstract class BaseService {
       return "関連するデータが存在しません";
     }
     return defaultMessage;
+  }
+
+  /**
+   * Get current staff ID - alias for backward compatibility
+   */
+  protected async getStaffId(): Promise<string | null> {
+    return this.getCurrentStaffId();
+  }
+
+  /**
+   * Convert data to snake_case for database operations
+   */
+  protected toSnakeCase<T>(data: T): T {
+    return toSnakeCase(data) as T;
+  }
+
+  /**
+   * Convert data to camelCase from database
+   */
+  protected toCamelCase<T>(data: T): T {
+    return toCamelCase(data) as T;
+  }
+
+  /**
+   * Handle error and throw appropriate message
+   */
+  protected handleError(
+    error: unknown,
+    defaultMessage = "操作に失敗しました"
+  ): never {
+    const message = this.handleDatabaseError(error, defaultMessage);
+    throw new Error(message);
   }
 }
