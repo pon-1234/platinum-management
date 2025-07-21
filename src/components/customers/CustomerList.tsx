@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Customer } from "@/types/customer.types";
 import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
 import { PencilIcon, EyeIcon } from "@heroicons/react/24/outline";
+import { formatDate, formatPhoneNumber } from "@/lib/utils/formatting";
 
 interface CustomerListProps {
   customers: Customer[];
@@ -28,17 +29,6 @@ export function CustomerList({ customers, onEdit }: CustomerListProps) {
     } else {
       setSelectedIds([...selectedIds, id]);
     }
-  };
-
-  const formatPhoneNumber = (phone: string | null) => {
-    if (!phone) return "-";
-    return phone;
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ja-JP");
   };
 
   return (
@@ -125,7 +115,7 @@ export function CustomerList({ customers, onEdit }: CustomerListProps) {
                 {customer.lineId || "-"}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                {formatDate(customer.birthday)}
+                {formatDate(customer.birthday ?? null)}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm">
                 <CustomerStatusBadge status={customer.status} />

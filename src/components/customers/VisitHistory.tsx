@@ -6,6 +6,7 @@ import {
   UsersIcon,
   CurrencyYenIcon,
 } from "@heroicons/react/24/outline";
+import { formatDateTime, formatCurrency } from "@/lib/utils/formatting";
 
 interface VisitHistoryProps {
   visits: Visit[];
@@ -13,17 +14,6 @@ interface VisitHistoryProps {
 }
 
 export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const formatDuration = (checkIn: string, checkOut: string | null) => {
     if (!checkOut) return "滞在中";
 
@@ -38,7 +28,7 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
 
   const formatAmount = (amount: number | null) => {
     if (amount === null) return "-";
-    return `¥${amount.toLocaleString()}`;
+    return formatCurrency(amount);
   };
 
   const getStatusBadge = (status: Visit["status"]) => {
