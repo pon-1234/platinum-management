@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Calendar, Clock, Users, Phone, Check, X } from "lucide-react";
-import { ReservationService } from "@/services/reservation.service";
-import { CustomerService } from "@/services/customer.service";
-import { TableService } from "@/services/table.service";
+import { reservationService } from "@/services/reservation.service";
+import { customerService } from "@/services/customer.service";
+import { tableService } from "@/services/table.service";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { ReservationWithDetails, Table } from "@/types/reservation.types";
 import type { Customer } from "@/types/customer.types";
+import { toast } from "react-hot-toast";
+import { Card } from "@/components/ui/Card";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface ReservationListProps {
   date?: string;
@@ -27,10 +30,6 @@ export function ReservationList({
   const [isLoading, setIsLoading] = useState(true);
   const [customerMap, setCustomerMap] = useState<Record<string, Customer>>({});
   const [tableMap, setTableMap] = useState<Record<string, Table>>({});
-
-  const reservationService = new ReservationService();
-  const customerService = new CustomerService();
-  const tableService = new TableService();
 
   useEffect(() => {
     loadReservations();
@@ -54,7 +53,11 @@ export function ReservationList({
         Promise.all(
           customerIds.map((id) => customerService.getCustomerById(id))
         ),
-        Promise.all(tableIds.map((id) => tableService.getTableById(id))),
+        Promise.all(
+          tableIds
+            .filter((id) => id !== null)
+            .map((id) => tableService.getTableById(id!))
+        ),
       ]);
 
       const customerMapData = customers.reduce(
@@ -85,11 +88,13 @@ export function ReservationList({
 
   const handleCheckIn = async (reservation: ReservationWithDetails) => {
     try {
-      await reservationService.checkInReservation(reservation.id);
+      // Use the table ID from the reservation, or require user to select
+      const tableId = reservation.tableId || "1"; // Default table or let user select
+      await reservationService.checkInReservation(reservation.id, tableId);
       await loadReservations();
     } catch (error) {
       console.error("Failed to check in reservation:", error);
-      alert("チェックインに失敗しました");
+      toast.error("チェックインに失敗しました");
     }
   };
 
@@ -102,26 +107,20 @@ export function ReservationList({
       await loadReservations();
     } catch (error) {
       console.error("Failed to cancel reservation:", error);
-      alert("キャンセルに失敗しました");
+      toast.error("キャンセルに失敗しました");
     }
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { color: "bg-gray-100 text-gray-800", label: "未確認" },
-      confirmed: { color: "bg-blue-100 text-blue-800", label: "確認済" },
-      checked_in: { color: "bg-green-100 text-green-800", label: "来店済" },
-      cancelled: { color: "bg-red-100 text-red-800", label: "キャンセル" },
+      pending: { variant: "default" as const, label: "未確認" },
+      confirmed: { variant: "info" as const, label: "確認済" },
+      checked_in: { variant: "success" as const, label: "来店済" },
+      cancelled: { variant: "error" as const, label: "キャンセル" },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig];
-    return (
-      <span
-        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-      >
-        {config.label}
-      </span>
-    );
+    return <StatusBadge variant={config.variant}>{config.label}</StatusBadge>;
   };
 
   if (isLoading) {
@@ -144,12 +143,14 @@ export function ReservationList({
     <div className="space-y-4">
       {reservations.map((reservation) => {
         const customer = customerMap[reservation.customerId];
-        const table = tableMap[reservation.tableId];
+        const table = reservation.tableId
+          ? tableMap[reservation.tableId]
+          : null;
 
         return (
-          <div
+          <Card
             key={reservation.id}
-            className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+            hover={true}
             onClick={() => onReservationSelect?.(reservation)}
           >
             <div className="flex items-start justify-between">
@@ -231,7 +232,7 @@ export function ReservationList({
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         );
       })}
     </div>

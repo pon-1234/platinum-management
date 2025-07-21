@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { QRCodeService } from "@/services/qr-code.service";
+import { qrCodeService } from "@/services/qr-code.service";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { QRManagementData, QRScanHistory } from "@/types/qr-code.types";
@@ -13,8 +13,6 @@ export function QRAttendanceDashboard() {
   const [scanHistory, setScanHistory] = useState<QRScanHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
-
-  const qrCodeService = new QRCodeService();
 
   useEffect(() => {
     loadData();

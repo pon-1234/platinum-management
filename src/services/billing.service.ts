@@ -653,3 +653,6 @@ export class BillingService {
     };
   }
 }
+
+// Export singleton instance
+export const billingService = new BillingService();

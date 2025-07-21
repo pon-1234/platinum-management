@@ -356,3 +356,6 @@ export class TableService extends BaseService {
     };
   }
 }
+
+// Export singleton instance
+export const tableService = new TableService();

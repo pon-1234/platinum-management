@@ -11,12 +11,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { AttendanceService } from "@/services/attendance.service";
+import { attendanceService } from "@/services/attendance.service";
 import type {
   ShiftRequest,
   ShiftRequestStatus,
 } from "@/types/attendance.types";
 import { SHIFT_REQUEST_STATUSES } from "@/types/attendance.types";
+import { toast } from "react-hot-toast";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface ShiftRequestListProps {
   onRequestUpdate: () => void;
@@ -32,8 +34,6 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
     null
   );
   const [rejectionReason, setRejectionReason] = useState("");
-
-  const attendanceService = new AttendanceService();
 
   const loadRequests = useCallback(async () => {
     try {
@@ -66,10 +66,10 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
       loadRequests();
       onRequestUpdate();
 
-      alert(approved ? "申請を承認しました" : "申請を却下しました");
+      toast.success(approved ? "申請を承認しました" : "申請を却下しました");
     } catch (error) {
       console.error("承認処理に失敗しました:", error);
-      alert("処理に失敗しました。もう一度お試しください。");
+      toast.error("処理に失敗しました。もう一度お試しください。");
     }
   };
 
@@ -77,21 +77,16 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
     const statusConfig = SHIFT_REQUEST_STATUSES.find((s) => s.value === status);
     if (!statusConfig) return null;
 
-    const colorClasses = {
-      yellow:
-        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      green:
-        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      red: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    const variantMap = {
+      yellow: "warning" as const,
+      green: "success" as const,
+      red: "error" as const,
     };
 
-    return (
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClasses[statusConfig.color as keyof typeof colorClasses]}`}
-      >
-        {statusConfig.label}
-      </span>
-    );
+    const variant =
+      variantMap[statusConfig.color as keyof typeof variantMap] || "default";
+
+    return <StatusBadge variant={variant}>{statusConfig.label}</StatusBadge>;
   };
 
   if (isLoading) {

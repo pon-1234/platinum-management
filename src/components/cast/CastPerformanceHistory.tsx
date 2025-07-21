@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CastService } from "@/services/cast.service";
+import { castService } from "@/services/cast.service";
 import type { CastPerformance } from "@/types/cast.types";
 import { format, subMonths } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -24,7 +24,6 @@ export function CastPerformanceHistory({
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const castService = new CastService();
 
         // Get performances for the last N months
         const endDate = new Date();

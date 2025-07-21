@@ -463,3 +463,6 @@ export class CastService extends BaseService {
     };
   }
 }
+
+// Export singleton instance
+export const castService = new CastService();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CastService } from "@/services/cast.service";
+import { castService } from "@/services/cast.service";
 import type { Cast, CastPerformance } from "@/types/cast.types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -22,7 +22,6 @@ export function CastPerformanceMetrics({
     const fetchData = async () => {
       try {
         setLoading(true);
-        const castService = new CastService();
 
         // Get cast details
         const castData = await castService.getCastById(castId);

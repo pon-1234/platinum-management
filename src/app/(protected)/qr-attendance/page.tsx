@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
-import { StaffService } from "@/services/staff.service";
+import { staffService } from "@/services/staff.service";
 import {
   QRCodeGenerator,
   QRCodeScanner,
   QRAttendanceDashboard,
 } from "@/components/qr-code";
+import { toast } from "react-hot-toast";
 
 type TabType = "generate" | "scan" | "dashboard";
 
@@ -18,7 +19,6 @@ export default function QRAttendancePage() {
     name: string;
   } | null>(null);
   const { user } = useAuthStore();
-  const staffService = new StaffService();
 
   useEffect(() => {
     loadStaffInfo();
@@ -43,12 +43,12 @@ export default function QRAttendancePage() {
   };
 
   const handleScanSuccess = (result: { actionType: string }) => {
-    alert(`打刻が完了しました: ${result.actionType}`);
+    toast.success(`打刻が完了しました: ${result.actionType}`);
     setActiveTab("dashboard");
   };
 
   const handleScanError = (error: string) => {
-    alert(`エラー: ${error}`);
+    toast.error(`エラー: ${error}`);
   };
 
   return (

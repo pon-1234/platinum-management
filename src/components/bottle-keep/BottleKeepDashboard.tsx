@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BottleKeepService } from "@/services/bottle-keep.service";
+import { bottleKeepService } from "@/services/bottle-keep.service";
 import type {
   BottleKeepStats,
   BottleKeepAlert,
@@ -29,8 +29,6 @@ export function BottleKeepDashboard({
   const [alerts, setAlerts] = useState<BottleKeepAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const bottleKeepService = new BottleKeepService();
 
   useEffect(() => {
     loadDashboardData();

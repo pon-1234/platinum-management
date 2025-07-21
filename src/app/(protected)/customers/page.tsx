@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CustomerService } from "@/services/customer.service";
+import { customerService } from "@/services/customer.service";
 import { CustomerList } from "@/components/customers/CustomerList";
 import { CustomerForm } from "@/components/customers/CustomerForm";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -20,8 +20,6 @@ export default function CustomersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const customerService = new CustomerService();
 
   const loadCustomers = useCallback(async () => {
     try {

@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { format, addWeeks, subWeeks, startOfWeek } from "date-fns";
 import { ja } from "date-fns/locale";
-import { AttendanceService } from "@/services/attendance.service";
+import { attendanceService } from "@/services/attendance.service";
 import type {
   WeeklySchedule as WeeklyScheduleType,
   CalendarShift,
@@ -30,8 +30,6 @@ export function WeeklySchedule({
     const start = startOfWeek(new Date(selectedDate), { weekStartsOn: 0 });
     return format(start, "yyyy-MM-dd");
   });
-
-  const attendanceService = new AttendanceService();
 
   const loadWeeklySchedule = useCallback(async (weekStart: string) => {
     try {

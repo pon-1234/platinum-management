@@ -119,3 +119,6 @@ export class AuthService {
     return resourcePermissions.includes(action);
   }
 }
+
+// Export singleton instance
+export const authService = new AuthService();

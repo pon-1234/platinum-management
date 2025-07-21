@@ -1,24 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { BillingService } from "@/services/billing.service";
+import { useState, useEffect, useCallback } from "react";
+import { billingService } from "@/services/billing.service";
 import type { Visit, DailyReport } from "@/types/billing.types";
-import { CalendarIcon, CurrencyYenIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
+import {
+  CalendarIcon,
+  CurrencyYenIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast";
+import { StatCard } from "@/components/ui/StatCard";
 
 export default function BillingPage() {
   const [todayReport, setTodayReport] = useState<DailyReport | null>(null);
   const [activeVisits, setActiveVisits] = useState<Visit[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const billingService = new BillingService();
-
-  useEffect(() => {
-    loadBillingData();
-  }, [selectedDate]);
-
-  const loadBillingData = async () => {
+  const loadBillingData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -28,7 +30,7 @@ export default function BillingPage() {
       setTodayReport(report);
 
       // Load active visits for today
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       if (selectedDate === today) {
         const visits = await billingService.searchVisits({
           status: "active",
@@ -45,7 +47,11 @@ export default function BillingPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedDate]);
+
+  useEffect(() => {
+    loadBillingData();
+  }, [loadBillingData]);
 
   const handleClosingProcess = async () => {
     if (!confirm("本日の売上を確定してレジ締めを実行しますか？")) {
@@ -56,11 +62,13 @@ export default function BillingPage() {
       setError(null);
       // Implementation for closing process
       // This would involve finalizing all active visits and generating final reports
-      
+
       await loadBillingData();
-      alert("レジ締めが完了しました");
+      toast.success("レジ締めが完了しました");
     } catch (err) {
-      setError("レジ締め処理に失敗しました");
+      const errorMessage = "レジ締め処理に失敗しました";
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error(err);
     }
   };
@@ -90,7 +98,7 @@ export default function BillingPage() {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="rounded-md border-gray-300 text-sm"
             />
-            {selectedDate === new Date().toISOString().split('T')[0] && (
+            {selectedDate === new Date().toISOString().split("T")[0] && (
               <button
                 onClick={handleClosingProcess}
                 className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
@@ -120,85 +128,35 @@ export default function BillingPage() {
         <div className="mt-8">
           {/* Daily Report Cards */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CalendarIcon className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        来店組数
-                      </dt>
-                      <dd className="text-lg font-semibold text-gray-900">
-                        {todayReport ? formatNumber(todayReport.totalVisits) : 0}組
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StatCard
+              title="来店組数"
+              value={todayReport ? todayReport.totalVisits : 0}
+              icon={<CalendarIcon className="h-6 w-6" />}
+              valueFormatter={(value) => `${formatNumber(Number(value))}組`}
+            />
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CurrencyYenIcon className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        総売上
-                      </dt>
-                      <dd className="text-lg font-semibold text-gray-900">
-                        {todayReport ? formatCurrency(todayReport.totalSales) : formatCurrency(0)}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StatCard
+              title="総売上"
+              value={todayReport ? todayReport.totalSales : 0}
+              icon={<CurrencyYenIcon className="h-6 w-6" />}
+              valueFormatter={(value) => formatCurrency(Number(value))}
+            />
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CurrencyYenIcon className="h-6 w-6 text-green-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        現金売上
-                      </dt>
-                      <dd className="text-lg font-semibold text-gray-900">
-                        {todayReport ? formatCurrency(todayReport.totalCash) : formatCurrency(0)}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StatCard
+              title="現金売上"
+              value={todayReport ? todayReport.totalCash : 0}
+              icon={<CurrencyYenIcon className="h-6 w-6" />}
+              iconColor="text-green-400"
+              valueFormatter={(value) => formatCurrency(Number(value))}
+            />
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CurrencyYenIcon className="h-6 w-6 text-blue-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        カード売上
-                      </dt>
-                      <dd className="text-lg font-semibold text-gray-900">
-                        {todayReport ? formatCurrency(todayReport.totalCard) : formatCurrency(0)}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StatCard
+              title="カード売上"
+              value={todayReport ? todayReport.totalCard : 0}
+              icon={<CurrencyYenIcon className="h-6 w-6" />}
+              iconColor="text-blue-400"
+              valueFormatter={(value) => formatCurrency(Number(value))}
+            />
           </div>
 
           {/* Active Visits */}
@@ -225,7 +183,12 @@ export default function BillingPage() {
                               テーブル {visit.tableId}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {visit.numGuests}名 • {new Date(visit.checkInAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}〜
+                              {visit.numGuests}名 •{" "}
+                              {new Date(visit.checkInAt).toLocaleTimeString(
+                                "ja-JP",
+                                { hour: "2-digit", minute: "2-digit" }
+                              )}
+                              〜
                             </p>
                           </div>
                         </div>
@@ -234,7 +197,12 @@ export default function BillingPage() {
                             進行中
                           </p>
                           <p className="text-sm text-gray-500">
-                            {Math.floor((Date.now() - new Date(visit.checkInAt).getTime()) / (1000 * 60))}分経過
+                            {Math.floor(
+                              (Date.now() -
+                                new Date(visit.checkInAt).getTime()) /
+                                (1000 * 60)
+                            )}
+                            分経過
                           </p>
                         </div>
                       </div>
@@ -255,10 +223,14 @@ export default function BillingPage() {
                 </h3>
               </div>
               <div className="px-6 py-4">
-                {todayReport?.topProducts && todayReport.topProducts.length > 0 ? (
+                {todayReport?.topProducts &&
+                todayReport.topProducts.length > 0 ? (
                   <ul className="space-y-3">
                     {todayReport.topProducts.map((product, index) => (
-                      <li key={product.productId} className="flex justify-between">
+                      <li
+                        key={product.productId}
+                        className="flex justify-between"
+                      >
                         <div className="flex items-center">
                           <span className="text-sm font-medium text-gray-500 w-6">
                             {index + 1}.

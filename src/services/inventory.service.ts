@@ -457,3 +457,6 @@ export class InventoryService {
     return categories.sort();
   }
 }
+
+// Export singleton instance
+export const inventoryService = new InventoryService();

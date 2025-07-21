@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { StaffService } from "@/services/staff.service";
+import { staffService } from "@/services/staff.service";
 import { StaffList, StaffForm } from "@/components/staff";
 import { SearchInput } from "@/components/ui/SearchInput";
-import type { Staff, CreateStaffData, UpdateStaffData } from "@/types/staff.types";
+import type {
+  Staff,
+  CreateStaffData,
+  UpdateStaffData,
+} from "@/types/staff.types";
 import type { UserRole } from "@/types/auth.types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { usePermission } from "@/hooks/usePermission";
@@ -21,27 +25,27 @@ export default function StaffPage() {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const staffService = new StaffService();
-
   const loadStaff = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       const data = await staffService.getAllStaff();
-      
+
       // Filter by search query and role
       let filteredData = data;
-      
+
       if (searchQuery) {
-        filteredData = filteredData.filter(staff =>
+        filteredData = filteredData.filter((staff) =>
           staff.fullName.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
-      
+
       if (roleFilter) {
-        filteredData = filteredData.filter(staff => staff.role === roleFilter);
+        filteredData = filteredData.filter(
+          (staff) => staff.role === roleFilter
+        );
       }
-      
+
       setStaff(filteredData);
     } catch (err) {
       setError("スタッフデータの取得に失敗しました");
@@ -76,7 +80,10 @@ export default function StaffPage() {
       setError(null);
 
       if (editingStaff) {
-        await staffService.updateStaff(editingStaff.id, data as UpdateStaffData);
+        await staffService.updateStaff(
+          editingStaff.id,
+          data as UpdateStaffData
+        );
       } else {
         await staffService.createStaff(data as CreateStaffData);
       }
@@ -169,9 +176,7 @@ export default function StaffPage() {
           <div>
             <select
               value={roleFilter}
-              onChange={(e) =>
-                setRoleFilter(e.target.value as UserRole | "")
-              }
+              onChange={(e) => setRoleFilter(e.target.value as UserRole | "")}
               className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
               {roleOptions.map((option) => (

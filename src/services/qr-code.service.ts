@@ -674,3 +674,6 @@ export class QRCodeService extends BaseService {
     })) as QRAttendanceHistory[];
   }
 }
+
+// Export singleton instance
+export const qrCodeService = new QRCodeService();

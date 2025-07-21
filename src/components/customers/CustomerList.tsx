@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Customer } from "@/types/customer.types";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
 import { PencilIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 interface CustomerListProps {
@@ -128,7 +128,7 @@ export function CustomerList({ customers, onEdit }: CustomerListProps) {
                 {formatDate(customer.birthday)}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm">
-                <StatusBadge status={customer.status} />
+                <CustomerStatusBadge status={customer.status} />
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                 {formatDate(customer.createdAt)}

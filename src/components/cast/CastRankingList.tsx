@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CastService } from "@/services/cast.service";
+import { castService } from "@/services/cast.service";
 import type { CastRanking } from "@/types/cast.types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { TrophyIcon } from "@heroicons/react/24/solid";
@@ -25,7 +25,6 @@ export function CastRankingList({
     const fetchRankings = async () => {
       try {
         setLoading(true);
-        const castService = new CastService();
 
         // Use current month if dates not provided
         const now = new Date();

@@ -495,3 +495,6 @@ export class BottleKeepService {
     return locations.sort();
   }
 }
+
+// Export singleton instance
+export const bottleKeepService = new BottleKeepService();

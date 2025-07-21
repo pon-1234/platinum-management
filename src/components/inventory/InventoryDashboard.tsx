@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { InventoryService } from "@/services/inventory.service";
+import { inventoryService } from "@/services/inventory.service";
 import type { InventoryStats, InventoryAlert } from "@/types/inventory.types";
 import {
   ExclamationTriangleIcon,
@@ -23,8 +23,6 @@ export function InventoryDashboard({
   const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const inventoryService = new InventoryService();
 
   useEffect(() => {
     loadDashboardData();

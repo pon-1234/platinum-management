@@ -4,15 +4,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const authService = new AuthService();
 
   const {
     register,

@@ -293,3 +293,6 @@ export class CustomerService extends BaseService {
     };
   }
 }
+
+// Export singleton instance
+export const customerService = new CustomerService();

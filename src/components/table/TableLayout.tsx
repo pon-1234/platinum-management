@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { TableService } from "@/services/table.service";
+import { tableService } from "@/services/table.service";
 import type { Table } from "@/types/reservation.types";
 
 interface TableLayoutProps {
@@ -33,7 +33,6 @@ export function TableLayout({
 }: TableLayoutProps) {
   const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const tableService = new TableService();
 
   useEffect(() => {
     loadTables();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { QRCodeService } from "@/services/qr-code.service";
+import { qrCodeService } from "@/services/qr-code.service";
 import { CameraIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface QRCodeScannerProps {
@@ -20,7 +20,6 @@ export function QRCodeScanner({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const qrCodeService = new QRCodeService();
 
   useEffect(() => {
     return () => {

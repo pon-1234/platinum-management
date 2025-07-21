@@ -471,18 +471,25 @@ export class AttendanceService {
       .eq("attendance_date", today)
       .single();
 
+    let currentRecord = record;
+
     if (error && error.code === "PGRST116") {
       // Record doesn't exist, create it
       const newRecord = await this.createAttendanceRecord({
         staffId,
         attendanceDate: today,
       });
-      record = await this.supabase
+      const { data: updatedRecord } = await this.supabase
         .from("attendance_records")
         .select("*")
         .eq("id", newRecord.id)
-        .single()
-        .then(({ data }) => data!);
+        .single();
+
+      if (!updatedRecord) {
+        throw new Error("出勤記録の作成に失敗しました");
+      }
+
+      currentRecord = updatedRecord;
     } else if (error) {
       throw new Error(`出勤記録の取得に失敗しました: ${error.message}`);
     }
@@ -513,7 +520,7 @@ export class AttendanceService {
     const { data: updatedRecord, error: updateError } = await this.supabase
       .from("attendance_records")
       .update(updateData)
-      .eq("id", record!.id)
+      .eq("id", currentRecord!.id)
       .select()
       .single();
 
@@ -706,3 +713,6 @@ export class AttendanceService {
     };
   }
 }
+
+// Export singleton instance
+export const attendanceService = new AttendanceService();

@@ -1,30 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { CastService } from "@/services/cast.service";
+import { useEffect } from "react";
+import { useCastStore } from "@/stores/cast.store";
 import { PayrollExport } from "@/components/cast/PayrollExport";
 import { RoleGate } from "@/components/auth/RoleGate";
-import type { Cast } from "@/types/cast.types";
 
 export default function CastManagementPage() {
-  const [casts, setCasts] = useState<Cast[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { casts, isLoading, error, fetchCasts } = useCastStore();
 
   useEffect(() => {
-    loadCasts();
-  }, []);
-
-  const loadCasts = async () => {
-    try {
-      const castService = new CastService();
-      const data = await castService.getCasts({ isActive: true });
-      setCasts(data);
-    } catch (error) {
-      console.error("Failed to load casts:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchCasts({ isActive: true });
+  }, [fetchCasts]);
 
   return (
     <RoleGate allowedRoles={["admin", "manager"]}>
@@ -32,6 +18,13 @@ export default function CastManagementPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-8">
           キャスト管理
         </h1>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
 
         {/* Cast List */}
         <div className="mb-8">

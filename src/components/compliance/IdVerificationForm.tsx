@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IdTypes } from "@/types/compliance.types";
 import { z } from "zod";
+import { toast } from "react-hot-toast";
 
 // Form-specific schema that matches the component's needs
 const idVerificationFormSchema = z.object({
@@ -82,7 +83,7 @@ export function IdVerificationForm({
       });
 
     if (error) {
-      alert("画像のアップロードに失敗しました");
+      toast.error("画像のアップロードに失敗しました");
       console.error(error);
       return;
     }
@@ -105,19 +106,16 @@ export function IdVerificationForm({
         id_image_url: data.idImageUrl,
         birth_date: data.birthDate,
         expiry_date: data.expiryDate,
-        ocr_result: data.ocrResult as
-          | Record<string, unknown>
-          | null
-          | undefined,
+        ocr_result: data.ocrResult || null,
         is_verified: data.isVerified,
         notes: data.notes,
       };
       await complianceService.createIdVerification(serviceData);
-      alert("身分証確認情報を登録しました");
+      toast.success("身分証確認情報を登録しました");
       onSuccess?.();
     } catch (error) {
       console.error(error);
-      alert("登録に失敗しました");
+      toast.error("登録に失敗しました");
     } finally {
       setIsSubmitting(false);
     }

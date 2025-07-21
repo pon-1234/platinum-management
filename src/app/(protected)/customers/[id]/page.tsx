@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CustomerService } from "@/services/customer.service";
+import { customerService } from "@/services/customer.service";
 import { CustomerForm } from "@/components/customers/CustomerForm";
 import { VisitHistory } from "@/components/customers/VisitHistory";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
 import type { Customer, Visit } from "@/types/customer.types";
 import {
   PencilIcon,
@@ -32,8 +32,6 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const customerService = new CustomerService();
 
   useEffect(() => {
     const initPage = async () => {
@@ -210,7 +208,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 </p>
               )}
             </div>
-            <StatusBadge status={customer.status} />
+            <CustomerStatusBadge status={customer.status} />
           </div>
         </div>
         <div className="border-t border-gray-200">

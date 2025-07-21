@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { TableService } from "@/services/table.service";
+import { tableService } from "@/services/table.service";
 import type { Table, TableStatus } from "@/types/reservation.types";
 
 interface TableStatusModalProps {
@@ -49,7 +49,6 @@ export function TableStatusModal({
     table.currentStatus
   );
   const [isUpdating, setIsUpdating] = useState(false);
-  const tableService = new TableService();
 
   if (!isOpen) return null;
 

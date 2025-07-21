@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CustomerService } from "@/services/customer.service";
-import { ReservationService } from "@/services/reservation.service";
-import { BillingService } from "@/services/billing.service";
+import { customerService } from "@/services/customer.service";
+import { reservationService } from "@/services/reservation.service";
+import { billingService } from "@/services/billing.service";
 
 interface DashboardStats {
   totalCustomers: number;
@@ -20,10 +20,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const customerService = new CustomerService();
-  const reservationService = new ReservationService();
-  const billingService = new BillingService();
-
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
@@ -31,11 +27,11 @@ export default function DashboardPage() {
         setError(null);
 
         const today = new Date();
-        const todayString = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        const todayString = today.toISOString().split("T")[0]; // Format as YYYY-MM-DD
 
         // Get total customers
         const customers = await customerService.searchCustomers({});
-        
+
         // Get today's reservations
         const reservations = await reservationService.searchReservations({
           startDate: todayString,
@@ -43,7 +39,8 @@ export default function DashboardPage() {
         });
 
         // Get today's sales data
-        const dailyReport = await billingService.generateDailyReport(todayString);
+        const dailyReport =
+          await billingService.generateDailyReport(todayString);
 
         setStats({
           totalCustomers: customers.length,

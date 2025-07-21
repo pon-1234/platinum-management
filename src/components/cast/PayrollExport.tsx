@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Calendar, Download, Users } from "lucide-react";
-import { CastService } from "@/services/cast.service";
+import { castService } from "@/services/cast.service";
 import {
   exportCastCompensationToCSV,
   formatDateRange,
 } from "@/lib/utils/export";
 import type { Cast } from "@/types/cast.types";
+import { toast } from "react-hot-toast";
 
 interface PayrollExportProps {
   casts: Cast[];
@@ -23,8 +24,6 @@ export function PayrollExport({ casts }: PayrollExportProps) {
     endDate: new Date().toISOString().split("T")[0],
   });
 
-  const castService = new CastService();
-
   const handleSelectAll = () => {
     if (selectedCasts.length === casts.length) {
       setSelectedCasts([]);
@@ -35,7 +34,7 @@ export function PayrollExport({ casts }: PayrollExportProps) {
 
   const handleExport = async () => {
     if (selectedCasts.length === 0) {
-      alert("エクスポートするキャストを選択してください");
+      toast.error("エクスポートするキャストを選択してください");
       return;
     }
 
@@ -60,7 +59,7 @@ export function PayrollExport({ casts }: PayrollExportProps) {
       );
     } catch (error) {
       console.error("Export failed:", error);
-      alert("エクスポートに失敗しました");
+      toast.error("エクスポートに失敗しました");
     } finally {
       setIsExporting(false);
     }

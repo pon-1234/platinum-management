@@ -166,12 +166,14 @@ export class StaffService {
     data: UpdateCastProfileData
   ): Promise<CastProfile> {
     const updateData: Record<string, unknown> = {};
-    
+
     if (data.nickname !== undefined) updateData.stage_name = data.nickname;
-    if (data.profileImageUrl !== undefined) updateData.profile_image_url = data.profileImageUrl;
+    if (data.profileImageUrl !== undefined)
+      updateData.profile_image_url = data.profileImageUrl;
     if (data.bio !== undefined) updateData.self_introduction = data.bio;
     if (data.hourlyWage !== undefined) updateData.hourly_rate = data.hourlyWage;
-    if (data.commissionRate !== undefined) updateData.back_percentage = data.commissionRate.shimei;
+    if (data.commissionRate !== undefined)
+      updateData.back_percentage = data.commissionRate.shimei;
 
     const { data: profile, error } = await this.supabase
       .from("casts_profile")
@@ -220,3 +222,6 @@ export class StaffService {
     };
   }
 }
+
+// Export singleton instance
+export const staffService = new StaffService();

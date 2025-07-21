@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { format } from "date-fns";
-import { AttendanceService } from "@/services/attendance.service";
+import { attendanceService } from "@/services/attendance.service";
 import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
 import { WeeklySchedule } from "@/components/attendance/WeeklySchedule";
 import { TimeClock } from "@/components/attendance/TimeClock";
@@ -26,8 +26,6 @@ export default function AttendancePage() {
   const [dashboardData, setDashboardData] =
     useState<AttendanceDashboardType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const attendanceService = new AttendanceService();
 
   const loadDashboardData = useCallback(async () => {
     try {

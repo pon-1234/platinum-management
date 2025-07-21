@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { QRCodeService } from "@/services/qr-code.service";
+import { qrCodeService } from "@/services/qr-code.service";
 import type {
   QRCode,
   StaffQRInfo,
@@ -36,7 +36,6 @@ export function QRCodeGenerator({
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
-  const qrCodeService = new QRCodeService();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 

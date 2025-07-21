@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { ReservationService } from "@/services/reservation.service";
+import { reservationService } from "@/services/reservation.service";
 import {
   format,
   startOfMonth,
@@ -33,8 +33,6 @@ export function ReservationCalendar({
     Record<string, Reservation[]>
   >({});
   const [isLoading, setIsLoading] = useState(true);
-
-  const reservationService = new ReservationService();
 
   useEffect(() => {
     loadMonthReservations();

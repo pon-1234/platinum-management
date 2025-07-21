@@ -10,10 +10,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { AttendanceService } from "@/services/attendance.service";
-import { StaffService } from "@/services/staff.service";
+import { attendanceService } from "@/services/attendance.service";
+import { staffService } from "@/services/staff.service";
 import type { ClockAction, AttendanceRecord } from "@/types/attendance.types";
 import type { Staff } from "@/types/staff.types";
+import { toast } from "react-hot-toast";
 
 interface TimeClockProps {
   onClockAction: () => void;
@@ -25,9 +26,6 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notes, setNotes] = useState("");
-
-  const attendanceService = new AttendanceService();
-  const staffService = new StaffService();
 
   // Update current time every second
   useEffect(() => {
@@ -75,7 +73,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
   const handleClockAction = useCallback(
     async (actionType: ClockAction["type"]) => {
       if (!currentStaff) {
-        alert("スタッフ情報が見つかりません");
+        toast.error("スタッフ情報が見つかりません");
         return;
       }
 
@@ -103,10 +101,10 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
           break_start: "休憩開始",
           break_end: "休憩終了",
         };
-        alert(`${actionLabels[actionType]}を記録しました`);
+        toast.success(`${actionLabels[actionType]}を記録しました`);
       } catch (error) {
         console.error("打刻処理に失敗しました:", error);
-        alert("打刻処理に失敗しました。もう一度お試しください。");
+        toast.error("打刻処理に失敗しました。もう一度お試しください。");
       } finally {
         setIsLoading(false);
       }
