@@ -24,7 +24,11 @@
       "Bash(npm run test:*)",
       "Bash(npm run lint:*)",
       "Bash(pnpm build:*)",
-      "Bash(SKIP_ENV_VALIDATION=true pnpm build:skip-lint)"
+      "Bash(SKIP_ENV_VALIDATION=true pnpm build:skip-lint)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": []
   },
