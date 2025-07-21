@@ -115,7 +115,7 @@ export function CustomerList({ customers, onEdit }: CustomerListProps) {
                 {customer.lineId || "-"}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                {formatDate(customer.birthday ?? null)}
+                {formatDate(customer.birthday)}
               </td>
               <td className="whitespace-nowrap px-3 py-4 text-sm">
                 <CustomerStatusBadge status={customer.status} />

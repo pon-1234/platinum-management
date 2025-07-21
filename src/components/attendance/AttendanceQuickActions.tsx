@@ -23,25 +23,33 @@ export function AttendanceQuickActions({
       label: "打刻",
       icon: ClockIcon,
       onClick: onTimeClockClick,
-      color: "indigo",
+      className:
+        "hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20",
+      iconClassName: "text-indigo-600 dark:text-indigo-400",
     },
     {
       label: "シフト申請",
       icon: DocumentTextIcon,
       onClick: onShiftRequestClick,
-      color: "blue",
+      className:
+        "hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20",
+      iconClassName: "text-blue-600 dark:text-blue-400",
     },
     {
       label: "スケジュール",
       icon: CalendarIcon,
       onClick: onScheduleClick,
-      color: "green",
+      className:
+        "hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20",
+      iconClassName: "text-green-600 dark:text-green-400",
     },
     {
       label: "レポート",
       icon: ChartBarIcon,
       onClick: onReportClick,
-      color: "purple",
+      className:
+        "hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20",
+      iconClassName: "text-purple-600 dark:text-purple-400",
     },
   ];
 
@@ -55,10 +63,10 @@ export function AttendanceQuickActions({
           <button
             key={action.label}
             onClick={action.onClick}
-            className={`p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-${action.color}-500 hover:bg-${action.color}-50 dark:hover:bg-${action.color}-900/20 transition-all`}
+            className={`p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 transition-all ${action.className}`}
           >
             <action.icon
-              className={`w-8 h-8 mx-auto mb-2 text-${action.color}-600 dark:text-${action.color}-400`}
+              className={`w-8 h-8 mx-auto mb-2 ${action.iconClassName}`}
             />
             <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {action.label}
