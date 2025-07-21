@@ -640,4 +640,32 @@ export class QRCodeService {
 
     return result;
   }
+
+  async getScanHistory(params: {
+    staffId?: string;
+    limit?: number;
+  }): Promise<QRScanHistory[]> {
+    let query = this.supabase.from("qr_attendance_logs").select(`
+        *,
+        staff:staffs!staff_id (
+          id,
+          full_name
+        )
+      `);
+
+    if (params.staffId) {
+      query = query.eq("staff_id", params.staffId);
+    }
+
+    if (params.limit) {
+      query = query.limit(params.limit);
+    }
+
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
+
+    if (error) this.handleError(error);
+    return this.toCamelCase(data || []);
+  }
 }

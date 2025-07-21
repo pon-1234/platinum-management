@@ -19,12 +19,13 @@ import {
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function CustomerDetailPage({ params }: PageProps) {
+  const [customerId, setCustomerId] = useState<string>("");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,16 +36,26 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const customerService = new CustomerService();
 
   useEffect(() => {
-    loadCustomerData();
+    const initPage = async () => {
+      const resolvedParams = await params;
+      setCustomerId(resolvedParams.id);
+    };
+    initPage();
+  }, [params]);
+
+  useEffect(() => {
+    if (customerId) {
+      loadCustomerData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [customerId]);
 
   const loadCustomerData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const customerData = await customerService.getCustomerById(params.id);
+      const customerData = await customerService.getCustomerById(customerId);
       if (!customerData) {
         setError("顧客が見つかりません");
         return;
@@ -52,7 +63,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
       setCustomer(customerData);
 
-      const visitsData = await customerService.getCustomerVisits(params.id);
+      const visitsData = await customerService.getCustomerVisits(customerId);
       setVisits(visitsData);
     } catch (err) {
       setError("データの取得に失敗しました");
@@ -76,7 +87,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setError(null);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await customerService.updateCustomer(params.id, data as any);
+      await customerService.updateCustomer(customerId, data as any);
       await loadCustomerData();
       setIsEditing(false);
     } catch (err) {

@@ -47,12 +47,14 @@ export function QRCodeGenerator({
         clearInterval(intervalRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffId]);
 
   useEffect(() => {
     if (qrInfo?.qrCode && autoRefresh) {
       startCountdown();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrInfo, autoRefresh]);
 
   const loadQRInfo = async () => {

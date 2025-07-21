@@ -69,7 +69,9 @@ export interface QRCodeStats {
   failedScans: number;
   activeQRCodes: number;
   todayScans: number;
+  monthlyScans: number;
   uniqueUsers: number;
+  totalStaff: number;
 }
 
 // 位置検証設定
@@ -96,6 +98,47 @@ export interface LocationData {
   longitude: number;
   accuracy: number;
   timestamp: number;
+}
+
+// QRスキャン履歴
+export interface QRScanHistory {
+  id: string;
+  staffId: string;
+  actionType: QRAttendanceAction;
+  success: boolean;
+  locationData?: LocationData;
+  deviceInfo?: DeviceInfo;
+  errorMessage?: string;
+  createdAt: string;
+  staff: {
+    id: string;
+    fullName: string;
+  };
+}
+
+// QR管理データ
+export interface QRManagementData {
+  stats: QRCodeStats;
+  staffQRCodes: {
+    staffId: string;
+    staffName: string;
+    qrCode?: {
+      id: string;
+      expiresAt: string;
+      isActive: boolean;
+    };
+    todayScans: number;
+    lastScan?: QRScanHistory;
+  }[];
+}
+
+// スタッフQR情報
+export interface StaffQRInfo {
+  staffId: string;
+  staffName: string;
+  qrCode?: QRCode;
+  todayScans: number;
+  lastScan?: QRScanHistory;
 }
 
 // QRコード履歴
