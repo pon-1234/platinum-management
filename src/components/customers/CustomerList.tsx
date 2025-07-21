@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Customer } from "@/types/customer.types";
 import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
 import { PencilIcon, EyeIcon } from "@heroicons/react/24/outline";
+import { formatDate, formatPhoneNumber } from "@/lib/utils/formatting";
 
 interface CustomerListProps {
   customers: Customer[];
@@ -28,17 +29,6 @@ export function CustomerList({ customers, onEdit }: CustomerListProps) {
     } else {
       setSelectedIds([...selectedIds, id]);
     }
-  };
-
-  const formatPhoneNumber = (phone: string | null) => {
-    if (!phone) return "-";
-    return phone;
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ja-JP");
   };
 
   return (

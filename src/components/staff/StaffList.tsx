@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Staff } from "@/types/staff.types";
 import { RoleBadge } from "@/components/ui/RoleBadge";
 import { PencilIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { formatDate } from "@/lib/utils/formatting";
 
 interface StaffListProps {
   staff: Staff[];
@@ -29,11 +30,6 @@ export function StaffList({ staff, onEdit, onDelete, onView }: StaffListProps) {
     } else {
       setSelectedIds([...selectedIds, id]);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ja-JP");
   };
 
   return (
@@ -88,7 +84,9 @@ export function StaffList({ staff, onEdit, onDelete, onView }: StaffListProps) {
           {staff.map((staffMember) => (
             <tr
               key={staffMember.id}
-              className={selectedIds.includes(staffMember.id) ? "bg-gray-50" : ""}
+              className={
+                selectedIds.includes(staffMember.id) ? "bg-gray-50" : ""
+              }
             >
               <td className="relative px-6 sm:w-12 sm:px-6">
                 <input

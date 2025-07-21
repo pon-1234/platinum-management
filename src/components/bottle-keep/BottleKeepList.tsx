@@ -12,6 +12,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { formatDate, formatCurrency } from "@/lib/utils/formatting";
 
 interface BottleKeepListProps {
   bottleKeeps: BottleKeepDetail[];
@@ -63,19 +64,6 @@ export function BottleKeepList({
     } else {
       setSelectedIds([...selectedIds, id]);
     }
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ja-JP");
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("ja-JP", {
-      style: "currency",
-      currency: "JPY",
-    }).format(amount);
   };
 
   const getStatusBadge = (status: string) => {
