@@ -50,6 +50,7 @@ export const useCastPerformance = (castId?: string) => {
     if (castId) {
       fetchPerformances({ castId });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [castId, refreshKey]);
 
   // Get cast info and current month performances

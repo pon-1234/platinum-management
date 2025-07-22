@@ -106,3 +106,36 @@ Follow conventional commit format:
 - `chore:` - Build process or auxiliary tool changes
 
 Example: `feat: add customer registration form`
+
+---
+
+## Ⅵ. Gemini Delegation Policy
+
+### When to Use Gemini
+Following the development guide philosophy:
+- **Red/Green Phases:** **Do not use Gemini.** Focus on the fast TDD cycle.
+- **Refactor Phase:** You may delegate to Gemini for:
+  - Complex refactoring analysis
+  - Researching new APIs or best practices
+  - Getting objective code review feedback
+  - Large codebase analysis
+
+### Gemini Commands (Future Implementation)
+When Gemini CLI is available, use these delegation patterns:
+```bash
+# For code analysis
+gemini-analyze "Analyze this service layer for potential improvements"
+
+# For research
+gemini-search "Latest Next.js 14 performance optimization techniques"
+
+# For refactoring guidance
+gemini "Review this component for accessibility and performance issues"
+```
+
+### Collaboration Flow
+1. **Claude (TDD Focus):** Write tests, implement features, maintain TDD cycle
+2. **Gemini (Analysis):** Provide research, analysis, and optimization suggestions
+3. **Code Hooks:** Ensure quality gates and process enforcement
+
+**Note:** Summarize Gemini's findings. Do not paste raw output directly into code.
