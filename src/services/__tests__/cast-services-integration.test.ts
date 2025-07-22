@@ -54,8 +54,8 @@ describe("Cast Services Integration", () => {
       // Mock cast data
       mockSupabase.single.mockResolvedValueOnce({
         data: {
-          id: "cast-123",
-          staff_id: "staff-123",
+          id: "123e4567-e89b-12d3-a456-426614174000",
+          staff_id: "223e4567-e89b-12d3-a456-426614174001",
           stage_name: "テストキャスト",
           hourly_rate: 3000,
           back_percentage: 50,
@@ -70,8 +70,8 @@ describe("Cast Services Integration", () => {
       mockSupabase.range.mockResolvedValueOnce({
         data: [
           {
-            id: "perf-123",
-            cast_id: "cast-123",
+            id: "323e4567-e89b-12d3-a456-426614174002",
+            cast_id: "123e4567-e89b-12d3-a456-426614174000",
             date: "2024-01-15",
             shimei_count: 5,
             dohan_count: 2,
@@ -85,12 +85,12 @@ describe("Cast Services Integration", () => {
       });
 
       const result = await compensationService.calculateCastCompensation(
-        "cast-123",
+        "123e4567-e89b-12d3-a456-426614174000",
         "2024-01-01",
         "2024-01-31"
       );
 
-      expect(result.castId).toBe("cast-123");
+      expect(result.castId).toBe("123e4567-e89b-12d3-a456-426614174000");
       expect(result.cast.stageName).toBe("テストキャスト");
       expect(result.workHours).toBe(6); // 1 day * 6 hours
       expect(result.hourlyWage).toBe(18000); // 6 hours * 3000
@@ -100,7 +100,7 @@ describe("Cast Services Integration", () => {
 
     it("should handle performance creation and immediate retrieval", async () => {
       const performanceData = {
-        castId: "cast-123",
+        castId: "123e4567-e89b-12d3-a456-426614174000",
         date: "2024-01-20",
         shimeiCount: 3,
         dohanCount: 1,
@@ -108,11 +108,17 @@ describe("Cast Services Integration", () => {
         drinkCount: 5,
       };
 
+      // Mock for staff ID fetch
+      mockSupabase.single.mockResolvedValueOnce({
+        data: { id: "test-staff-id" },
+        error: null,
+      });
+
       // Mock performance creation
       mockSupabase.single.mockResolvedValueOnce({
         data: {
-          id: "perf-124",
-          cast_id: "cast-123",
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          cast_id: "123e4567-e89b-12d3-a456-426614174000",
           date: "2024-01-20",
           shimei_count: 3,
           dohan_count: 1,
@@ -128,8 +134,8 @@ describe("Cast Services Integration", () => {
       mockSupabase.range.mockResolvedValueOnce({
         data: [
           {
-            id: "perf-124",
-            cast_id: "cast-123",
+            id: "223e4567-e89b-12d3-a456-426614174001",
+            cast_id: "123e4567-e89b-12d3-a456-426614174000",
             date: "2024-01-20",
             shimei_count: 3,
             dohan_count: 1,
@@ -146,18 +152,20 @@ describe("Cast Services Integration", () => {
       const createdPerformance =
         await performanceService.createCastPerformance(performanceData);
 
-      expect(createdPerformance.castId).toBe("cast-123");
+      expect(createdPerformance.castId).toBe(
+        "123e4567-e89b-12d3-a456-426614174000"
+      );
       expect(createdPerformance.salesAmount).toBe(100000);
 
       // Retrieve performances
       const performances = await performanceService.getCastPerformances({
-        castId: "cast-123",
+        castId: "123e4567-e89b-12d3-a456-426614174000",
         startDate: "2024-01-01",
         endDate: "2024-01-31",
       });
 
       expect(performances).toHaveLength(1);
-      expect(performances[0].id).toBe("perf-124");
+      expect(performances[0].id).toBe("223e4567-e89b-12d3-a456-426614174001");
     });
 
     it("should handle service errors gracefully", async () => {
