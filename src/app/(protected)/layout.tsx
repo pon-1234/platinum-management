@@ -2,34 +2,15 @@
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleBasedNavigation } from "@/components/navigation/RoleBasedNavigation";
-import { useEffect } from "react";
+import { useState } from "react";
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    const sidebar = document.getElementById("sidebar");
-    const overlay = document.getElementById("overlay");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    const observer = new MutationObserver(() => {
-      if (sidebar?.classList.contains("-translate-x-full")) {
-        overlay!.style.display = "none";
-      } else {
-        overlay!.style.display = "block";
-      }
-    });
-
-    if (sidebar) {
-      observer.observe(sidebar, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-    }
-
-    return () => observer.disconnect();
-  }, []);
   return (
     <ProtectedRoute
       fallback={
@@ -45,10 +26,8 @@ export default function ProtectedLayout({
         <button
           type="button"
           className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-lg"
-          onClick={() => {
-            const sidebar = document.getElementById("sidebar");
-            sidebar?.classList.toggle("-translate-x-full");
-          }}
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          aria-label="メニューを開く"
         >
           <svg
             className="w-6 h-6"
@@ -67,18 +46,19 @@ export default function ProtectedLayout({
 
         {/* Sidebar */}
         <div
-          id="sidebar"
-          className="fixed lg:static inset-y-0 left-0 z-40 flex flex-col w-64 bg-white border-r border-gray-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out"
+          className={`fixed lg:static inset-y-0 left-0 z-40 flex flex-col w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+            isSidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
+          }`}
         >
           <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
             <h1 className="text-xl font-bold text-gray-900">プラチナ管理</h1>
             <button
               type="button"
               className="lg:hidden p-2 rounded-md"
-              onClick={() => {
-                const sidebar = document.getElementById("sidebar");
-                sidebar?.classList.add("-translate-x-full");
-              }}
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="メニューを閉じる"
             >
               <svg
                 className="w-6 h-6"
@@ -96,20 +76,18 @@ export default function ProtectedLayout({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            <RoleBasedNavigation />
+            <RoleBasedNavigation onNavigate={() => setIsSidebarOpen(false)} />
           </div>
         </div>
 
         {/* Overlay */}
-        <div
-          className="fixed inset-0 z-30 bg-gray-600 bg-opacity-50 lg:hidden"
-          id="overlay"
-          onClick={() => {
-            const sidebar = document.getElementById("sidebar");
-            sidebar?.classList.add("-translate-x-full");
-          }}
-          style={{ display: "none" }}
-        />
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-gray-600 bg-opacity-50 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="オーバーレイを閉じる"
+          />
+        )}
 
         {/* Main content */}
         <div className="flex-1 flex flex-col lg:pl-0">
