@@ -3,7 +3,6 @@ import { CastService } from "../cast.service";
 import { CastPerformanceService } from "../cast-performance.service";
 import { CastCompensationService } from "../cast-compensation.service";
 import { createClient } from "@/lib/supabase/client";
-import type { Cast, CastPerformance } from "@/types/cast.types";
 
 vi.mock("@/lib/supabase/client");
 
