@@ -109,9 +109,13 @@ export function RoleBasedNavigation() {
   const { canAccessRoute } = usePermission();
   const { user, signOut } = useAuthStore();
 
-  const filteredItems = navigationItems.filter((item) =>
-    canAccessRoute(item.href)
-  );
+  const filteredItems = navigationItems.filter((item) => {
+    // Admin should see all items
+    if (user?.role === "admin") {
+      return true;
+    }
+    return canAccessRoute(item.href);
+  });
 
   return (
     <nav className="flex flex-1 flex-col">
