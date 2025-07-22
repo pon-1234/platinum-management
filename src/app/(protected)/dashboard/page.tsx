@@ -68,7 +68,9 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900">ダッシュボード</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        ダッシュボード
+      </h1>
       <p className="mt-2 text-sm text-gray-600">
         プラチナ管理システムへようこそ
       </p>
@@ -79,13 +81,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="h-12 w-12 bg-indigo-500 rounded-md flex items-center justify-center">
-                  <span className="text-white font-semibold">顧客</span>
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-indigo-500 rounded-md flex items-center justify-center">
+                  <span className="text-white font-semibold text-xs sm:text-sm">
+                    顧客
+                  </span>
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -110,8 +114,10 @@ export default function DashboardPage() {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="h-12 w-12 bg-green-500 rounded-md flex items-center justify-center">
-                  <span className="text-white font-semibold">予約</span>
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-500 rounded-md flex items-center justify-center">
+                  <span className="text-white font-semibold text-xs sm:text-sm">
+                    予約
+                  </span>
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -136,8 +142,10 @@ export default function DashboardPage() {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="h-12 w-12 bg-yellow-500 rounded-md flex items-center justify-center">
-                  <span className="text-white font-semibold">売上</span>
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-yellow-500 rounded-md flex items-center justify-center">
+                  <span className="text-white font-semibold text-xs sm:text-sm">
+                    売上
+                  </span>
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
