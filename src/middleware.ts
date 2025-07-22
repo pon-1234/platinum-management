@@ -18,10 +18,12 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: Record<string, unknown>) {
-          response.cookies.set({
-            name,
-            value,
+          // Set cookie in the response for proper session handling
+          response.cookies.set(name, value, {
             ...options,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
           });
         },
         remove(name: string, options: Record<string, unknown>) {
@@ -29,6 +31,7 @@ export async function middleware(request: NextRequest) {
             name,
             value: "",
             ...options,
+            maxAge: 0,
           });
         },
       },
@@ -118,6 +121,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
+
+  // Refresh the user session to ensure proper cookie handling
+  await supabase.auth.getUser();
 
   return response;
 }
