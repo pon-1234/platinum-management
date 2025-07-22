@@ -448,21 +448,49 @@ export class ReservationService {
   private mapToReservationWithDetails(
     data: Record<string, unknown>
   ): ReservationWithDetails {
-    const reservation = this.mapToReservation(data);
+    const reservation = this.mapToReservation(
+      data as Database["public"]["Tables"]["reservations"]["Row"]
+    );
+    const customerData = data.customer as {
+      id: string;
+      name: string;
+      phone_number: string | null;
+    } | null;
+    const tableData = data.table as
+      | Database["public"]["Tables"]["tables"]["Row"]
+      | null;
+    const assignedCastData = data.assigned_cast as {
+      id: string;
+      casts_profile?: { stage_name: string };
+    } | null;
+
     return {
       ...reservation,
-      customer: data.customer
+      customer: customerData
         ? {
-            id: data.customer.id,
-            name: data.customer.name,
-            phoneNumber: data.customer.phone_number,
+            id: customerData.id,
+            name: customerData.name,
+            phoneNumber: customerData.phone_number,
           }
         : undefined,
-      table: data.table,
-      assignedCast: data.assigned_cast?.casts_profile
+      table: tableData
         ? {
-            id: data.assigned_cast.id,
-            stageName: data.assigned_cast.casts_profile.stage_name,
+            id: tableData.id,
+            tableName: tableData.table_name,
+            capacity: tableData.capacity,
+            location: tableData.location,
+            isVip: tableData.is_vip,
+            isActive: tableData.is_active,
+            currentStatus: tableData.current_status,
+            currentVisitId: tableData.current_visit_id,
+            createdAt: tableData.created_at,
+            updatedAt: tableData.updated_at,
+          }
+        : undefined,
+      assignedCast: assignedCastData?.casts_profile
+        ? {
+            id: assignedCastData.id,
+            stageName: assignedCastData.casts_profile.stage_name,
           }
         : undefined,
     };

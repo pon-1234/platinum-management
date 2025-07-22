@@ -31,7 +31,7 @@ export class AttendanceService {
   }
 
   // Helper method to get current staff ID
-  private async getCurrentStaffId(): Promise<string> {
+  async getCurrentStaffId(): Promise<string> {
     const {
       data: { user },
     } = await this.supabase.auth.getUser();

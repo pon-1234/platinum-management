@@ -10,31 +10,45 @@ interface IdVerificationListProps {
   customerId?: string;
 }
 
-interface IdVerificationData {
+interface IdVerificationItem {
   id: string;
-  customerId: string;
-  idType: string;
-  idImageUrl: string | null;
-  birthDate: string | null;
-  verificationDate: string;
-  verifiedBy: string | null;
-  ocrResult: Record<string, unknown> | null;
-  isVerified: boolean;
-  expiryDate: string | null;
-  notes: string | null;
-  customer: {
+  idType?: string;
+  id_type?: string;
+  idImageUrl?: string | null;
+  id_image_url?: string | null;
+  birthDate?: string | null;
+  birth_date?: string | null;
+  verificationDate?: string;
+  verification_date?: string;
+  verifiedBy?: string | null;
+  verified_by?: string | null;
+  ocrResult?: Record<string, unknown> | null;
+  ocr_result?: Record<string, unknown> | null;
+  isVerified?: boolean;
+  is_verified?: boolean;
+  expiryDate?: string | null;
+  expiry_date?: string | null;
+  notes?: string | null;
+  customer?: {
     id: string;
     name: string;
-    phoneNumber: string | null;
+    phoneNumber?: string | null;
+    phone_number?: string | null;
   };
-  verifiedStaff: {
+  verifiedStaff?: {
     id: string;
-    fullName: string;
+    fullName?: string;
+    full_name?: string;
+  } | null;
+  verified_staff?: {
+    id: string;
+    fullName?: string;
+    full_name?: string;
   } | null;
 }
 
 export function IdVerificationList({ customerId }: IdVerificationListProps) {
-  const [verifications, setVerifications] = useState<IdVerificationData[]>([]);
+  const [verifications, setVerifications] = useState<IdVerificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
     idType: "" as IdType | "",
@@ -49,15 +63,17 @@ export function IdVerificationList({ customerId }: IdVerificationListProps) {
   const loadVerifications = async () => {
     try {
       setLoading(true);
-      let data: IdVerificationData[];
+      let data: IdVerificationItem[];
 
       if (customerId) {
-        data = await complianceService.getIdVerificationsByCustomer(customerId);
+        data = (await complianceService.getIdVerificationsByCustomer(
+          customerId
+        )) as IdVerificationItem[];
       } else {
-        data = await complianceService.searchIdVerifications({
+        data = (await complianceService.searchIdVerifications({
           idType: filter.idType || undefined,
           isVerified: filter.isVerified,
-        });
+        })) as IdVerificationItem[];
       }
 
       setVerifications(data);
@@ -165,51 +181,81 @@ export function IdVerificationList({ customerId }: IdVerificationListProps) {
               <tr key={verification.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {format(
-                    new Date(verification.verificationDate),
+                    new Date(
+                      verification.verificationDate ||
+                        verification.verification_date ||
+                        ""
+                    ),
                     "yyyy/MM/dd HH:mm",
                     { locale: ja }
                   )}
                 </td>
                 {!customerId && (
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {verification.customer.name}
+                    {verification.customer?.name || verification.customer?.name}
                   </td>
                 )}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getIdTypeName(verification.idType)}
+                  {getIdTypeName(
+                    verification.idType || verification.id_type || ""
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {verification.birthDate
-                    ? format(new Date(verification.birthDate), "yyyy/MM/dd", {
-                        locale: ja,
-                      })
+                  {verification.birthDate || verification.birth_date
+                    ? format(
+                        new Date(
+                          verification.birthDate ||
+                            verification.birth_date ||
+                            ""
+                        ),
+                        "yyyy/MM/dd",
+                        {
+                          locale: ja,
+                        }
+                      )
                     : "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {verification.expiryDate
-                    ? format(new Date(verification.expiryDate), "yyyy/MM/dd", {
-                        locale: ja,
-                      })
+                  {verification.expiryDate || verification.expiry_date
+                    ? format(
+                        new Date(
+                          verification.expiryDate ||
+                            verification.expiry_date ||
+                            ""
+                        ),
+                        "yyyy/MM/dd",
+                        {
+                          locale: ja,
+                        }
+                      )
                     : "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      verification.isVerified
+                      (verification.isVerified ?? verification.is_verified)
                         ? "bg-green-100 text-green-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {verification.isVerified ? "確認済み" : "未確認"}
+                    {(verification.isVerified ?? verification.is_verified)
+                      ? "確認済み"
+                      : "未確認"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {verification.verifiedStaff?.fullName || "-"}
+                  {verification.verifiedStaff?.fullName ||
+                    verification.verified_staff?.full_name ||
+                    "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {verification.idImageUrl && (
+                  {(verification.idImageUrl || verification.id_image_url) && (
                     <a
-                      href={verification.idImageUrl}
+                      href={
+                        verification.idImageUrl ||
+                        verification.id_image_url ||
+                        ""
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-900"

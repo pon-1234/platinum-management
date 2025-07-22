@@ -134,7 +134,7 @@ export class QRCodeService extends BaseService {
           request.qrData,
           request.action,
           false,
-          validation.errorMessage,
+          validation.errorMessage || "Unknown error",
           request.locationData,
           request.deviceInfo
         );
@@ -157,7 +157,7 @@ export class QRCodeService extends BaseService {
           request.qrData,
           request.action,
           false,
-          locationCheck.errorMessage,
+          locationCheck.errorMessage || "Location error",
           request.locationData,
           request.deviceInfo,
           staffId
@@ -182,7 +182,7 @@ export class QRCodeService extends BaseService {
           request.qrData,
           request.action,
           false,
-          duplicateCheck.errorMessage,
+          duplicateCheck.errorMessage || "Duplicate check error",
           request.locationData,
           request.deviceInfo,
           staffId
@@ -382,19 +382,34 @@ export class QRCodeService extends BaseService {
 
   // 管理用データ取得
   async getManagementData(): Promise<QRManagementData> {
-    const [stats, recentLogs, activeStaffs] = await Promise.all([
+    const [stats, activeStaffs] = await Promise.all([
       this.getQRCodeStats(),
-      this.getQRAttendanceHistory(undefined, undefined, undefined, 20),
       this.getActiveStaffsWithQR(),
     ]);
 
-    const failedAttempts = recentLogs.filter((log) => !log.success);
+    // Get staff QR codes with scan history
+    const staffQRCodes = await Promise.all(
+      activeStaffs.map(async (staffInfo) => {
+        const today = new Date().toISOString().split("T")[0];
+        const todayScans = staffInfo.scanHistory.filter((log) =>
+          log.created_at.startsWith(today)
+        ).length;
+
+        const lastScan = staffInfo.scanHistory[0];
+
+        return {
+          staffId: staffInfo.staff.id,
+          staffName: staffInfo.staff.full_name,
+          qrCode: staffInfo.qrCode,
+          todayScans,
+          lastScan,
+        };
+      })
+    );
 
     return {
       stats,
-      recentLogs,
-      activeQRCodes: activeStaffs,
-      failedAttempts,
+      staffQRCodes,
     };
   }
 
@@ -640,10 +655,7 @@ export class QRCodeService extends BaseService {
     return result;
   }
 
-  async getScanHistory(params: {
-    staffId?: string;
-    limit?: number;
-  }): Promise<QRAttendanceHistory[]> {
+  async getScanHistory(params: { staffId?: string; limit?: number }) {
     let query = this.supabase.from("qr_attendance_logs").select(`
         *,
         staff:staffs!staff_id (
@@ -667,11 +679,19 @@ export class QRCodeService extends BaseService {
     if (error) this.handleError(error);
 
     return (data || []).map((log) => ({
-      log,
-      staff: log.staff,
+      id: log.id,
+      staffId: log.staff_id,
+      actionType: log.action_type,
       success: log.success,
+      locationData: log.location_data,
+      deviceInfo: log.device_info,
       errorMessage: log.error_message,
-    })) as QRAttendanceHistory[];
+      createdAt: log.created_at,
+      staff: {
+        id: log.staff.id,
+        fullName: log.staff.full_name,
+      },
+    }));
   }
 }
 

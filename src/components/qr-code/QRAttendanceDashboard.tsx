@@ -172,12 +172,12 @@ export function QRAttendanceDashboard() {
                           {staff.qrCode ? (
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                staff.qrCode.isActive
+                                staff.qrCode.is_active
                                   ? "bg-green-100 text-green-800"
                                   : "bg-gray-100 text-gray-800"
                               }`}
                             >
-                              {staff.qrCode.isActive ? "有効" : "無効"}
+                              {staff.qrCode.is_active ? "有効" : "無効"}
                             </span>
                           ) : (
                             <span className="text-sm text-gray-500">
@@ -188,7 +188,7 @@ export function QRAttendanceDashboard() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {staff.qrCode
                             ? format(
-                                new Date(staff.qrCode.expiresAt),
+                                new Date(staff.qrCode.expires_at),
                                 "MM/dd HH:mm",
                                 { locale: ja }
                               )
@@ -200,7 +200,7 @@ export function QRAttendanceDashboard() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {staff.lastScan
                             ? format(
-                                new Date(staff.lastScan.createdAt),
+                                new Date(staff.lastScan.created_at),
                                 "HH:mm",
                                 { locale: ja }
                               )

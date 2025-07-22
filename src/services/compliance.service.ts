@@ -97,6 +97,11 @@ export class ComplianceService extends BaseService {
       .select(
         `
         *,
+        customer:customers!customer_id (
+          id,
+          name,
+          phone_number
+        ),
         verified_staff:staffs!verified_by (
           id,
           full_name
@@ -107,7 +112,7 @@ export class ComplianceService extends BaseService {
       .order("verification_date", { ascending: false });
 
     if (error) this.handleError(error);
-    return this.toCamelCase(data || []);
+    return this.toCamelCase(data || []) as IdVerificationWithCustomer[];
   }
 
   async searchIdVerifications(params: {
