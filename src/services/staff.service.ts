@@ -1,5 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { BaseService } from "./base.service";
 import type { Database } from "@/types/database.types";
 import type {
   Staff,
@@ -10,27 +9,27 @@ import type {
   UpdateCastProfileData,
 } from "@/types/staff.types";
 
-export class StaffService {
-  private supabase: SupabaseClient<Database>;
-
+export class StaffService extends BaseService {
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   async createStaff(data: CreateStaffData): Promise<Staff> {
     const { data: staff, error } = await this.supabase
       .from("staffs")
-      .insert({
-        user_id: data.userId,
-        full_name: data.fullName,
-        role: data.role,
-        hire_date: data.hireDate || new Date().toISOString().split("T")[0],
-      })
+      .insert(
+        this.toSnakeCase({
+          userId: data.userId,
+          fullName: data.fullName,
+          role: data.role,
+          hireDate: data.hireDate || new Date().toISOString().split("T")[0],
+        })
+      )
       .select()
       .single();
 
     if (error) {
-      throw new Error(`Failed to create staff: ${error.message}`);
+      this.handleError(error, "スタッフの作成に失敗しました");
     }
 
     return this.mapToStaff(staff);
@@ -47,7 +46,7 @@ export class StaffService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`Failed to fetch staff: ${error.message}`);
+      this.handleError(error, "スタッフの取得に失敗しました");
     }
 
     return this.mapToStaff(data);
@@ -64,7 +63,7 @@ export class StaffService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`Failed to fetch staff by user ID: ${error.message}`);
+      this.handleError(error, "ユーザーIDでスタッフの取得に失敗しました");
     }
 
     return this.mapToStaff(data);
@@ -77,7 +76,7 @@ export class StaffService {
       .order("created_at", { ascending: false });
 
     if (error) {
-      throw new Error(`Failed to fetch staff list: ${error.message}`);
+      this.handleError(error, "スタッフ一覧の取得に失敗しました");
     }
 
     return data.map(this.mapToStaff);
@@ -86,17 +85,19 @@ export class StaffService {
   async updateStaff(id: string, data: UpdateStaffData): Promise<Staff> {
     const { data: staff, error } = await this.supabase
       .from("staffs")
-      .update({
-        full_name: data.fullName,
-        role: data.role,
-        is_active: data.isActive,
-      })
+      .update(
+        this.toSnakeCase({
+          fullName: data.fullName,
+          role: data.role,
+          isActive: data.isActive,
+        })
+      )
       .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      throw new Error(`Failed to update staff: ${error.message}`);
+      this.handleError(error, "スタッフの更新に失敗しました");
     }
 
     return this.mapToStaff(staff);
@@ -106,7 +107,7 @@ export class StaffService {
     const { error } = await this.supabase.from("staffs").delete().eq("id", id);
 
     if (error) {
-      throw new Error(`Failed to delete staff: ${error.message}`);
+      this.handleError(error, "スタッフの削除に失敗しました");
     }
   }
 
@@ -125,7 +126,7 @@ export class StaffService {
       .single();
 
     if (error) {
-      throw new Error(`Failed to create cast profile: ${error.message}`);
+      this.handleError(error, "キャストプロフィールの作成に失敗しました");
     }
 
     return this.mapToCastProfile(profile);
@@ -142,7 +143,7 @@ export class StaffService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`Failed to fetch cast profile: ${error.message}`);
+      this.handleError(error, "キャストプロフィールの取得に失敗しました");
     }
 
     return this.mapToCastProfile(data);
@@ -155,7 +156,7 @@ export class StaffService {
       .order("created_at", { ascending: false });
 
     if (error) {
-      throw new Error(`Failed to fetch cast profiles: ${error.message}`);
+      this.handleError(error, "キャストプロフィール一覧の取得に失敗しました");
     }
 
     return data.map(this.mapToCastProfile);
@@ -183,7 +184,7 @@ export class StaffService {
       .single();
 
     if (error) {
-      throw new Error(`Failed to update cast profile: ${error.message}`);
+      this.handleError(error, "キャストプロフィールの更新に失敗しました");
     }
 
     return this.mapToCastProfile(profile);
@@ -192,7 +193,7 @@ export class StaffService {
   private mapToStaff(
     data: Database["public"]["Tables"]["staffs"]["Row"]
   ): Staff {
-    return {
+    return this.toCamelCase({
       id: data.id,
       userId: data.user_id,
       fullName: data.full_name,
@@ -201,7 +202,7 @@ export class StaffService {
       isActive: data.is_active,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    };
+    }) as Staff;
   }
 
   private mapToCastProfile(
