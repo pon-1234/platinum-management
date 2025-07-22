@@ -49,7 +49,7 @@ export const validateDate = (date: string): boolean => {
 // Error message utilities
 export const getErrorMessage = (error: unknown): string => {
   if (error instanceof z.ZodError) {
-    return error.errors[0]?.message || "バリデーションエラーが発生しました";
+    return error.issues[0]?.message || "バリデーションエラーが発生しました";
   }
   if (error instanceof Error) {
     return error.message;

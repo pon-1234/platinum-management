@@ -1,5 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { BaseService } from "./base.service";
 import type { Database } from "@/types/database.types";
 import type {
   Product,
@@ -20,33 +19,9 @@ import type {
   DailyReport,
 } from "@/types/billing.types";
 
-export class BillingService {
-  private supabase: SupabaseClient<Database>;
-
+export class BillingService extends BaseService {
   constructor() {
-    this.supabase = createClient();
-  }
-
-  // Helper method to get current staff ID
-  private async getCurrentStaffId(): Promise<string> {
-    const {
-      data: { user },
-    } = await this.supabase.auth.getUser();
-    if (!user) {
-      throw new Error("認証が必要です");
-    }
-
-    const { data: staff, error } = await this.supabase
-      .from("staffs")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (error || !staff) {
-      throw new Error("スタッフ情報が見つかりません");
-    }
-
-    return staff.id;
+    super();
   }
 
   // ============= PRODUCT MANAGEMENT =============
@@ -71,7 +46,7 @@ export class BillingService {
       .single();
 
     if (error) {
-      throw new Error(`商品の作成に失敗しました: ${error.message}`);
+      this.handleError(error, "商品の作成に失敗しました");
     }
 
     return this.mapToProduct(product);
@@ -88,7 +63,7 @@ export class BillingService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`商品情報の取得に失敗しました: ${error.message}`);
+      this.handleError(error, "商品情報の取得に失敗しました");
     }
 
     return this.mapToProduct(data);
@@ -130,7 +105,7 @@ export class BillingService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`商品の検索に失敗しました: ${error.message}`);
+      this.handleError(error, "商品の検索に失敗しました");
     }
 
     return data.map(this.mapToProduct);
@@ -161,7 +136,7 @@ export class BillingService {
       .single();
 
     if (error) {
-      throw new Error(`商品の更新に失敗しました: ${error.message}`);
+      this.handleError(error, "商品の更新に失敗しました");
     }
 
     return this.mapToProduct(product);
@@ -174,7 +149,7 @@ export class BillingService {
       .eq("id", id);
 
     if (error) {
-      throw new Error(`商品の削除に失敗しました: ${error.message}`);
+      this.handleError(error, "商品の削除に失敗しました");
     }
   }
 
@@ -198,7 +173,7 @@ export class BillingService {
       .single();
 
     if (error) {
-      throw new Error(`来店記録の作成に失敗しました: ${error.message}`);
+      this.handleError(error, "来店記録の作成に失敗しました");
     }
 
     return this.mapToVisit(visit);
@@ -215,7 +190,7 @@ export class BillingService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`来店記録の取得に失敗しました: ${error.message}`);
+      this.handleError(error, "来店記録の取得に失敗しました");
     }
 
     return this.mapToVisit(data);
@@ -242,7 +217,7 @@ export class BillingService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`来店記録の詳細取得に失敗しました: ${error.message}`);
+      this.handleError(error, "来店記録の詳細取得に失敗しました");
     }
 
     return this.mapToVisitWithDetails(data);
@@ -292,7 +267,7 @@ export class BillingService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`来店記録の検索に失敗しました: ${error.message}`);
+      this.handleError(error, "来店記録の検索に失敗しました");
     }
 
     return data.map(this.mapToVisit);
@@ -330,7 +305,7 @@ export class BillingService {
       .single();
 
     if (error) {
-      throw new Error(`来店記録の更新に失敗しました: ${error.message}`);
+      this.handleError(error, "来店記録の更新に失敗しました");
     }
 
     return this.mapToVisit(visit);
@@ -346,7 +321,10 @@ export class BillingService {
     if (!unitPrice) {
       const product = await this.getProductById(data.productId);
       if (!product) {
-        throw new Error("商品が見つかりません");
+        this.handleError(
+          new Error("商品が見つかりません"),
+          "商品が見つかりません"
+        );
       }
       unitPrice = product.price;
     }
@@ -366,7 +344,7 @@ export class BillingService {
       .single();
 
     if (error) {
-      throw new Error(`注文の追加に失敗しました: ${error.message}`);
+      this.handleError(error, "注文の追加に失敗しました");
     }
 
     return this.mapToOrderItem(orderItem);
@@ -383,7 +361,7 @@ export class BillingService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(`注文項目の取得に失敗しました: ${error.message}`);
+      this.handleError(error, "注文項目の取得に失敗しました");
     }
 
     return this.mapToOrderItem(data);
@@ -431,7 +409,7 @@ export class BillingService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`注文項目の検索に失敗しました: ${error.message}`);
+      this.handleError(error, "注文項目の検索に失敗しました");
     }
 
     return data.map(this.mapToOrderItem);
@@ -456,7 +434,7 @@ export class BillingService {
       .single();
 
     if (error) {
-      throw new Error(`注文項目の更新に失敗しました: ${error.message}`);
+      this.handleError(error, "注文項目の更新に失敗しました");
     }
 
     return this.mapToOrderItem(orderItem);
@@ -469,7 +447,7 @@ export class BillingService {
       .eq("id", id);
 
     if (error) {
-      throw new Error(`注文項目の削除に失敗しました: ${error.message}`);
+      this.handleError(error, "注文項目の削除に失敗しました");
     }
   }
 
@@ -481,7 +459,7 @@ export class BillingService {
     });
 
     if (error) {
-      throw new Error(`料金計算に失敗しました: ${error.message}`);
+      this.handleError(error, "料金計算に失敗しました");
     }
 
     if (!data || data.length === 0) {

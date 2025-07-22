@@ -1,5 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { BaseService } from "./base.service";
 import type { Database } from "@/types/database.types";
 import type {
   ShiftTemplate,
@@ -23,33 +22,9 @@ import type {
   DailySchedule,
 } from "@/types/attendance.types";
 
-export class AttendanceService {
-  private supabase: SupabaseClient<Database>;
-
+export class AttendanceService extends BaseService {
   constructor() {
-    this.supabase = createClient();
-  }
-
-  // Helper method to get current staff ID
-  async getCurrentStaffId(): Promise<string> {
-    const {
-      data: { user },
-    } = await this.supabase.auth.getUser();
-    if (!user) {
-      throw new Error("認証が必要です");
-    }
-
-    const { data: staff, error } = await this.supabase
-      .from("staffs")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (error || !staff) {
-      throw new Error("スタッフ情報が見つかりません");
-    }
-
-    return staff.id;
+    super();
   }
 
   // ============= SHIFT TEMPLATE MANAGEMENT =============
@@ -61,22 +36,22 @@ export class AttendanceService {
 
     const { data: template, error } = await this.supabase
       .from("shift_templates")
-      .insert({
-        name: data.name,
-        start_time: data.startTime,
-        end_time: data.endTime,
-        days_of_week: data.daysOfWeek,
-        is_active: data.isActive ?? true,
-        created_by: staffId,
-        updated_by: staffId,
-      })
+      .insert(
+        this.toSnakeCase({
+          name: data.name,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          daysOfWeek: data.daysOfWeek,
+          isActive: data.isActive ?? true,
+          createdBy: staffId,
+          updatedBy: staffId,
+        })
+      )
       .select()
       .single();
 
     if (error) {
-      throw new Error(
-        `シフトテンプレートの作成に失敗しました: ${error.message}`
-      );
+      this.handleError(error, "シフトテンプレートの作成に失敗しました");
     }
 
     return this.mapToShiftTemplate(template);
@@ -93,9 +68,7 @@ export class AttendanceService {
       if (error.code === "PGRST116") {
         return null;
       }
-      throw new Error(
-        `シフトテンプレートの取得に失敗しました: ${error.message}`
-      );
+      this.handleError(error, "シフトテンプレートの取得に失敗しました");
     }
 
     return this.mapToShiftTemplate(data);
@@ -108,9 +81,7 @@ export class AttendanceService {
       .order("name");
 
     if (error) {
-      throw new Error(
-        `シフトテンプレートの取得に失敗しました: ${error.message}`
-      );
+      this.handleError(error, "シフトテンプレートの取得に失敗しました");
     }
 
     return data.map(this.mapToShiftTemplate);
@@ -122,16 +93,10 @@ export class AttendanceService {
   ): Promise<ShiftTemplate> {
     const staffId = await this.getCurrentStaffId();
 
-    const updateData: Record<string, unknown> = {
-      updated_by: staffId,
-    };
-
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.startTime !== undefined) updateData.start_time = data.startTime;
-    if (data.endTime !== undefined) updateData.end_time = data.endTime;
-    if (data.daysOfWeek !== undefined)
-      updateData.days_of_week = data.daysOfWeek;
-    if (data.isActive !== undefined) updateData.is_active = data.isActive;
+    const updateData = this.toSnakeCase({
+      updatedBy: staffId,
+      ...data,
+    });
 
     const { data: template, error } = await this.supabase
       .from("shift_templates")
@@ -141,9 +106,7 @@ export class AttendanceService {
       .single();
 
     if (error) {
-      throw new Error(
-        `シフトテンプレートの更新に失敗しました: ${error.message}`
-      );
+      this.handleError(error, "シフトテンプレートの更新に失敗しました");
     }
 
     return this.mapToShiftTemplate(template);
@@ -156,9 +119,7 @@ export class AttendanceService {
       .eq("id", id);
 
     if (error) {
-      throw new Error(
-        `シフトテンプレートの削除に失敗しました: ${error.message}`
-      );
+      this.handleError(error, "シフトテンプレートの削除に失敗しました");
     }
   }
 
@@ -169,18 +130,20 @@ export class AttendanceService {
   ): Promise<ShiftRequest> {
     const { data: request, error } = await this.supabase
       .from("shift_requests")
-      .insert({
-        cast_id: data.castId,
-        request_date: data.requestDate,
-        start_time: data.startTime,
-        end_time: data.endTime,
-        notes: data.notes || null,
-      })
+      .insert(
+        this.toSnakeCase({
+          castId: data.castId,
+          requestDate: data.requestDate,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          notes: data.notes || null,
+        })
+      )
       .select()
       .single();
 
     if (error) {
-      throw new Error(`シフト申請の作成に失敗しました: ${error.message}`);
+      this.handleError(error, "シフト申請の作成に失敗しました");
     }
 
     return this.mapToShiftRequest(request);
@@ -224,7 +187,7 @@ export class AttendanceService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`シフト申請の検索に失敗しました: ${error.message}`);
+      this.handleError(error, "シフト申請の検索に失敗しました");
     }
 
     return data.map(this.mapToShiftRequest);
@@ -254,7 +217,7 @@ export class AttendanceService {
       .single();
 
     if (error) {
-      throw new Error(`シフト申請の承認処理に失敗しました: ${error.message}`);
+      this.handleError(error, "シフト申請の承認処理に失敗しました");
     }
 
     return this.mapToShiftRequest(request);
@@ -283,7 +246,7 @@ export class AttendanceService {
       .single();
 
     if (error) {
-      throw new Error(`確定シフトの作成に失敗しました: ${error.message}`);
+      this.handleError(error, "確定シフトの作成に失敗しました");
     }
 
     return this.mapToConfirmedShift(shift);
@@ -327,7 +290,7 @@ export class AttendanceService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`確定シフトの検索に失敗しました: ${error.message}`);
+      this.handleError(error, "確定シフトの検索に失敗しました");
     }
 
     return data.map(this.mapToConfirmedShift);
@@ -407,7 +370,7 @@ export class AttendanceService {
       .single();
 
     if (error) {
-      throw new Error(`出勤記録の作成に失敗しました: ${error.message}`);
+      this.handleError(error, "出勤記録の作成に失敗しました");
     }
 
     return this.mapToAttendanceRecord(record);
@@ -451,7 +414,7 @@ export class AttendanceService {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(`出勤記録の検索に失敗しました: ${error.message}`);
+      this.handleError(error, "出勤記録の検索に失敗しました");
     }
 
     return data.map(this.mapToAttendanceRecord);
@@ -486,12 +449,15 @@ export class AttendanceService {
         .single();
 
       if (!updatedRecord) {
-        throw new Error("出勤記録の作成に失敗しました");
+        this.handleError(
+          new Error("出勤記録の作成に失敗しました"),
+          "出勤記録の作成に失敗しました"
+        );
       }
 
       currentRecord = updatedRecord;
     } else if (error) {
-      throw new Error(`出勤記録の取得に失敗しました: ${error.message}`);
+      this.handleError(error, "出勤記録の取得に失敗しました");
     }
 
     // Update the record based on action type
@@ -525,7 +491,7 @@ export class AttendanceService {
       .single();
 
     if (updateError) {
-      throw new Error(`出勤記録の更新に失敗しました: ${updateError.message}`);
+      this.handleError(updateError, "出勤記録の更新に失敗しました");
     }
 
     return this.mapToAttendanceRecord(updatedRecord);
@@ -638,7 +604,7 @@ export class AttendanceService {
   private mapToShiftTemplate(
     data: Database["public"]["Tables"]["shift_templates"]["Row"]
   ): ShiftTemplate {
-    return {
+    return this.toCamelCase({
       id: data.id,
       name: data.name,
       startTime: data.start_time,
@@ -649,13 +615,13 @@ export class AttendanceService {
       updatedBy: data.updated_by,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    };
+    }) as ShiftTemplate;
   }
 
   private mapToShiftRequest(
     data: Database["public"]["Tables"]["shift_requests"]["Row"]
   ): ShiftRequest {
-    return {
+    return this.toCamelCase({
       id: data.id,
       castId: data.cast_id,
       requestDate: data.request_date,
@@ -668,7 +634,7 @@ export class AttendanceService {
       rejectionReason: data.rejection_reason,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    };
+    }) as ShiftRequest;
   }
 
   private mapToConfirmedShift(

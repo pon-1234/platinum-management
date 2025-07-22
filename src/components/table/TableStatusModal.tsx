@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { X } from "lucide-react";
 import { tableService } from "@/services/table.service";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import { LoadingSpinner, ErrorMessage } from "@/components/common";
+import {
+  tableStatusUpdateSchema,
+  TableStatusUpdateData,
+} from "@/lib/validations/table";
 import type { Table, TableStatus } from "@/types/reservation.types";
 
 interface TableStatusModalProps {
@@ -45,33 +50,34 @@ export function TableStatusModal({
   onClose,
   onStatusUpdate,
 }: TableStatusModalProps) {
-  const [selectedStatus, setSelectedStatus] = useState<TableStatus>(
-    table.currentStatus
-  );
-  const [isUpdating, setIsUpdating] = useState(false);
+  const form = useFormValidation<TableStatusUpdateData>({
+    schema: tableStatusUpdateSchema,
+    defaultValues: {
+      status: table.currentStatus,
+    },
+  });
 
   if (!isOpen) return null;
 
-  const handleStatusUpdate = async () => {
-    if (selectedStatus === table.currentStatus) {
+  const handleSubmit = async (data: TableStatusUpdateData) => {
+    if (data.status === table.currentStatus) {
       onClose();
       return;
     }
 
-    setIsUpdating(true);
     try {
-      await tableService.updateTableStatus(table.id, selectedStatus);
+      await tableService.updateTableStatus(table.id, data.status);
       if (onStatusUpdate) {
         onStatusUpdate();
       }
       onClose();
     } catch (error) {
       console.error("Failed to update table status:", error);
-      alert("ステータスの更新に失敗しました");
-    } finally {
-      setIsUpdating(false);
+      throw new Error("ステータスの更新に失敗しました");
     }
   };
+
+  const selectedStatus = form.watch("status");
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -83,12 +89,16 @@ export function TableStatusModal({
         />
 
         {/* Modal */}
-        <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+        <form
+          onSubmit={form.handleAsyncSubmit(handleSubmit)}
+          className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
+        >
           <div className="absolute right-0 top-0 pr-4 pt-4">
             <button
               type="button"
               className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               onClick={onClose}
+              disabled={form.formState.isSubmitting}
             >
               <span className="sr-only">閉じる</span>
               <X className="h-6 w-6" />
@@ -100,6 +110,13 @@ export function TableStatusModal({
               <h3 className="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100">
                 テーブルステータス変更
               </h3>
+
+              {/* Form Error */}
+              {form.formState.errors.root && (
+                <div className="mt-2">
+                  <ErrorMessage message={form.formState.errors.root.message!} />
+                </div>
+              )}
 
               <div className="mt-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -128,13 +145,10 @@ export function TableStatusModal({
                   >
                     <input
                       type="radio"
-                      name="status"
+                      {...form.register("status")}
                       value={option.value}
-                      checked={selectedStatus === option.value}
-                      onChange={(e) =>
-                        setSelectedStatus(e.target.value as TableStatus)
-                      }
                       className="sr-only"
+                      disabled={form.formState.isSubmitting}
                     />
                     <div className="flex flex-1">
                       <div className="flex flex-col">
@@ -160,27 +174,37 @@ export function TableStatusModal({
                   </label>
                 ))}
               </div>
+
+              {/* Field Error */}
+              {form.formState.errors.status && (
+                <div className="mt-2">
+                  <ErrorMessage
+                    message={form.formState.errors.status.message!}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse">
             <button
-              type="button"
-              disabled={isUpdating}
-              onClick={handleStatusUpdate}
-              className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto"
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto items-center gap-2"
             >
-              {isUpdating ? "更新中..." : "更新"}
+              {form.formState.isSubmitting && <LoadingSpinner size="sm" />}
+              {form.formState.isSubmitting ? "更新中..." : "更新"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 sm:mt-0 sm:w-auto"
+              disabled={form.formState.isSubmitting}
+              className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 sm:mt-0 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               キャンセル
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
