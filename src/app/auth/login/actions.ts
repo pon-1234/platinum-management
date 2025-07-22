@@ -37,7 +37,7 @@ export async function signInWithValidation(data: LoginFormData) {
 
   const supabase = await createClient();
 
-  const { data: authData, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email: validatedData.email,
     password: validatedData.password,
   });
@@ -48,12 +48,6 @@ export async function signInWithValidation(data: LoginFormData) {
         ? "メールアドレスまたはパスワードが間違っています"
         : error.message
     );
-  }
-
-  // Ensure session is properly established
-  if (authData.session) {
-    // Force refresh the session to ensure cookies are set
-    await supabase.auth.getSession();
   }
 
   // Server Action automatically handles cookies and state
