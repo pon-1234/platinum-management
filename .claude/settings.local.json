@@ -65,7 +65,8 @@
       "WebFetch(domain:github.com)",
       "Bash(/Users/pon/dev/platinum-management/bin/gemini-analyze:*)",
       "Bash(git fetch:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": []
   }
