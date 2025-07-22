@@ -541,7 +541,9 @@ export class BillingService {
       .filter((v) => v.paymentMethod === "cash")
       .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
     const totalCard = visits
-      .filter((v) => v.paymentMethod === "card")
+      .filter(
+        (v) => v.paymentMethod === "card" || v.paymentMethod === "credit_card"
+      )
       .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
 
     // Get order items for the day
@@ -599,7 +601,10 @@ export class BillingService {
       taxAmount: data.tax_amount,
       totalAmount: data.total_amount,
       paymentMethod: data.payment_method,
-      paymentStatus: data.payment_status as "pending" | "paid" | "cancelled",
+      paymentStatus: data.payment_status as
+        | "pending"
+        | "completed"
+        | "cancelled",
       status: data.status as "active" | "completed" | "cancelled",
       notes: data.notes,
       createdBy: data.created_by,
@@ -629,18 +634,40 @@ export class BillingService {
   private mapToVisitWithDetails(
     data: Record<string, unknown>
   ): VisitWithDetails {
-    const visit = this.mapToVisit(data);
+    const visit = this.mapToVisit(
+      data as Database["public"]["Tables"]["visits"]["Row"]
+    );
+    const customerData = data.customer as {
+      id: string;
+      name: string;
+      phone_number: string | null;
+    } | null;
+    const orderItemsData = data.order_items as Array<{
+      id: number;
+      visit_id: string;
+      product_id: number;
+      cast_id: string | null;
+      quantity: number;
+      unit_price: number;
+      total_price: number;
+      notes: string | null;
+      created_by: string;
+      created_at: string;
+      product?: Database["public"]["Tables"]["products"]["Row"];
+      cast?: { id: string; full_name: string };
+    }> | null;
+
     return {
       ...visit,
-      customer: data.customer
+      customer: customerData
         ? {
-            id: data.customer.id,
-            name: data.customer.name,
-            phoneNumber: data.customer.phone_number,
+            id: customerData.id,
+            name: customerData.name,
+            phoneNumber: customerData.phone_number,
           }
         : undefined,
       orderItems:
-        data.order_items?.map((item: Record<string, unknown>) => ({
+        orderItemsData?.map((item) => ({
           ...this.mapToOrderItem(item),
           product: item.product ? this.mapToProduct(item.product) : undefined,
           cast: item.cast

@@ -119,9 +119,13 @@ export interface QRScanHistory {
 // QR管理データ
 export interface QRManagementData {
   stats: QRCodeStats;
-  recentLogs: QRAttendanceHistory[];
-  activeQRCodes: StaffQRInfo[];
-  failedAttempts: QRAttendanceHistory[];
+  staffQRCodes: {
+    staffId: string;
+    staffName: string;
+    qrCode?: QRCode;
+    todayScans: number;
+    lastScan?: QRAttendanceLog;
+  }[];
 }
 
 // スタッフQR情報

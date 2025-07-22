@@ -47,8 +47,8 @@ interface AttendanceState {
   createShiftRequest: (data: {
     requestDate: string;
     shiftType: string;
-    startTime?: string;
-    endTime?: string;
+    startTime: string;
+    endTime: string;
     reason?: string;
   }) => Promise<void>;
 
@@ -130,13 +130,11 @@ export const useAttendanceStore = create<AttendanceState>()(
       clockIn: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current user to get staff ID
-          const {
-            data: { user },
-          } = await attendanceService["supabase"].auth.getUser();
-          if (!user) throw new Error("ユーザーが見つかりません");
+          // Get current staff ID through the service
+          const staffId = await attendanceService["getCurrentStaffId"]();
+          if (!staffId) throw new Error("スタッフIDが見つかりません");
 
-          await attendanceService.clockAction(user.id, {
+          await attendanceService.clockAction(staffId, {
             type: "clock_in",
             timestamp: new Date().toISOString(),
             notes,
@@ -155,13 +153,11 @@ export const useAttendanceStore = create<AttendanceState>()(
       clockOut: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current user to get staff ID
-          const {
-            data: { user },
-          } = await attendanceService["supabase"].auth.getUser();
-          if (!user) throw new Error("ユーザーが見つかりません");
+          // Get current staff ID through the service
+          const staffId = await attendanceService["getCurrentStaffId"]();
+          if (!staffId) throw new Error("スタッフIDが見つかりません");
 
-          await attendanceService.clockAction(user.id, {
+          await attendanceService.clockAction(staffId, {
             type: "clock_out",
             timestamp: new Date().toISOString(),
             notes,
@@ -179,13 +175,11 @@ export const useAttendanceStore = create<AttendanceState>()(
       startBreak: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current user to get staff ID
-          const {
-            data: { user },
-          } = await attendanceService["supabase"].auth.getUser();
-          if (!user) throw new Error("ユーザーが見つかりません");
+          // Get current staff ID through the service
+          const staffId = await attendanceService["getCurrentStaffId"]();
+          if (!staffId) throw new Error("スタッフIDが見つかりません");
 
-          await attendanceService.clockAction(user.id, {
+          await attendanceService.clockAction(staffId, {
             type: "break_start",
             timestamp: new Date().toISOString(),
             notes,
@@ -203,13 +197,11 @@ export const useAttendanceStore = create<AttendanceState>()(
       endBreak: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current user to get staff ID
-          const {
-            data: { user },
-          } = await attendanceService["supabase"].auth.getUser();
-          if (!user) throw new Error("ユーザーが見つかりません");
+          // Get current staff ID through the service
+          const staffId = await attendanceService["getCurrentStaffId"]();
+          if (!staffId) throw new Error("スタッフIDが見つかりません");
 
-          await attendanceService.clockAction(user.id, {
+          await attendanceService.clockAction(staffId, {
             type: "break_end",
             timestamp: new Date().toISOString(),
             notes,
@@ -227,15 +219,16 @@ export const useAttendanceStore = create<AttendanceState>()(
       createShiftRequest: async (data) => {
         set({ requestsLoading: true, error: null });
         try {
-          // Get current user to get staff/cast ID
-          const {
-            data: { user },
-          } = await attendanceService["supabase"].auth.getUser();
-          if (!user) throw new Error("ユーザーが見つかりません");
+          // Get current staff ID through the service
+          const staffId = await attendanceService["getCurrentStaffId"]();
+          if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.createShiftRequest({
-            ...data,
-            castId: user.id, // Add required castId
+            castId: staffId,
+            requestDate: data.requestDate,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            notes: data.reason,
           });
           // Refresh shift requests after creation
           const { fetchShiftRequests } = get();

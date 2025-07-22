@@ -84,7 +84,11 @@ export const useCastStore = create<CastState>()(
       fetchPerformances: async (params) => {
         set({ performanceLoading: true, error: null });
         try {
-          const performances = await castService.getCastPerformances(params);
+          const performances = await castService.getCastPerformances({
+            castId: params.castId,
+            startDate: params.startDate?.toISOString().split("T")[0],
+            endDate: params.endDate?.toISOString().split("T")[0],
+          });
           set({ performances, performanceLoading: false });
         } catch (error) {
           const errorMessage =

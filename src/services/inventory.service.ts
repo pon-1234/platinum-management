@@ -39,9 +39,14 @@ export class InventoryService {
     }
 
     if (filter?.isLowStock) {
-      query = query.lt(
-        "stock_quantity",
-        this.supabase.raw("low_stock_threshold")
+      // Get products where stock_quantity < low_stock_threshold
+      // Since Supabase doesn't have raw() method, we'll filter in post-processing
+      const { data: allProducts, error } = await query;
+      if (error) {
+        throw new Error(`商品取得エラー: ${error.message}`);
+      }
+      return (allProducts || []).filter(
+        (product) => product.stock_quantity < product.low_stock_threshold
       );
     }
 
@@ -376,24 +381,24 @@ export class InventoryService {
       });
     });
 
-    const topMovedProducts = Array.from(productMovements.entries())
+    // Get top moved products with actual product data
+    const topProductIds = Array.from(productMovements.entries())
       .sort((a, b) => b[1].quantity - a[1].quantity)
       .slice(0, 5)
-      .map(([productId, stats]) => {
-        movements.find((m) => m.product_id === productId);
-        // Placeholder for product data - in real implementation, fetch from products table
-        const product = {
-          id: productId,
-          name: "Product",
-          category: "Category",
-          price: 0,
-        };
-        return {
+      .map(([productId]) => productId);
+
+    const topMovedProducts = [];
+    for (const productId of topProductIds) {
+      const product = await this.getProductById(productId);
+      const stats = productMovements.get(productId)!;
+      if (product) {
+        topMovedProducts.push({
           product,
           totalQuantity: stats.quantity,
           movementCount: stats.count,
-        };
-      });
+        });
+      }
+    }
 
     return {
       startDate,

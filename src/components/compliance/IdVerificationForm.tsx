@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { IdTypes } from "@/types/compliance.types";
 import { z } from "zod";
 import { toast } from "react-hot-toast";
+import type { Json } from "@/types/database.types";
 
 // Form-specific schema that matches the component's needs
 const idVerificationFormSchema = z.object({
@@ -106,7 +107,7 @@ export function IdVerificationForm({
         id_image_url: data.idImageUrl,
         birth_date: data.birthDate,
         expiry_date: data.expiryDate,
-        ocr_result: data.ocrResult || null,
+        ocr_result: (data.ocrResult as Json) || null,
         is_verified: data.isVerified,
         notes: data.notes,
       };
