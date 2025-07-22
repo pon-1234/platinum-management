@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { castService } from "@/services/cast.service";
-import { castPerformanceService } from "@/services/cast-performance.service";
-import type { Cast, CastPerformance } from "@/types/cast.types";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
+import { useCastPerformance } from "@/hooks/useCastPerformance";
+import type { Cast } from "@/types/cast.types";
+import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
+/**
+ * @design_doc See doc.md - Cast Performance Metrics Display
+ * @related_to useCastPerformance, CastPerformanceStore - uses centralized state management
+ * @known_issues None currently known
+ */
 interface CastPerformanceMetricsProps {
   castId: string;
 }
@@ -14,46 +18,28 @@ interface CastPerformanceMetricsProps {
 export function CastPerformanceMetrics({
   castId,
 }: CastPerformanceMetricsProps) {
+  const {
+    currentMonthPerformances,
+    performanceTotals,
+    isLoading,
+    error,
+    getCastById,
+  } = useCastPerformance(castId);
+
   const [cast, setCast] = useState<Cast | null>(null);
-  const [performances, setPerformances] = useState<CastPerformance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
+  // Fetch cast details when castId changes
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // Get cast details
-        const castData = await castService.getCastById(castId);
-        if (!castData) {
-          throw new Error("キャストが見つかりません");
-        }
+    const fetchCast = async () => {
+      if (castId) {
+        const castData = await getCastById(castId);
         setCast(castData);
-
-        // Get performances for current month
-        const now = new Date();
-        const startDate = format(startOfMonth(now), "yyyy-MM-dd");
-        const endDate = format(endOfMonth(now), "yyyy-MM-dd");
-
-        const performanceData =
-          await castPerformanceService.getCastPerformances({
-            castId,
-            startDate,
-            endDate,
-          });
-        setPerformances(performanceData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "エラーが発生しました");
-      } finally {
-        setLoading(false);
       }
     };
+    fetchCast();
+  }, [castId, getCastById]);
 
-    fetchData();
-  }, [castId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
         <div
@@ -76,47 +62,40 @@ export function CastPerformanceMetrics({
     return null;
   }
 
-  // Calculate totals
-  const totals = performances.reduce(
-    (acc, perf) => ({
-      shimeiCount: acc.shimeiCount + perf.shimeiCount,
-      dohanCount: acc.dohanCount + perf.dohanCount,
-      salesAmount: acc.salesAmount + perf.salesAmount,
-      drinkCount: acc.drinkCount + perf.drinkCount,
-    }),
-    { shimeiCount: 0, dohanCount: 0, salesAmount: 0, drinkCount: 0 }
+  // Memoize metrics to avoid recalculation on every render
+  const metrics = useMemo(
+    () => [
+      {
+        label: "指名数",
+        value: performanceTotals.shimeiCount,
+        unit: "回",
+        bgColor: "bg-pink-50",
+        textColor: "text-pink-700",
+      },
+      {
+        label: "同伴数",
+        value: performanceTotals.dohanCount,
+        unit: "回",
+        bgColor: "bg-purple-50",
+        textColor: "text-purple-700",
+      },
+      {
+        label: "売上金額",
+        value: performanceTotals.salesAmount.toLocaleString(),
+        unit: "円",
+        bgColor: "bg-green-50",
+        textColor: "text-green-700",
+      },
+      {
+        label: "ドリンク数",
+        value: performanceTotals.drinkCount,
+        unit: "杯",
+        bgColor: "bg-blue-50",
+        textColor: "text-blue-700",
+      },
+    ],
+    [performanceTotals]
   );
-
-  const metrics = [
-    {
-      label: "指名数",
-      value: totals.shimeiCount,
-      unit: "回",
-      bgColor: "bg-pink-50",
-      textColor: "text-pink-700",
-    },
-    {
-      label: "同伴数",
-      value: totals.dohanCount,
-      unit: "回",
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-700",
-    },
-    {
-      label: "売上金額",
-      value: totals.salesAmount.toLocaleString(),
-      unit: "円",
-      bgColor: "bg-green-50",
-      textColor: "text-green-700",
-    },
-    {
-      label: "ドリンク数",
-      value: totals.drinkCount,
-      unit: "杯",
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-700",
-    },
-  ];
 
   return (
     <div className="space-y-4">
@@ -144,7 +123,7 @@ export function CastPerformanceMetrics({
         ))}
       </div>
 
-      {performances.length === 0 && (
+      {currentMonthPerformances.length === 0 && (
         <p className="text-center text-gray-500 py-4">
           今月の成績データはまだありません
         </p>

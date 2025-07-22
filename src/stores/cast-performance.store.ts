@@ -68,6 +68,12 @@ interface CastPerformanceState {
   setShowForm: (show: boolean) => void;
   refreshData: () => void;
 
+  // Cleanup actions
+  clearPerformances: () => void;
+  clearRankings: () => void;
+  clearCompensations: () => void;
+  clearAll: () => void;
+
   // Utility actions
   setError: (error: string | null) => void;
   clearError: () => void;
@@ -120,11 +126,13 @@ export const useCastPerformanceStore = create<CastPerformanceState>()(
         try {
           const updatedPerformance =
             await castPerformanceService.updateCastPerformance(id, data);
-          const { performances } = get();
+          const { performances, refreshData } = get();
           const updatedPerformances = performances.map((p) =>
             p.id === id ? updatedPerformance : p
           );
           set({ performances: updatedPerformances });
+          // Refresh related data that might be affected
+          refreshData();
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "成績の更新に失敗しました";
@@ -215,6 +223,30 @@ export const useCastPerformanceStore = create<CastPerformanceState>()(
 
       clearError: () => {
         set({ error: null });
+      },
+
+      // Cleanup actions
+      clearPerformances: () => {
+        set({ performances: [], selectedPerformance: null });
+      },
+
+      clearRankings: () => {
+        set({ rankings: [] });
+      },
+
+      clearCompensations: () => {
+        set({ compensations: [] });
+      },
+
+      clearAll: () => {
+        set({
+          performances: [],
+          selectedPerformance: null,
+          rankings: [],
+          compensations: [],
+          showForm: false,
+          error: null,
+        });
       },
     }),
     {
