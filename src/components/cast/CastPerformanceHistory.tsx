@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { castService } from "@/services/cast.service";
+import { castPerformanceService } from "@/services/cast-performance.service";
 import type { CastPerformance } from "@/types/cast.types";
 import { format, subMonths } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -29,7 +29,7 @@ export function CastPerformanceHistory({
         const endDate = new Date();
         const startDate = subMonths(endDate, months);
 
-        const data = await castService.getCastPerformances({
+        const data = await castPerformanceService.getCastPerformances({
           castId,
           startDate: format(startDate, "yyyy-MM-dd"),
           endDate: format(endDate, "yyyy-MM-dd"),

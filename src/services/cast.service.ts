@@ -3,27 +3,23 @@ import { camelToSnake, removeUndefined } from "@/lib/utils/transform";
 import type { Database } from "@/types/database.types";
 import type {
   Cast,
-  CastPerformance,
   CreateCastData,
   UpdateCastData,
   UpdateCastProfileData,
-  CreateCastPerformanceData,
-  UpdateCastPerformanceData,
   CastSearchParams,
-  CastPerformanceSearchParams,
-  CastRanking,
-  CastCompensation,
 } from "@/types/cast.types";
 import {
   createCastSchema,
   updateCastSchema,
   updateCastProfileSchema,
-  createCastPerformanceSchema,
-  updateCastPerformanceSchema,
   castSearchSchema,
-  castPerformanceSearchSchema,
 } from "@/lib/validations/cast";
 
+/**
+ * @design_doc See doc.md - Cast Profile Management
+ * @related_to CastPerformanceService, CastCompensationService - separated responsibilities
+ * @known_issues None currently known
+ */
 export class CastService extends BaseService {
   constructor() {
     super();
@@ -204,222 +200,6 @@ export class CastService extends BaseService {
     return data.map(this.mapToCast);
   }
 
-  // Cast performance operations
-  async createCastPerformance(
-    data: CreateCastPerformanceData
-  ): Promise<CastPerformance> {
-    // Validate input
-    const validatedData = createCastPerformanceSchema.parse(data);
-
-    // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
-
-    const { data: performance, error } = await this.supabase
-      .from("cast_performances")
-      .insert({
-        cast_id: validatedData.castId,
-        date: validatedData.date,
-        shimei_count: validatedData.shimeiCount,
-        dohan_count: validatedData.dohanCount,
-        sales_amount: validatedData.salesAmount,
-        drink_count: validatedData.drinkCount,
-        created_by: staffId,
-        updated_by: staffId,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(
-        this.handleDatabaseError(error, "成績の記録に失敗しました")
-      );
-    }
-
-    return this.mapToCastPerformance(performance);
-  }
-
-  async updateCastPerformance(
-    id: string,
-    data: UpdateCastPerformanceData
-  ): Promise<CastPerformance> {
-    // Validate input
-    const validatedData = updateCastPerformanceSchema.parse(data);
-
-    // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
-
-    const transformedData = removeUndefined(camelToSnake(validatedData));
-    const updateData: Record<string, unknown> = {
-      ...transformedData,
-      updated_by: staffId,
-    };
-
-    const { data: performance, error } = await this.supabase
-      .from("cast_performances")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(
-        this.handleDatabaseError(error, "成績の更新に失敗しました")
-      );
-    }
-
-    return this.mapToCastPerformance(performance);
-  }
-
-  async getCastPerformances(
-    params: CastPerformanceSearchParams = {}
-  ): Promise<CastPerformance[]> {
-    // Validate search parameters
-    const validatedParams = castPerformanceSearchSchema.parse(params);
-
-    let query = this.supabase
-      .from("cast_performances")
-      .select("*")
-      .order("date", { ascending: false });
-
-    // Filter by cast ID if provided
-    if (validatedParams.castId) {
-      query = query.eq("cast_id", validatedParams.castId);
-    }
-
-    // Filter by date range
-    if (validatedParams.startDate) {
-      query = query.gte("date", validatedParams.startDate);
-    }
-    if (validatedParams.endDate) {
-      query = query.lte("date", validatedParams.endDate);
-    }
-
-    // Apply pagination
-    query = query.range(
-      validatedParams.offset,
-      validatedParams.offset + validatedParams.limit - 1
-    );
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(
-        this.handleDatabaseError(error, "成績の取得に失敗しました")
-      );
-    }
-
-    return data.map(this.mapToCastPerformance);
-  }
-
-  async getCastRanking(
-    startDate: string,
-    endDate: string,
-    limit: number = 10
-  ): Promise<CastRanking[]> {
-    const { data, error } = await this.supabase.rpc("get_cast_ranking", {
-      start_date: startDate,
-      end_date: endDate,
-      limit_count: limit,
-    });
-
-    if (error) {
-      throw new Error(
-        this.handleDatabaseError(error, "ランキングの取得に失敗しました")
-      );
-    }
-
-    return data || [];
-  }
-
-  async calculateCastCompensation(
-    castId: string,
-    startDate: string,
-    endDate: string
-  ): Promise<CastCompensation> {
-    // Get cast information
-    const cast = await this.getCastById(castId);
-    if (!cast) {
-      throw new Error("キャストが見つかりません");
-    }
-
-    // Get performances in the period
-    const performances = await this.getCastPerformances({
-      castId,
-      startDate,
-      endDate,
-    });
-
-    // Calculate work hours (this would need attendance data in real implementation)
-    // For now, we'll estimate based on the number of days with performances
-    const workDays = new Set(performances.map((p) => p.date)).size;
-    const averageHoursPerDay = 6; // Placeholder
-    const workHours = workDays * averageHoursPerDay;
-
-    // Calculate hourly wage - ensure values are valid numbers
-    const hourlyRate = cast.hourlyRate || 0;
-    const hourlyWage = hourlyRate * workHours;
-
-    // Calculate back amount
-    const totalSales = performances.reduce(
-      (sum, p) => sum + (p.salesAmount || 0),
-      0
-    );
-    const backPercentage = cast.backPercentage || 0;
-    const backAmount = (totalSales * backPercentage) / 100;
-
-    // Total compensation
-    const totalAmount = hourlyWage + backAmount;
-
-    return {
-      castId,
-      cast,
-      period: `${startDate} - ${endDate}`,
-      hourlyWage,
-      backAmount,
-      totalAmount,
-      workHours,
-      performances,
-    };
-  }
-
-  // Batch calculate compensation for multiple casts
-  async calculateMultipleCastsCompensation(
-    castIds: string[],
-    startDate: string,
-    endDate: string
-  ): Promise<(CastCompensation & { castName: string })[]> {
-    const compensations = await Promise.all(
-      castIds.map(async (castId) => {
-        const compensation = await this.calculateCastCompensation(
-          castId,
-          startDate,
-          endDate
-        );
-
-        // Get cast name
-        const { data: cast } = await this.supabase
-          .from("casts_profile")
-          .select("stage_name, staffs!inner(full_name)")
-          .eq("staff_id", castId)
-          .single();
-
-        const castName =
-          cast?.stage_name ||
-          (Array.isArray(cast?.staffs)
-            ? cast.staffs[0]?.full_name
-            : undefined) ||
-          "Unknown";
-
-        return {
-          ...compensation,
-          castName,
-        };
-      })
-    );
-
-    return compensations;
-  }
-
   // Helper methods
 
   private mapToCast(
@@ -440,24 +220,6 @@ export class CastService extends BaseService {
       hourlyRate: data.hourly_rate,
       backPercentage: data.back_percentage,
       isActive: data.is_active,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
-  }
-
-  private mapToCastPerformance(
-    data: Database["public"]["Tables"]["cast_performances"]["Row"]
-  ): CastPerformance {
-    return {
-      id: data.id,
-      castId: data.cast_id,
-      date: data.date,
-      shimeiCount: data.shimei_count,
-      dohanCount: data.dohan_count,
-      salesAmount: data.sales_amount,
-      drinkCount: data.drink_count,
-      createdBy: data.created_by || null,
-      updatedBy: data.updated_by || null,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };

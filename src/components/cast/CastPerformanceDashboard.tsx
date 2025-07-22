@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { CastPerformanceMetrics } from "./CastPerformanceMetrics";
 import { CastPerformanceHistory } from "./CastPerformanceHistory";
 import { CastPerformanceForm } from "./CastPerformanceForm";
+import { useCastPerformance } from "@/hooks/useCastPerformance";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
+/**
+ * @design_doc See doc.md - Cast Performance Dashboard Component
+ * @related_to useCastPerformance, CastPerformanceStore - refactored to use custom hook
+ * @known_issues None currently known
+ */
 interface CastPerformanceDashboardProps {
   castId: string;
   canEdit?: boolean;
@@ -15,13 +20,11 @@ export function CastPerformanceDashboard({
   castId,
   canEdit = false,
 }: CastPerformanceDashboardProps) {
-  const [showForm, setShowForm] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { showForm, setShowForm, refreshData } = useCastPerformance(castId);
 
   const handleFormSuccess = () => {
     setShowForm(false);
-    // Refresh the metrics and history by changing the key
-    setRefreshKey((prev) => prev + 1);
+    refreshData();
   };
 
   return (
@@ -56,14 +59,10 @@ export function CastPerformanceDashboard({
       )}
 
       {/* Current Month Metrics */}
-      <div key={`metrics-${refreshKey}`}>
-        <CastPerformanceMetrics castId={castId} />
-      </div>
+      <CastPerformanceMetrics castId={castId} />
 
       {/* Performance History */}
-      <div key={`history-${refreshKey}`}>
-        <CastPerformanceHistory castId={castId} months={3} />
-      </div>
+      <CastPerformanceHistory castId={castId} months={3} />
     </div>
   );
 }
