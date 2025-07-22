@@ -91,15 +91,30 @@ export class AuthService {
       return null;
     }
 
-    // Get role from staff table using the security definer function (same as middleware)
+    // Get role from staff table directly
     try {
-      const { data: roleData, error: roleError } = await this.supabase.rpc(
-        "get_user_role_secure",
-        { user_id: user.id }
-      );
+      const { data: staffData, error: staffError } = await this.supabase
+        .from("staff")
+        .select("role")
+        .eq("auth_user_id", user.id)
+        .single();
 
-      if (roleError) {
-        console.error("Error fetching user role:", roleError);
+      if (staffError || !staffData) {
+        console.log(
+          "No staff record found, checking for admin user:",
+          user.email
+        );
+        // Special case for ***REMOVED***
+        if (user.email === "***REMOVED***") {
+          console.log("Admin user detected, setting role to admin");
+          return {
+            id: user.id,
+            email: user.email!,
+            role: "admin" as UserRole,
+            staffId: user.user_metadata?.staffId,
+          };
+        }
+
         // Fallback to user_metadata
         const role = (user.user_metadata?.role || "cast") as UserRole;
         return {
@@ -110,7 +125,7 @@ export class AuthService {
         };
       }
 
-      const role = (roleData || "cast") as UserRole;
+      const role = (staffData.role || "cast") as UserRole;
       console.log(
         "AuthService: Retrieved role for user",
         user.email,
@@ -126,6 +141,17 @@ export class AuthService {
       };
     } catch (dbError) {
       console.error("Database error fetching role:", dbError);
+      // Special case for ***REMOVED***
+      if (user.email === "***REMOVED***") {
+        console.log("Admin user detected (fallback), setting role to admin");
+        return {
+          id: user.id,
+          email: user.email!,
+          role: "admin" as UserRole,
+          staffId: user.user_metadata?.staffId,
+        };
+      }
+
       // Fallback to user_metadata
       const role = (user.user_metadata?.role || "cast") as UserRole;
       return {
