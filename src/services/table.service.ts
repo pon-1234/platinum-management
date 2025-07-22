@@ -209,7 +209,7 @@ export class TableService extends BaseService {
       );
     }
 
-    return data?.map(this.mapToTable) || [];
+    return data?.map((item) => this.mapToTable(item)) || [];
   }
 
   // Table status management

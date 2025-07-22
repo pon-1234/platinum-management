@@ -176,7 +176,7 @@ export class CastService extends BaseService {
       );
     }
 
-    return data.map(this.mapToCast);
+    return data.map((item) => this.mapToCast(item));
   }
 
   async searchCasts(params: CastSearchParams = {}): Promise<Cast[]> {
@@ -212,7 +212,7 @@ export class CastService extends BaseService {
       );
     }
 
-    return data.map(this.mapToCast);
+    return data.map((item) => this.mapToCast(item));
   }
 
   // Delete cast

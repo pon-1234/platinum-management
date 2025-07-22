@@ -50,7 +50,7 @@ export const useCastPerformance = (castId?: string) => {
     if (castId) {
       fetchPerformances({ castId });
     }
-  }, [castId, refreshKey, fetchPerformances]);
+  }, [castId, refreshKey]);
 
   // Get cast info and current month performances
   const currentMonthPerformances = useMemo(() => {
