@@ -48,8 +48,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // If user is authenticated and trying to access auth pages
+  // If user is authenticated and trying to access auth pages, redirect to dashboard
   if (user && request.nextUrl.pathname.startsWith("/auth/")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // If user is authenticated and on root path, redirect to dashboard
+  if (user && request.nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -63,7 +68,8 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (!staffData) {
-      // User has no staff record, redirect to login
+      // User has no staff record, sign them out and redirect to login
+      await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
