@@ -215,6 +215,20 @@ export class CastService extends BaseService {
     return data.map(this.mapToCast);
   }
 
+  // Delete cast
+  async deleteCast(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("casts_profile")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      throw new Error(
+        this.handleDatabaseError(error, "キャストの削除に失敗しました")
+      );
+    }
+  }
+
   // Helper methods
 
   private mapToCast(
