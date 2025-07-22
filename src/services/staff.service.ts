@@ -190,9 +190,9 @@ export class StaffService extends BaseService {
     return this.mapToCastProfile(profile);
   }
 
-  private mapToStaff(
+  private mapToStaff = (
     data: Database["public"]["Tables"]["staffs"]["Row"]
-  ): Staff {
+  ): Staff => {
     return this.toCamelCase({
       id: data.id,
       userId: data.user_id,
@@ -203,11 +203,11 @@ export class StaffService extends BaseService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     }) as Staff;
-  }
+  };
 
-  private mapToCastProfile(
+  private mapToCastProfile = (
     data: Database["public"]["Tables"]["casts_profile"]["Row"]
-  ): CastProfile {
+  ): CastProfile => {
     return {
       staffId: data.staff_id,
       nickname: data.stage_name,
@@ -221,7 +221,7 @@ export class StaffService extends BaseService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
-  }
+  };
 }
 
 // Export singleton instance
