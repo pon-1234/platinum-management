@@ -3,6 +3,15 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
+  // COMPLETELY DISABLED FOR AUTH DEBUGGING
+  console.log(`Middleware: COMPLETELY DISABLED for authentication debugging`);
+  return NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // The rest of the code is unreachable but kept for reference
   const response = NextResponse.next({
     request: {
       headers: request.headers,
