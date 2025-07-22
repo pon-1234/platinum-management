@@ -662,7 +662,7 @@ export class AttendanceService extends BaseService {
   private mapToShiftRequest(
     data: Database["public"]["Tables"]["shift_requests"]["Row"]
   ): ShiftRequest {
-    return {
+    return this.toCamelCase({
       id: data.id,
       staffId: data.cast_id, // データベースではcast_idを使用
       shiftTemplateId: null, // デフォルト値
@@ -676,7 +676,7 @@ export class AttendanceService extends BaseService {
       rejectionReason: data.rejection_reason,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    };
+    }) as ShiftRequest;
   }
 
   private mapToConfirmedShift(

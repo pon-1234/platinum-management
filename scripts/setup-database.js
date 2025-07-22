@@ -3,29 +3,27 @@
 const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
 const path = require("path");
-const dotenv = require("dotenv");
 
-// Load environment variables from .env.local file
-dotenv.config({ path: ".env.local" });
-
-// Validate required environment variables
-if (
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  !process.env.SUPABASE_SERVICE_ROLE_KEY
-) {
-  console.error("❌ Missing required environment variables!");
-  console.error("Please ensure your .env.local file contains:");
-  console.error("- NEXT_PUBLIC_SUPABASE_URL");
-  console.error("- SUPABASE_SERVICE_ROLE_KEY");
-  console.error(
-    "\nCopy .env.local.example to .env.local and fill in the values."
-  );
-  process.exit(1);
-}
-
-// Supabase connection using environment variables
+// Supabase connection from environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Validate environment variables
+function validateEnvironment() {
+  const missing = [];
+  if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (missing.length > 0) {
+    console.error("❌ Missing required environment variables:");
+    missing.forEach((var_name) => console.error(`  - ${var_name}`));
+    console.error("\n💡 Please set these in your .env.local file");
+    console.error("📋 For more details, see DATABASE_SETUP.md");
+    process.exit(1);
+  }
+}
+
+validateEnvironment();
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -53,100 +51,50 @@ async function checkTablesExist() {
     .eq("table_schema", "public");
 
   if (error) {
-    console.log("📊 No existing tables found, proceeding with migrations...");
-    return [];
+    console.error("Error checking tables:", error);
+    return false;
   }
 
-  const tableNames = data.map((row) => row.table_name);
-  console.log("📊 Existing tables:", tableNames);
-  return tableNames;
+  const tables = data?.map((t) => t.table_name) || [];
+  return tables.length > 0;
 }
 
-async function runMigrations() {
+async function setupDatabase() {
   console.log("🚀 Starting database setup...\n");
 
-  // Check existing tables
-  const existingTables = await checkTablesExist();
-
-  if (existingTables.includes("staffs")) {
-    console.log("✅ Tables already exist, skipping migrations...");
-  } else {
-    console.log("📦 Running migrations...\n");
-
-    // Read and execute all migrations
-    const migrationsDir = path.join(__dirname, "../supabase/migrations");
-    const migrationFiles = [
-      "20240101000000_create_staff_tables.sql",
-      "20240102000000_create_customer_tables.sql",
-      "20240103000000_update_cast_tables.sql",
-      "20240104000000_create_reservation_tables.sql",
-      "20240105000000_create_billing_tables.sql",
-      "20240106000000_create_attendance_tables.sql",
-      "20240107000000_create_inventory_tables.sql",
-      "20240108000000_create_bottle_keep_tables.sql",
-      "20240109000000_create_compliance_tables.sql",
-    ];
-
-    for (const file of migrationFiles) {
-      const filePath = path.join(migrationsDir, file);
-      if (fs.existsSync(filePath)) {
-        const sql = fs.readFileSync(filePath, "utf8");
-        await runSQL(sql, `Migration: ${file}`);
-      } else {
-        console.log(`⚠️  Migration file not found: ${file}`);
-      }
-    }
+  // Check if tables already exist
+  const tablesExist = await checkTablesExist();
+  if (tablesExist) {
+    console.log("⚠️  Tables already exist in the database.");
+    console.log("To reset, drop all tables first or use a fresh database.\n");
+    return;
   }
 
-  console.log("\n📄 Inserting demo data...\n");
+  // Read and execute migration files
+  const migrationsDir = path.join(__dirname, "..", "supabase", "migrations");
+  const migrationFiles = fs
+    .readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
 
-  // Read and execute demo data
-  const demoDataPath = path.join(__dirname, "../supabase/demo_data.sql");
-  if (fs.existsSync(demoDataPath)) {
-    const demoSQL = fs.readFileSync(demoDataPath, "utf8");
-    await runSQL(demoSQL, "Demo data insertion");
-  } else {
-    console.log("⚠️  Demo data file not found");
+  console.log(`📁 Found ${migrationFiles.length} migration files\n`);
+
+  let successCount = 0;
+  for (const file of migrationFiles) {
+    const filePath = path.join(migrationsDir, file);
+    const sql = fs.readFileSync(filePath, "utf8");
+    const success = await runSQL(sql, file);
+    if (success) successCount++;
   }
 
-  console.log("\n🎉 Database setup completed!");
-  console.log("\n📋 Demo login credentials:");
-  console.log("Admin: admin@platinum-demo.com / DemoAdmin123!");
-  console.log("Manager: manager@platinum-demo.com / DemoManager123!");
-  console.log("Hall: hall@platinum-demo.com / DemoHall123!");
-  console.log("Cashier: cashier@platinum-demo.com / DemoCashier123!");
-  console.log("Cast: cast@platinum-demo.com / DemoCast123!");
-  console.log(
-    "\nNote: You still need to create these users in Supabase Dashboard > Authentication > Users"
-  );
+  console.log(`\n✨ Setup completed! ${successCount}/${migrationFiles.length} migrations successful.`);
+  
+  if (successCount === migrationFiles.length) {
+    console.log("\n📋 Next steps:");
+    console.log("1. Run 'npm run db:insert-demo' to add demo data");
+    console.log("2. Create authentication users in Supabase Dashboard");
+    console.log("3. Link auth users to staff records");
+  }
 }
 
-// Alternative method using direct SQL execution
-async function runMigrationsDirectSQL() {
-  console.log("🚀 Running migrations with direct SQL...\n");
-
-  // First, try to create the exec_sql function if it doesn't exist
-  const createFunctionSQL = `
-CREATE OR REPLACE FUNCTION exec_sql(sql_query text)
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  EXECUTE sql_query;
-  RETURN 'SQL executed successfully';
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN 'Error: ' || SQLERRM;
-END;
-$$;
-`;
-
-  await runSQL(createFunctionSQL, "Creating exec_sql function");
-
-  // Now run migrations
-  await runMigrations();
-}
-
-// Run the setup
-runMigrationsDirectSQL().catch(console.error);
+setupDatabase();

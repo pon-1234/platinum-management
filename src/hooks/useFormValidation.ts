@@ -4,8 +4,8 @@ import { z } from "zod";
 import { getErrorMessage } from "@/lib/utils/validation";
 
 interface UseFormValidationProps<T extends FieldValues>
-  extends UseFormProps<T> {
-  schema: z.ZodSchema<T>;
+  extends Omit<UseFormProps<T>, "resolver"> {
+  schema: z.ZodType<T>;
 }
 
 export function useFormValidation<T extends FieldValues>({
@@ -13,15 +13,15 @@ export function useFormValidation<T extends FieldValues>({
   ...formProps
 }: UseFormValidationProps<T>) {
   const form = useForm<T>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     ...formProps,
   });
 
-  const handleAsyncSubmit = async (
+  const handleAsyncSubmit = (
     onSubmit: (data: T) => Promise<void>,
     onError?: (error: unknown) => void
   ) => {
-    return form.handleSubmit(async (data) => {
+    return form.handleSubmit(async (data: T) => {
       try {
         await onSubmit(data);
       } catch (error) {

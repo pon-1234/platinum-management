@@ -6,7 +6,9 @@ import { useFormValidation } from "@/hooks/useFormValidation";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import {
   createStaffFormSchema,
+  updateStaffFormSchema,
   CreateStaffFormData,
+  UpdateStaffFormData,
 } from "@/lib/validations/staff";
 
 interface StaffFormProps {
