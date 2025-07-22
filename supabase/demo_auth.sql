@@ -10,11 +10,7 @@
 Demo Users to create in Supabase Dashboard:
 
 1. Admin User:
-<<<<<<< HEAD
-   Email: ***REMOVED***
-=======
    Email: admin@platinum-demo.com
->>>>>>> origin/main
    Password: DemoAdmin123!
    Role: admin
    
