@@ -72,8 +72,7 @@ export async function middleware(request: NextRequest) {
 
     // Get user's role using the security definer function to avoid RLS recursion
     const { data: roleData, error: roleError } = await supabase.rpc(
-      "get_staff_role_for_user",
-      { target_user_id: user.id }
+      "get_current_user_staff_role"
     );
 
     console.log(`Middleware: Role data for user ${user.id}:`, {
