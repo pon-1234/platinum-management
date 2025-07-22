@@ -16,6 +16,11 @@ describe("AuthService", () => {
       getUser: ReturnType<typeof vi.fn>;
       getSession: ReturnType<typeof vi.fn>;
     };
+    rpc: ReturnType<typeof vi.fn>;
+    from: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -26,6 +31,11 @@ describe("AuthService", () => {
         getUser: vi.fn(),
         getSession: vi.fn(),
       },
+      rpc: vi.fn(),
+      from: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn(),
     };
 
     vi.mocked(createClient).mockReturnValue(
@@ -103,6 +113,11 @@ describe("AuthService", () => {
 
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: mockAuthUser },
+        error: null,
+      });
+
+      mockSupabaseClient.rpc.mockResolvedValue({
+        data: "manager",
         error: null,
       });
 
