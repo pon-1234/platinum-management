@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
@@ -44,7 +44,6 @@ export function CastRegistrationModal({
   const [availableStaff, setAvailableStaff] = useState<Staff[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasLoadedStaff = useRef(false);
   const { can } = usePermission();
   const canCreateCast = can("cast", "create");
 
@@ -59,44 +58,29 @@ export function CastRegistrationModal({
     },
   });
 
-  // Removed loadAvailableStaff callback to prevent infinite loops
-
-  useEffect(() => {
-    // Only run when modal opens, not on any other changes
-    if (!isOpen) {
-      hasLoadedStaff.current = false;
-      setAvailableStaff([]);
-      return;
-    }
-
-    if (!canCreateCast || hasLoadedStaff.current) {
-      return;
-    }
-
-    hasLoadedStaff.current = true;
+  // Load available staff when modal opens
+  const loadAvailableStaff = useCallback(async () => {
     setIsLoadingStaff(true);
-
-    staffService
-      .getUnregisteredStaff(1, 100)
-      .then((result) => {
-        const available = result.data.filter((staff) => staff.role !== "admin");
-        setAvailableStaff(available);
-      })
-      .catch((error) => {
-        console.error("Failed to load staff:", error);
-        setAvailableStaff([]);
-      })
-      .finally(() => {
-        setIsLoadingStaff(false);
+    try {
+      const result = await staffService.getUnregisteredStaff(1, 100);
+      const available = result.data.filter((staff) => staff.role !== "admin");
+      setAvailableStaff(available);
+    } catch (error) {
+      console.error("Failed to load available staff:", error);
+      form.setError("root", {
+        message: "スタッフ情報の読み込みに失敗しました",
       });
-  }, [isOpen, canCreateCast]); // Include canCreateCast dependency
-
-  // Reset form when modal opens - separate effect to avoid conflicts
-  useEffect(() => {
-    if (isOpen) {
-      form.reset();
+    } finally {
+      setIsLoadingStaff(false);
     }
-  }, [isOpen, form]); // Include form dependency
+  }, [form]);
+
+  useEffect(() => {
+    if (isOpen && canCreateCast) {
+      loadAvailableStaff();
+      form.reset(); // Reset form when opening
+    }
+  }, [isOpen, canCreateCast, form, loadAvailableStaff]);
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
@@ -117,170 +101,183 @@ export function CastRegistrationModal({
       isActive: true,
     };
 
-    console.log("CastRegistrationModal: Transformed cast data:", castData);
+    console.log("CastRegistrationModal: Final cast data:", castData);
 
     try {
       await castService.createCast(castData);
-      console.log("CastRegistrationModal: Cast created successfully");
       onSuccess();
+      onClose();
     } catch (error) {
-      console.error("CastRegistrationModal: Failed to create cast:", error);
-
-      // Show more detailed error message
-      const errorMessage =
-        error instanceof Error ? error.message : "キャストの登録に失敗しました";
-
+      console.error("Failed to register cast:", error);
       form.setError("root", {
-        message: errorMessage,
+        message: "キャストの登録に失敗しました",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!canCreateCast) {
+    return null;
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="新規キャスト登録" size="md">
-      {!canCreateCast ? (
-        <div className="text-center py-8">
-          <p className="text-gray-600">キャストを登録する権限がありません。</p>
-        </div>
-      ) : (
-        <form
-          onSubmit={form.handleAsyncSubmit(handleSubmit)}
-          className="space-y-6"
-        >
-          {/* Root Error */}
-          {form.formState.errors.root && (
-            <ErrorMessage message={form.formState.errors.root.message!} />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="キャスト新規登録"
+      size="lg"
+    >
+      <form onSubmit={form.handleAsyncSubmit(handleSubmit)} className="space-y-6">
+        {/* Root Error */}
+        {form.formState.errors.root && (
+          <ErrorMessage message={form.formState.errors.root.message!} />
+        )}
+
+        {/* Staff Selection */}
+        <div>
+          <label
+            htmlFor="staffId"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            スタッフ選択 <span className="text-red-500">*</span>
+          </label>
+          {isLoadingStaff ? (
+            <div className="mt-1 flex items-center justify-center p-8">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <select
+              id="staffId"
+              {...form.register("staffId")}
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value="">スタッフを選択してください</option>
+              {availableStaff.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.fullName} ({staff.role})
+                </option>
+              ))}
+            </select>
           )}
-
-          {/* Staff Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              スタッフ選択 <span className="text-red-500">*</span>
-            </label>
-            {isLoadingStaff ? (
-              <div className="flex justify-center py-4">
-                <LoadingSpinner size="sm" />
-                <span className="ml-2 text-sm text-gray-600">
-                  読み込み中...
-                </span>
-              </div>
-            ) : (
-              <select
-                {...form.register("staffId")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">スタッフを選択してください</option>
-                {availableStaff.map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.fullName} ({staff.role})
-                  </option>
-                ))}
-              </select>
-            )}
-            {form.formState.errors.staffId && (
-              <ErrorMessage message={form.formState.errors.staffId.message!} />
-            )}
-          </div>
-
-          {/* Stage Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              源氏名 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              {...form.register("stageName")}
-              placeholder="例: さくら"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {form.formState.errors.stageName && (
-              <ErrorMessage
-                message={form.formState.errors.stageName.message!}
-              />
-            )}
-          </div>
-
-          {/* Hourly Rate */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              時給（円） <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              {...form.register("hourlyRate", { valueAsNumber: true })}
-              min="1000"
-              max="10000"
-              step="100"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {form.formState.errors.hourlyRate && (
-              <ErrorMessage
-                message={form.formState.errors.hourlyRate.message!}
-              />
-            )}
-          </div>
-
-          {/* Back Percentage */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              バック率（%） <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              {...form.register("backPercentage", { valueAsNumber: true })}
-              min="0"
-              max="100"
-              step="5"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              売上に対するバック率を設定してください
+          {form.formState.errors.staffId && (
+            <p className="mt-1 text-sm text-red-600">
+              {form.formState.errors.staffId.message}
             </p>
-            {form.formState.errors.backPercentage && (
-              <ErrorMessage
-                message={form.formState.errors.backPercentage.message!}
-              />
-            )}
-          </div>
+          )}
+        </div>
 
-          {/* Memo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              メモ
-            </label>
-            <textarea
-              {...form.register("memo")}
-              rows={3}
-              placeholder="特記事項があれば入力してください"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {form.formState.errors.memo && (
-              <ErrorMessage message={form.formState.errors.memo.message!} />
-            )}
-          </div>
+        {/* Stage Name */}
+        <div>
+          <label
+            htmlFor="stageName"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            源氏名 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="stageName"
+            {...form.register("stageName")}
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder="例: 愛香"
+          />
+          {form.formState.errors.stageName && (
+            <p className="mt-1 text-sm text-red-600">
+              {form.formState.errors.stageName.message}
+            </p>
+          )}
+        </div>
 
-          {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || isLoadingStaff}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
-            >
-              {isSubmitting && <LoadingSpinner size="sm" />}
-              {isSubmitting ? "登録中..." : "登録"}
-            </button>
-          </div>
-        </form>
-      )}
+        {/* Hourly Rate */}
+        <div>
+          <label
+            htmlFor="hourlyRate"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            時給（円） <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            id="hourlyRate"
+            {...form.register("hourlyRate", { valueAsNumber: true })}
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            min="1000"
+            max="10000"
+            step="100"
+          />
+          {form.formState.errors.hourlyRate && (
+            <p className="mt-1 text-sm text-red-600">
+              {form.formState.errors.hourlyRate.message}
+            </p>
+          )}
+        </div>
+
+        {/* Back Percentage */}
+        <div>
+          <label
+            htmlFor="backPercentage"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            バック率（%） <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            id="backPercentage"
+            {...form.register("backPercentage", { valueAsNumber: true })}
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            min="0"
+            max="100"
+            step="5"
+          />
+          {form.formState.errors.backPercentage && (
+            <p className="mt-1 text-sm text-red-600">
+              {form.formState.errors.backPercentage.message}
+            </p>
+          )}
+        </div>
+
+        {/* Memo */}
+        <div>
+          <label
+            htmlFor="memo"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            メモ
+          </label>
+          <textarea
+            id="memo"
+            {...form.register("memo")}
+            rows={3}
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder="特記事項があれば入力してください"
+          />
+          {form.formState.errors.memo && (
+            <p className="mt-1 text-sm text-red-600">
+              {form.formState.errors.memo.message}
+            </p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            disabled={isSubmitting}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting || !form.formState.isValid}
+          >
+            {isSubmitting ? <LoadingSpinner size="sm" /> : "登録"}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }
