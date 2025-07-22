@@ -31,6 +31,31 @@ export abstract class BaseService {
   }
 
   /**
+   * Check if the current user has permission for a resource and action
+   * Note: This is a client-side check. Real permission enforcement happens via RLS on the server
+   * @param resource The resource to check permission for
+   * @param action The action to perform
+   * @returns Whether the user has permission
+   */
+  protected async hasPermission(
+    resource: string,
+    action: string
+  ): Promise<boolean> {
+    try {
+      const { data } = await this.supabase.rpc("has_permission", {
+        user_id: (await this.supabase.auth.getUser()).data.user?.id,
+        resource,
+        action,
+      });
+
+      return data || false;
+    } catch (error) {
+      console.error("Permission check failed:", error);
+      return false;
+    }
+  }
+
+  /**
    * Handle common Supabase errors
    * @param error The error object from Supabase
    * @param defaultMessage The default error message
