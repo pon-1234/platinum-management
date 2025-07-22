@@ -48,9 +48,10 @@ export function PayrollExport({ casts }: PayrollExportProps) {
         );
 
       const period = formatDateRange(dateRange.startDate, dateRange.endDate);
-      const compensationsWithPeriod = compensations.map((comp: any) => ({
+      const compensationsWithPeriod = compensations.map((comp) => ({
         ...comp,
         period,
+        castName: comp.cast.stageName, // Add required castName property
       }));
 
       exportCastCompensationToCSV(

@@ -1,8 +1,9 @@
-import { CastService, castService } from "./cast.service";
+import { CastService } from "./cast.service";
 import {
   CastPerformanceService,
   castPerformanceService,
 } from "./cast-performance.service";
+import { castService } from "./cast.service";
 import type { CastCompensation } from "@/types/cast.types";
 
 /**
@@ -12,7 +13,7 @@ import type { CastCompensation } from "@/types/cast.types";
  */
 export class CastCompensationService {
   constructor(
-    private castService: CastService = castService,
+    private castServiceInstance: CastService = castService,
     private performanceService: CastPerformanceService = castPerformanceService
   ) {}
 
@@ -21,7 +22,7 @@ export class CastCompensationService {
     startDate: string,
     endDate: string
   ): Promise<CastCompensation> {
-    const cast = await this.castService.getCastById(castId);
+    const cast = await this.castServiceInstance.getCastById(castId);
     if (!cast) {
       throw new Error("キャストが見つかりません");
     }

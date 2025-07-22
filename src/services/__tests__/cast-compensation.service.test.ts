@@ -9,8 +9,12 @@ vi.mock("../cast-performance.service");
 
 describe("CastCompensationService", () => {
   let compensationService: CastCompensationService;
-  let mockCastService: any;
-  let mockPerformanceService: any;
+  let mockCastService: {
+    getCastById: ReturnType<typeof vi.fn>;
+  };
+  let mockPerformanceService: {
+    getCastPerformances: ReturnType<typeof vi.fn>;
+  };
 
   const mockCast: Cast = {
     id: "223e4567-e89b-12d3-a456-426614174001",
