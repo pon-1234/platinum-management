@@ -42,13 +42,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-<<<<<<< HEAD
         <ErrorBoundary>{children}</ErrorBoundary>
-=======
-        <ErrorBoundary>
-          <AuthProvider>{children}</AuthProvider>
-        </ErrorBoundary>
->>>>>>> origin/main
         <Toaster
           position="top-center"
           toastOptions={{

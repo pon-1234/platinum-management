@@ -30,7 +30,6 @@ Failed to load available staff: Error: 未登録スタッフの取得に失敗�
 
 ```bash
 # Check if functions exist
-<<<<<<< HEAD
 PGPASSWORD="$POSTGRES_PASSWORD" psql -h $DB_HOST -p 5432 -U postgres -d postgres -c "SELECT proname FROM pg_proc WHERE proname = 'get_unregistered_staff';"
 
 # Apply migrations
@@ -40,17 +39,6 @@ PGPASSWORD="$POSTGRES_PASSWORD" psql -h $DB_HOST -p 5432 -U postgres -d postgres
 
 # Verify functions are created
 PGPASSWORD="$POSTGRES_PASSWORD" psql -h $DB_HOST -p 5432 -U postgres -d postgres -c "SELECT proname FROM pg_proc WHERE proname LIKE '%unregistered_staff%';"
-=======
-PGPASSWORD="iru5rwL02ZMBQtl0" psql -h db.pdomeeyvatachcothudq.supabase.co -p 5432 -U postgres -d postgres -c "SELECT proname FROM pg_proc WHERE proname = 'get_unregistered_staff';"
-
-# Apply migrations
-PGPASSWORD="iru5rwL02ZMBQtl0" psql -h db.pdomeeyvatachcothudq.supabase.co -p 5432 -U postgres -d postgres -f supabase/migrations/20240120000000_add_rls_policies.sql
-
-PGPASSWORD="iru5rwL02ZMBQtl0" psql -h db.pdomeeyvatachcothudq.supabase.co -p 5432 -U postgres -d postgres -f supabase/migrations/20240120000001_create_unregistered_staff_function.sql
-
-# Verify functions are created
-PGPASSWORD="iru5rwL02ZMBQtl0" psql -h db.pdomeeyvatachcothudq.supabase.co -p 5432 -U postgres -d postgres -c "SELECT proname FROM pg_proc WHERE proname LIKE '%unregistered_staff%';"
->>>>>>> origin/main
 ```
 
 ## Result
