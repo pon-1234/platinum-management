@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# gemini-analyze wrapper script
+# Uses the installed gemini CLI to analyze code and provide insights
+
+if [ $# -eq 0 ]; then
+    echo "Usage: gemini-analyze <file_path> [specific_analysis_request]"
+    echo "Example: gemini-analyze src/app.ts"
+    echo "Example: gemini-analyze src/app.ts 'Check for performance issues'"
+    exit 1
+fi
+
+FILE_PATH="$1"
+ANALYSIS_REQUEST="${2:-general code review}"
+
+# Check if file exists
+if [ ! -f "$FILE_PATH" ]; then
+    echo "Error: File '$FILE_PATH' not found"
+    exit 1
+fi
+
+# Read the file content
+FILE_CONTENT=$(cat "$FILE_PATH")
+FILE_NAME=$(basename "$FILE_PATH")
+
+# Create an analysis-focused prompt
+PROMPT="Please analyze the following code file and provide a comprehensive review:
+
+File: $FILE_NAME
+Analysis Focus: $ANALYSIS_REQUEST
+
+Code:
+\`\`\`
+$FILE_CONTENT
+\`\`\`
+
+Please provide:
+1. Code quality assessment
+2. Potential bugs or issues
+3. Performance considerations
+4. Security concerns (if any)
+5. Suggestions for improvement
+6. Best practices compliance
+
+Be specific and provide actionable feedback."
+
+# Execute gemini with the analysis prompt
+gemini -p "$PROMPT"
