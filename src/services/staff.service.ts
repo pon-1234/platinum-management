@@ -69,17 +69,38 @@ export class StaffService extends BaseService {
     return this.mapToStaff(data);
   }
 
-  async getAllStaff(): Promise<Staff[]> {
+  async getAllStaff(
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ data: Staff[]; totalCount: number; hasMore: boolean }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // Get total count
+    const { count, error: countError } = await this.supabase
+      .from("staffs")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) {
+      this.handleError(countError, "スタッフ数の取得に失敗しました");
+    }
+
+    // Get paginated data
     const { data, error } = await this.supabase
       .from("staffs")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       this.handleError(error, "スタッフ一覧の取得に失敗しました");
     }
 
-    return data.map((item) => this.mapToStaff(item));
+    const staffList = data.map((item) => this.mapToStaff(item));
+    const totalCount = count || 0;
+    const hasMore = to < totalCount - 1;
+
+    return { data: staffList, totalCount, hasMore };
   }
 
   async updateStaff(id: string, data: UpdateStaffData): Promise<Staff> {
@@ -149,17 +170,41 @@ export class StaffService extends BaseService {
     return this.mapToCastProfile(data);
   }
 
-  async getAllCastProfiles(): Promise<CastProfile[]> {
+  async getAllCastProfiles(
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ data: CastProfile[]; totalCount: number; hasMore: boolean }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // Get total count
+    const { count, error: countError } = await this.supabase
+      .from("casts_profile")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) {
+      this.handleError(
+        countError,
+        "キャストプロフィール数の取得に失敗しました"
+      );
+    }
+
+    // Get paginated data
     const { data, error } = await this.supabase
       .from("casts_profile")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       this.handleError(error, "キャストプロフィール一覧の取得に失敗しました");
     }
 
-    return data.map((item) => this.mapToCastProfile(item));
+    const profileList = data.map((item) => this.mapToCastProfile(item));
+    const totalCount = count || 0;
+    const hasMore = to < totalCount - 1;
+
+    return { data: profileList, totalCount, hasMore };
   }
 
   async updateCastProfile(
