@@ -62,36 +62,12 @@ export function CastRegistrationModal({
   const loadAvailableStaff = useCallback(async () => {
     setIsLoadingStaff(true);
     try {
-      // Get all staff - load all pages
-      const allStaff: Staff[] = [];
-      let page = 1;
-      let hasMore = true;
+      // Use the new efficient function to get unregistered staff
+      const result = await staffService.getUnregisteredStaff(1, 100);
 
-      while (hasMore) {
-        const result = await staffService.getAllStaff(page, 100); // Load 100 at a time
-        allStaff.push(...result.data);
-        hasMore = result.hasMore;
-        page++;
-      }
-
-      // Get existing casts to filter out already registered staff - load all pages
-      const existingCasts: { staffId: string }[] = [];
-      page = 1;
-      hasMore = true;
-
-      while (hasMore) {
-        const result = await castService.getAllCasts(page, 100); // Load 100 at a time
-        existingCasts.push(...result.data);
-        hasMore = result.hasMore;
-        page++;
-      }
-
-      const registeredStaffIds = existingCasts.map((cast) => cast.staffId);
-
-      // Filter out already registered staff
-      const available = allStaff.filter(
-        (staff) =>
-          !registeredStaffIds.includes(staff.id) && staff.role !== "admin" // Don't allow admin to be cast
+      // Filter out admin role
+      const available = result.data.filter(
+        (staff) => staff.role !== "admin" // Don't allow admin to be cast
       );
 
       setAvailableStaff(available);
