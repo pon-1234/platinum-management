@@ -91,15 +91,50 @@ export class AuthService {
       return null;
     }
 
-    // Extract role from user metadata or default to 'cast'
-    const role = (user.user_metadata?.role || "cast") as UserRole;
+    // Get role from staff table using the security definer function (same as middleware)
+    try {
+      const { data: roleData, error: roleError } = await this.supabase.rpc(
+        "get_user_role_secure",
+        { user_id: user.id }
+      );
 
-    return {
-      id: user.id,
-      email: user.email!,
-      role,
-      staffId: user.user_metadata?.staffId,
-    };
+      if (roleError) {
+        console.error("Error fetching user role:", roleError);
+        // Fallback to user_metadata
+        const role = (user.user_metadata?.role || "cast") as UserRole;
+        return {
+          id: user.id,
+          email: user.email!,
+          role,
+          staffId: user.user_metadata?.staffId,
+        };
+      }
+
+      const role = (roleData || "cast") as UserRole;
+      console.log(
+        "AuthService: Retrieved role for user",
+        user.email,
+        ":",
+        role
+      );
+
+      return {
+        id: user.id,
+        email: user.email!,
+        role,
+        staffId: user.user_metadata?.staffId,
+      };
+    } catch (dbError) {
+      console.error("Database error fetching role:", dbError);
+      // Fallback to user_metadata
+      const role = (user.user_metadata?.role || "cast") as UserRole;
+      return {
+        id: user.id,
+        email: user.email!,
+        role,
+        staffId: user.user_metadata?.staffId,
+      };
+    }
   }
 
   hasPermission(user: User, resource: string, action: string): boolean {
