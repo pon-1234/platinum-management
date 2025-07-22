@@ -34,24 +34,15 @@ export default function StaffPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const result = await staffService.getAllStaff(currentPage, pageSize);
+      // Pass search and filter parameters to the service
+      const result = await staffService.getAllStaff(
+        currentPage,
+        pageSize,
+        searchQuery || undefined,
+        roleFilter || undefined
+      );
 
-      // Filter by search query and role on client side
-      let filteredData = result.data;
-
-      if (searchQuery) {
-        filteredData = filteredData.filter((staff) =>
-          staff.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-
-      if (roleFilter) {
-        filteredData = filteredData.filter(
-          (staff) => staff.role === roleFilter
-        );
-      }
-
-      setStaff(filteredData);
+      setStaff(result.data);
       setTotalCount(result.totalCount);
       setHasMore(result.hasMore);
     } catch (err) {
@@ -69,6 +60,11 @@ export default function StaffPage() {
       setIsLoading(false);
     }
   }, [loadStaff, canViewStaff]);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter]);
 
   const handleCreate = () => {
     setEditingStaff(null);

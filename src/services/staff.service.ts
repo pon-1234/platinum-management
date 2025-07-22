@@ -71,24 +71,40 @@ export class StaffService extends BaseService {
 
   async getAllStaff(
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    searchQuery?: string,
+    roleFilter?: string
   ): Promise<{ data: Staff[]; totalCount: number; hasMore: boolean }> {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    // Get total count
-    const { count, error: countError } = await this.supabase
+    // Build query with filters
+    let countQuery = this.supabase
       .from("staffs")
       .select("*", { count: "exact", head: true });
+    let dataQuery = this.supabase.from("staffs").select("*");
+
+    // Apply search filter
+    if (searchQuery) {
+      countQuery = countQuery.ilike("full_name", `%${searchQuery}%`);
+      dataQuery = dataQuery.ilike("full_name", `%${searchQuery}%`);
+    }
+
+    // Apply role filter
+    if (roleFilter) {
+      countQuery = countQuery.eq("role", roleFilter);
+      dataQuery = dataQuery.eq("role", roleFilter);
+    }
+
+    // Get total count
+    const { count, error: countError } = await countQuery;
 
     if (countError) {
       this.handleError(countError, "スタッフ数の取得に失敗しました");
     }
 
     // Get paginated data
-    const { data, error } = await this.supabase
-      .from("staffs")
-      .select("*")
+    const { data, error } = await dataQuery
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -233,6 +249,45 @@ export class StaffService extends BaseService {
     }
 
     return this.mapToCastProfile(profile);
+  }
+
+  async getUnregisteredStaff(
+    page: number = 1,
+    limit: number = 20,
+    searchQuery?: string
+  ): Promise<{ data: Staff[]; totalCount: number; hasMore: boolean }> {
+    // Call the Supabase function
+    const { data, error } = await this.supabase.rpc("get_unregistered_staff", {
+      p_page: page,
+      p_limit: limit,
+      p_search_query: searchQuery || null,
+    });
+
+    if (error) {
+      this.handleError(error, "未登録スタッフの取得に失敗しました");
+    }
+
+    if (!data || data.length === 0) {
+      return { data: [], totalCount: 0, hasMore: false };
+    }
+
+    // Extract total count and hasMore from the first row
+    const totalCount = data[0].total_count || 0;
+    const hasMore = data[0].has_more || false;
+
+    // Map the data to Staff type
+    const staffList = data.map((item: any) => ({
+      id: item.id,
+      userId: item.user_id,
+      fullName: item.full_name,
+      role: item.role,
+      hireDate: item.hire_date,
+      isActive: item.is_active,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
+
+    return { data: staffList, totalCount, hasMore };
   }
 
   private mapToStaff = (
