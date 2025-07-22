@@ -276,7 +276,7 @@ export class StaffService extends BaseService {
     const hasMore = data[0].has_more || false;
 
     // Map the data to Staff type
-    const staffList = data.map((item: any) => ({
+    const staffList = data.map((item: Record<string, unknown>) => ({
       id: item.id,
       userId: item.user_id,
       fullName: item.full_name,
