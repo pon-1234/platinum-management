@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { authService } from "@/services/auth.service";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 
 export default function LoginPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +28,9 @@ export default function LoginPage() {
       const result = await authService.signIn(data.email, data.password);
 
       if (result.success) {
-        router.push("/dashboard");
+        console.log("Login successful, redirecting to dashboard...");
+        // Use window.location for immediate redirect to ensure middleware runs
+        window.location.href = "/dashboard";
       } else {
         // Show detailed error for debugging
         console.error("Login error:", result.error);

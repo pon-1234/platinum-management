@@ -60,14 +60,27 @@ export async function middleware(request: NextRequest) {
 
   // For authenticated users, we need to check permissions
   if (user && !isPublicRoute) {
+    console.log(
+      `Middleware: Checking permissions for user ${user.id} on ${request.nextUrl.pathname}`
+    );
+
     // Get user's role from database
-    const { data: staffData } = await supabase
+    const { data: staffData, error: staffError } = await supabase
       .from("staffs")
       .select("role")
       .eq("user_id", user.id)
       .single();
 
+    console.log(
+      `Middleware: Staff data for user ${user.id}:`,
+      staffData,
+      staffError
+    );
+
     if (!staffData) {
+      console.log(
+        `Middleware: No staff record found for user ${user.id}, signing out`
+      );
       // User has no staff record, sign them out and redirect to login
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/auth/login", request.url));
