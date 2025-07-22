@@ -91,62 +91,43 @@ export class AuthService {
       return null;
     }
 
-    // Get role from staff table directly
+    // Get role using the RPC function to align with middleware
     try {
-      const { data: staffData, error: staffError } = await this.supabase
+      const { data: roleData, error: roleError } = await this.supabase.rpc(
+        "get_current_user_staff_role"
+      );
+
+      if (roleError || !roleData) {
+        console.error("Failed to get user role, signing out:", roleError);
+        await this.signOut();
+        return null;
+      }
+
+      const role = roleData as UserRole;
+
+      // We need staffId for some operations, let's get it from the staffs table
+      // This assumes the RLS for staffs table allows the user to read their own record.
+      const { data: staff, error: staffError } = await this.supabase
         .from("staffs")
-        .select("role")
-        .eq("auth_user_id", user.id)
+        .select("id")
+        .eq("user_id", user.id)
         .single();
 
-      if (staffError || !staffData) {
-        // Special case for admin@platinum-demo.com
-        if (user.email === "admin@platinum-demo.com") {
-          return {
-            id: user.id,
-            email: user.email!,
-            role: "admin" as UserRole,
-            staffId: user.user_metadata?.staffId,
-          };
-        }
-
-        // Fallback to user_metadata
-        const role = (user.user_metadata?.role || "cast") as UserRole;
-        return {
-          id: user.id,
-          email: user.email!,
-          role,
-          staffId: user.user_metadata?.staffId,
-        };
+      if (staffError) {
+        console.error("Failed to get staff id:", staffError);
+        // Decide if you want to sign out here as well, or proceed without staffId
       }
-
-      const role = (staffData.role || "cast") as UserRole;
 
       return {
         id: user.id,
         email: user.email!,
         role,
-        staffId: user.user_metadata?.staffId,
+        staffId: staff?.id,
       };
-    } catch {
-      // Special case for admin@platinum-demo.com
-      if (user.email === "admin@platinum-demo.com") {
-        return {
-          id: user.id,
-          email: user.email!,
-          role: "admin" as UserRole,
-          staffId: user.user_metadata?.staffId,
-        };
-      }
-
-      // Fallback to user_metadata
-      const role = (user.user_metadata?.role || "cast") as UserRole;
-      return {
-        id: user.id,
-        email: user.email!,
-        role,
-        staffId: user.user_metadata?.staffId,
-      };
+    } catch (e) {
+      console.error("Exception when getting user role:", e);
+      await this.signOut();
+      return null;
     }
   }
 
