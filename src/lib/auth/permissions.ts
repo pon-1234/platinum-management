@@ -42,6 +42,26 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     redirectTo: "/dashboard",
   },
   {
+    path: "/qr-attendance",
+    allowedRoles: ["admin", "manager", "hall", "cast"],
+    redirectTo: "/dashboard",
+  },
+  {
+    path: "/tables",
+    allowedRoles: ["admin", "manager", "hall"],
+    redirectTo: "/dashboard",
+  },
+  {
+    path: "/cast/management",
+    allowedRoles: ["admin", "manager"],
+    redirectTo: "/dashboard",
+  },
+  {
+    path: "/compliance",
+    allowedRoles: ["admin", "manager"],
+    redirectTo: "/dashboard",
+  },
+  {
     path: "/inventory",
     allowedRoles: ["admin", "manager"],
     redirectTo: "/dashboard",
@@ -73,6 +93,9 @@ export function canAccessRoute(user: User | null, pathname: string): boolean {
 
   // Require authentication for all other routes
   if (!user) return false;
+
+  // Admin has access to all routes
+  if (user.role === "admin") return true;
 
   // Find the most specific route permission
   const routePermission = ROUTE_PERMISSIONS.find((permission) => {
@@ -109,6 +132,9 @@ export function getRedirectPath(user: User | null, pathname: string): string {
 
 export function getAccessibleRoutes(user: User | null): RoutePermission[] {
   if (!user) return [];
+
+  // Admin can access all routes
+  if (user.role === "admin") return ROUTE_PERMISSIONS;
 
   return ROUTE_PERMISSIONS.filter((permission) =>
     permission.allowedRoles.includes(user.role)
@@ -150,6 +176,13 @@ export function hasPermission(
       { resource: "attendance", action: "manage" },
       { resource: "attendance", action: "view" },
       { resource: "attendance", action: "edit" },
+      { resource: "tables", action: "manage" },
+      { resource: "tables", action: "view" },
+      { resource: "cast", action: "manage" },
+      { resource: "cast", action: "view" },
+      { resource: "cast", action: "edit" },
+      { resource: "compliance", action: "manage" },
+      { resource: "compliance", action: "view" },
     ],
     hall: [
       { resource: "customers", action: "view" },
