@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# gemini-search wrapper script
+# Uses the installed gemini CLI to perform web searches
+
+if [ $# -eq 0 ]; then
+    echo "Usage: gemini-search <search query>"
+    echo "Example: gemini-search 'TypeScript best practices 2024'"
+    exit 1
+fi
+
+# Combine all arguments into a single search query
+QUERY="$*"
+
+# Create a search-focused prompt
+PROMPT="Please search the web for the following query and provide a comprehensive summary of the most relevant and recent information:
+
+Query: $QUERY
+
+Please include:
+1. Key findings from authoritative sources
+2. Latest trends or updates (if applicable)
+3. Best practices or recommendations
+4. Any important considerations or warnings
+
+Format your response in a clear, structured manner."
+
+# Execute gemini with the search prompt
+gemini -p "$PROMPT"
