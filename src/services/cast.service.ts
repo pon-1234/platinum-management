@@ -164,11 +164,30 @@ export class CastService extends BaseService {
     return this.searchCasts(params);
   }
 
-  async getAllCasts(): Promise<Cast[]> {
+  async getAllCasts(
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ data: Cast[]; totalCount: number; hasMore: boolean }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // Get total count
+    const { count, error: countError } = await this.supabase
+      .from("casts_profile")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) {
+      throw new Error(
+        this.handleDatabaseError(countError, "キャスト数の取得に失敗しました")
+      );
+    }
+
+    // Get paginated data
     const { data, error } = await this.supabase
       .from("casts_profile")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       throw new Error(
@@ -176,7 +195,11 @@ export class CastService extends BaseService {
       );
     }
 
-    return data.map((item) => this.mapToCast(item));
+    const castList = data.map((item) => this.mapToCast(item));
+    const totalCount = count || 0;
+    const hasMore = to < totalCount - 1;
+
+    return { data: castList, totalCount, hasMore };
   }
 
   async searchCasts(params: CastSearchParams = {}): Promise<Cast[]> {
