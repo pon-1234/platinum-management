@@ -1,5 +1,8 @@
-import { CastService } from "./cast.service";
-import { CastPerformanceService } from "./cast-performance.service";
+import { CastService, castService } from "./cast.service";
+import {
+  CastPerformanceService,
+  castPerformanceService,
+} from "./cast-performance.service";
 import type { CastCompensation } from "@/types/cast.types";
 
 /**
@@ -8,13 +11,10 @@ import type { CastCompensation } from "@/types/cast.types";
  * @known_issues Work hours calculation is estimated based on performance days
  */
 export class CastCompensationService {
-  private castService: CastService;
-  private performanceService: CastPerformanceService;
-
-  constructor() {
-    this.castService = new CastService();
-    this.performanceService = new CastPerformanceService();
-  }
+  constructor(
+    private castService: CastService = castService,
+    private performanceService: CastPerformanceService = castPerformanceService
+  ) {}
 
   async calculateCastCompensation(
     castId: string,
