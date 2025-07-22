@@ -19,38 +19,8 @@ describe("Cast Services Integration", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any;
 
-  const mockCast: Cast = {
-    id: "cast-123",
-    staffId: "staff-123",
-    stageName: "テストキャスト",
-    hourlyRate: 3000,
-    backPercentage: 50,
-    isActive: true,
-    birthday: null,
-    bloodType: null,
-    height: null,
-    threeSize: null,
-    hobby: null,
-    specialSkill: null,
-    selfIntroduction: null,
-    profileImageUrl: null,
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  };
-
-  const mockPerformance: CastPerformance = {
-    id: "perf-123",
-    castId: "cast-123",
-    date: "2024-01-15",
-    shimeiCount: 5,
-    dohanCount: 2,
-    salesAmount: 150000,
-    drinkCount: 10,
-    createdBy: null,
-    updatedBy: null,
-    createdAt: "2024-01-15T00:00:00Z",
-    updatedAt: "2024-01-15T00:00:00Z",
-  };
+  // Mock data constants removed to fix unused variable warnings
+  // Data is defined inline in tests where needed
 
   beforeEach(() => {
     mockSupabase = {

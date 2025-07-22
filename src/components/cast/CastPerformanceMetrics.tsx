@@ -39,30 +39,8 @@ export function CastPerformanceMetrics({
     fetchCast();
   }, [castId, getCastById]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div
-          className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"
-          data-testid="loading-spinner"
-        ></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-        {error}
-      </div>
-    );
-  }
-
-  if (!cast) {
-    return null;
-  }
-
   // Memoize metrics to avoid recalculation on every render
+  // Must be called before any conditional returns
   const metrics = useMemo(
     () => [
       {
@@ -96,6 +74,29 @@ export function CastPerformanceMetrics({
     ],
     [performanceTotals]
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"
+          data-testid="loading-spinner"
+        ></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+        {error}
+      </div>
+    );
+  }
+
+  if (!cast) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
