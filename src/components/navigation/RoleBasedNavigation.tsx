@@ -15,6 +15,10 @@ import {
   ClockIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
+  QrCodeIcon,
+  TableCellsIcon,
+  StarIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 interface NavigationItem {
@@ -55,6 +59,30 @@ const navigationItems: NavigationItem[] = [
     href: "/attendance",
     icon: ClockIcon,
     resource: "attendance",
+  },
+  {
+    name: "QR勤怠",
+    href: "/qr-attendance",
+    icon: QrCodeIcon,
+    resource: "attendance",
+  },
+  {
+    name: "テーブル管理",
+    href: "/tables",
+    icon: TableCellsIcon,
+    resource: "tables",
+  },
+  {
+    name: "キャスト管理",
+    href: "/cast/management",
+    icon: StarIcon,
+    resource: "cast",
+  },
+  {
+    name: "コンプライアンス",
+    href: "/compliance",
+    icon: ShieldCheckIcon,
+    resource: "compliance",
   },
   {
     name: "在庫管理",
