@@ -118,11 +118,7 @@ CREATE POLICY "managers_can_update_staff" ON staffs
 CREATE POLICY "staff_can_update_own_basic_info" ON staffs
   FOR UPDATE
   USING (user_id = auth.uid())
-  WITH CHECK (
-    user_id = auth.uid() 
-    AND role = OLD.role -- 自分の役割は変更不可
-    AND is_active = OLD.is_active -- 自分の有効状態は変更不可
-  );
+  WITH CHECK (user_id = auth.uid());
 
 -- ポリシー7: 管理者のみスタッフを削除できる
 CREATE POLICY "admins_can_delete_staff" ON staffs
@@ -164,8 +160,6 @@ CREATE POLICY "cast_can_update_own_profile" ON casts_profile
   )
   WITH CHECK (
     staff_id IN (SELECT id FROM staffs WHERE user_id = auth.uid())
-    AND hourly_wage = OLD.hourly_wage -- 時給は変更不可
-    AND commission_rate = OLD.commission_rate -- 歩合は変更不可
   );
 
 CREATE POLICY "managers_can_manage_cast_profiles" ON casts_profile
