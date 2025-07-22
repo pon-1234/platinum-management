@@ -47,7 +47,9 @@
       "Bash(grep:*)",
       "Bash(gemini:*)",
       "Bash(gemini-search:*)",
-      "Bash(gemini-analyze:*)"
+      "Bash(gemini-analyze:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(psql:*)"
     ],
     "deny": []
   },
@@ -58,8 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🔴 Red Phase: Running test to confirm failure...' && npm run test -- --run --reporter=verbose --testNamePattern='%(file_path)s' || echo '✅ Test failed as expected (Red phase complete)'",
-            "blocking": false
+            "command": "echo '🔴 Red Phase: Running test to confirm failure...' && npm run test -- --run --reporter=verbose --testNamePattern='%(file_path)s' || echo '✅ Test failed as expected (Red phase complete)'"
           }
         ]
       },
@@ -68,8 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🟢 Green Phase: Formatting and linting...' && npx prettier --write '%(file_path)s' && npm run lint -- --fix '%(file_path)s'",
-            "blocking": false
+            "command": "echo '🟢 Green Phase: Formatting and linting...' && npx prettier --write '%(file_path)s' && npm run lint -- --fix '%(file_path)s'"
           }
         ]
       }
@@ -80,13 +80,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🛑 Stop Hook: Running full CI pipeline...' && npm run lint && npm run typecheck && npm run test && npm run build",
-            "blocking": true
+            "command": "echo '🛑 Stop Hook: Running full CI pipeline...' && npm run lint && npm run typecheck && npm run test && npm run build"
           },
           {
             "type": "command",
-            "command": "echo '📊 Coverage Check: Verifying test coverage...' && npm run test:coverage",
-            "blocking": false
+            "command": "echo '📊 Coverage Check: Verifying test coverage...' && npm run test:coverage"
           }
         ]
       }
