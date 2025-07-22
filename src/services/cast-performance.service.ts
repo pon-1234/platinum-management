@@ -117,7 +117,7 @@ export class CastPerformanceService extends BaseService {
       );
     }
 
-    return data.map(this.mapToCastPerformance);
+    return data.map((item) => this.mapToCastPerformance(item));
   }
 
   async getCastRanking(

@@ -79,7 +79,7 @@ export class StaffService extends BaseService {
       this.handleError(error, "スタッフ一覧の取得に失敗しました");
     }
 
-    return data.map(this.mapToStaff);
+    return data.map((item) => this.mapToStaff(item));
   }
 
   async updateStaff(id: string, data: UpdateStaffData): Promise<Staff> {
@@ -159,7 +159,7 @@ export class StaffService extends BaseService {
       this.handleError(error, "キャストプロフィール一覧の取得に失敗しました");
     }
 
-    return data.map(this.mapToCastProfile);
+    return data.map((item) => this.mapToCastProfile(item));
   }
 
   async updateCastProfile(

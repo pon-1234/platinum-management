@@ -158,7 +158,7 @@ export class CustomerService extends BaseService {
       );
     }
 
-    return data.map(this.mapToCustomer);
+    return data.map((item) => this.mapToCustomer(item));
   }
 
   async getCustomerVisits(customerId: string): Promise<Visit[]> {
@@ -174,7 +174,7 @@ export class CustomerService extends BaseService {
       );
     }
 
-    return data.map(this.mapToVisit);
+    return data.map((item) => this.mapToVisit(item));
   }
 
   async createVisit(data: CreateVisitData): Promise<Visit> {
@@ -252,7 +252,7 @@ export class CustomerService extends BaseService {
       );
     }
 
-    return data.map(this.mapToVisit);
+    return data.map((item) => this.mapToVisit(item));
   }
 
   private mapToCustomer(
