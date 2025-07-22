@@ -120,7 +120,7 @@ describe("StaffService", () => {
           fullName: "山田太郎",
           role: "manager",
         })
-      ).rejects.toThrow("Failed to create staff: Database error");
+      ).rejects.toThrow("スタッフの作成に失敗しました");
     });
   });
 
