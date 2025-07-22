@@ -4,8 +4,8 @@ import { z } from "zod";
 import { getErrorMessage } from "@/lib/utils/validation";
 
 interface UseFormValidationProps<T extends FieldValues>
-  extends Omit<UseFormProps<T>, "resolver"> {
-  schema: z.ZodType<T>;
+  extends UseFormProps<T> {
+  schema: z.ZodSchema<T>;
 }
 
 export function useFormValidation<T extends FieldValues>({
@@ -13,18 +13,17 @@ export function useFormValidation<T extends FieldValues>({
   ...formProps
 }: UseFormValidationProps<T>) {
   const form = useForm<T>({
-    // @ts-expect-error - zodResolver has complex type issues with Zod schemas
     resolver: zodResolver(schema),
     ...formProps,
   });
 
-  const handleAsyncSubmit = (
+  const handleAsyncSubmit = async (
     onSubmit: (data: T) => Promise<void>,
     onError?: (error: unknown) => void
   ) => {
     return form.handleSubmit(async (data) => {
       try {
-        await onSubmit(data as unknown as T);
+        await onSubmit(data);
       } catch (error) {
         const errorMessage = getErrorMessage(error);
         form.setError("root", { message: errorMessage });
