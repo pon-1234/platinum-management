@@ -18,29 +18,29 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: Record<string, unknown>) {
-          // Set cookie in the response for proper session handling
-          response.cookies.set(name, value, {
-            ...options,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-          });
+          // Update the request cookies as well for immediate availability
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
         },
         remove(name: string, options: Record<string, unknown>) {
-          response.cookies.set({
-            name,
-            value: "",
-            ...options,
-            maxAge: 0,
-          });
+          request.cookies.set(name, "");
+          response.cookies.set(name, "", { ...options, maxAge: 0 });
         },
       },
     }
   );
 
+  // Try to get user session
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  console.log(`Middleware: User check for ${request.nextUrl.pathname}:`, {
+    userId: user?.id,
+    email: user?.email,
+    error: userError?.message,
+  });
 
   // Public routes that don't require authentication
   const publicRoutes = ["/", "/auth/login", "/auth/signup"];
@@ -48,6 +48,7 @@ export async function middleware(request: NextRequest) {
 
   // If user is not authenticated and trying to access protected route
   if (!user && !isPublicRoute) {
+    console.log(`Middleware: No user found, redirecting to login`);
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
@@ -67,8 +68,29 @@ export async function middleware(request: NextRequest) {
       `Middleware: Checking permissions for user ${user.id} on ${request.nextUrl.pathname}`
     );
 
-    // Get user's role from database
-    const { data: staffData, error: staffError } = await supabase
+    // Create admin client to bypass RLS for middleware operations
+    const adminSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: Record<string, unknown>) {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          },
+          remove(name: string, options: Record<string, unknown>) {
+            request.cookies.set(name, "");
+            response.cookies.set(name, "", { ...options, maxAge: 0 });
+          },
+        },
+      }
+    );
+
+    // Get user's role from database using admin client
+    const { data: staffData, error: staffError } = await adminSupabase
       .from("staffs")
       .select("role")
       .eq("user_id", user.id)
@@ -80,11 +102,12 @@ export async function middleware(request: NextRequest) {
       staffError
     );
 
-    if (!staffData) {
-      console.log(
-        `Middleware: No staff record found for user ${user.id}, signing out`
-      );
-      // User has no staff record, sign them out and redirect to login
+    if (!staffData || staffError) {
+      console.log(`Middleware: Staff data issue for user ${user.id}:`, {
+        staffData,
+        staffError: staffError?.message,
+      });
+      // User has no staff record or error occurred, sign them out and redirect to login
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
