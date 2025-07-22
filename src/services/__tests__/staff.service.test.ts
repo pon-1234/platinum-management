@@ -20,6 +20,7 @@ describe("StaffService", () => {
     eq: vi.fn().mockReturnThis(),
     single: vi.fn(),
     order: vi.fn().mockReturnThis(),
+    range: vi.fn().mockReturnThis(),
   };
 
   beforeEach(() => {
@@ -167,7 +168,7 @@ describe("StaffService", () => {
   });
 
   describe("getAllStaff", () => {
-    it("should return all staff members", async () => {
+    it("should return paginated staff members", async () => {
       const mockStaffList = [
         {
           id: "staff-1",
@@ -191,19 +192,36 @@ describe("StaffService", () => {
         },
       ];
 
-      mockDbMethods.order.mockResolvedValue({
+      // Mock count query
+      mockDbMethods.select.mockImplementation(
+        (columns: string, options: { count?: string; head?: boolean }) => {
+          if (options?.count === "exact" && options?.head === true) {
+            return Promise.resolve({
+              count: 2,
+              error: null,
+            });
+          }
+          return mockDbMethods;
+        }
+      );
+
+      // Mock data query
+      mockDbMethods.range.mockResolvedValue({
         data: mockStaffList,
         error: null,
       });
 
       const result = await staffService.getAllStaff();
 
-      expect(result).toHaveLength(2);
-      expect(result[0].fullName).toBe("山田太郎");
-      expect(result[1].fullName).toBe("鈴木花子");
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].fullName).toBe("山田太郎");
+      expect(result.data[1].fullName).toBe("鈴木花子");
+      expect(result.totalCount).toBe(2);
+      expect(result.hasMore).toBe(false);
       expect(mockDbMethods.order).toHaveBeenCalledWith("created_at", {
         ascending: false,
       });
+      expect(mockDbMethods.range).toHaveBeenCalledWith(0, 19);
     });
   });
 
