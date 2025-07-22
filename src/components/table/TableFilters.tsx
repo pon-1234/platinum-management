@@ -49,7 +49,7 @@ export function TableFilters({ onFilterChange, onSearch }: TableFiltersProps) {
     onSearch(value);
   };
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string | boolean | null) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
 

@@ -76,7 +76,7 @@ export function CastEditModal({
         hourlyRate: cast.hourlyRate || 3000,
         backPercentage: cast.backPercentage || 50,
         birthday: cast.birthday || "",
-        bloodType: (cast.bloodType as any) || "",
+        bloodType: (cast.bloodType as "A" | "B" | "O" | "AB" | "") || "",
         height: cast.height,
         threeSize: cast.threeSize || "",
         hobby: cast.hobby || "",

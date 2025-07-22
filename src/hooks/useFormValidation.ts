@@ -1,4 +1,9 @@
-import { useForm, UseFormProps, FieldValues } from "react-hook-form";
+import {
+  useForm,
+  UseFormProps,
+  FieldValues,
+  SubmitHandler,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { getErrorMessage } from "@/lib/utils/validation";
@@ -13,7 +18,8 @@ export function useFormValidation<T extends FieldValues>({
   ...formProps
 }: UseFormValidationProps<T>) {
   const form = useForm<T>({
-    resolver: zodResolver(schema) as any,
+    // @ts-ignore - zodResolver has complex type issues with Zod schemas
+    resolver: zodResolver(schema),
     ...formProps,
   });
 
@@ -21,9 +27,9 @@ export function useFormValidation<T extends FieldValues>({
     onSubmit: (data: T) => Promise<void>,
     onError?: (error: unknown) => void
   ) => {
-    return form.handleSubmit(async (data: T) => {
+    return form.handleSubmit(async (data) => {
       try {
-        await onSubmit(data);
+        await onSubmit(data as unknown as T);
       } catch (error) {
         const errorMessage = getErrorMessage(error);
         form.setError("root", { message: errorMessage });
