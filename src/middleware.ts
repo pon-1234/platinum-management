@@ -68,52 +68,27 @@ export async function middleware(request: NextRequest) {
       `Middleware: Checking permissions for user ${user.id} on ${request.nextUrl.pathname}`
     );
 
-    // Create admin client to bypass RLS for middleware operations
-    const adminSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-          set(name: string, value: string, options: Record<string, unknown>) {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
-          },
-          remove(name: string, options: Record<string, unknown>) {
-            request.cookies.set(name, "");
-            response.cookies.set(name, "", { ...options, maxAge: 0 });
-          },
-        },
-      }
+    console.log("Middleware: Using security definer function for role check");
+
+    // Get user's role using the security definer function to avoid RLS recursion
+    const { data: roleData, error: roleError } = await supabase.rpc(
+      "get_staff_role_for_user",
+      { target_user_id: user.id }
     );
 
-    // Get user's role from database using admin client
-    const { data: staffData, error: staffError } = await adminSupabase
-      .from("staffs")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
+    console.log(`Middleware: Role data for user ${user.id}:`, {
+      roleData,
+      roleError,
+    });
 
-    console.log(
-      `Middleware: Staff data for user ${user.id}:`,
-      staffData,
-      staffError
-    );
-
-    if (!staffData || staffError) {
-      console.log(`Middleware: Staff data issue for user ${user.id}:`, {
-        staffData,
-        staffError: staffError?.message,
-      });
-      // User has no staff record or error occurred, sign them out and redirect to login
+    if (roleError || !roleData) {
+      console.log(`Middleware: No role found for user ${user.id}, signing out`);
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
     // Check route permissions based on role
-    const role = staffData.role;
+    const role = roleData;
     const pathname = request.nextUrl.pathname;
 
     // Define protected routes and their allowed roles
