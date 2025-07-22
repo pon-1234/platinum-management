@@ -81,7 +81,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordSubmit = async (_data: PasswordFormData) => {
+  const handlePasswordSubmit = async (data: PasswordFormData) => {
+    console.log("Password change data:", data);
     setIsLoading(true);
     try {
       // Simulate API call
