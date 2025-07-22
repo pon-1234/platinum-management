@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { PlusIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect, useCallback } from "react";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { TableLayout } from "@/components/table/TableLayout";
 import { TableStatusModal } from "@/components/table/TableStatusModal";
 import { TableManagementModal } from "@/components/table/TableManagementModal";
@@ -29,24 +29,7 @@ export default function TablesPage() {
     loadTables();
   }, []);
 
-  // Apply filters and search
-  useEffect(() => {
-    applyFiltersAndSearch();
-  }, [tables, filters, searchQuery]);
-
-  const loadTables = async () => {
-    setIsLoading(true);
-    try {
-      const allTables = await tableService.searchTables({});
-      setTables(allTables);
-    } catch (error) {
-      console.error("Failed to load tables:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const applyFiltersAndSearch = () => {
+  const applyFiltersAndSearch = useCallback(() => {
     let filtered = tables;
 
     // Apply search
@@ -82,6 +65,23 @@ export default function TablesPage() {
     }
 
     setFilteredTables(filtered);
+  }, [tables, filters, searchQuery]);
+
+  // Apply filters and search
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [applyFiltersAndSearch]);
+
+  const loadTables = async () => {
+    setIsLoading(true);
+    try {
+      const allTables = await tableService.searchTables({});
+      setTables(allTables);
+    } catch (error) {
+      console.error("Failed to load tables:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTableSelect = (table: Table) => {

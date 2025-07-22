@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { UserRole } from "@/types/auth.types";
 
 // User roles as zod enum
 const userRoleEnum = z.enum(["admin", "manager", "hall", "cashier", "cast"]);

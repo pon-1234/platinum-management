@@ -128,7 +128,7 @@ export class AuthService {
         role,
         staffId: user.user_metadata?.staffId,
       };
-    } catch (dbError) {
+    } catch {
       // Special case for admin@platinum-demo.com
       if (user.email === "admin@platinum-demo.com") {
         return {

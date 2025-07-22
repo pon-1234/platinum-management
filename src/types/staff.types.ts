@@ -4,6 +4,8 @@ export interface Staff {
   id: string;
   userId: string | null;
   fullName: string;
+  name?: string; // Alias for fullName for backward compatibility
+  email?: string; // Email from user metadata
   role: UserRole;
   hireDate: string;
   isActive: boolean;

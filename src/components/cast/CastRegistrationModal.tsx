@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { castService } from "@/services/cast.service";
 import { staffService } from "@/services/staff.service";
+import type { Staff } from "@/types/staff.types";
 import { z } from "zod";
 
 // Validation schema
@@ -27,13 +28,6 @@ const castRegistrationSchema = z.object({
 });
 
 type CastRegistrationData = z.infer<typeof castRegistrationSchema>;
-
-interface Staff {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
 
 interface CastRegistrationModalProps {
   isOpen: boolean;
@@ -62,14 +56,7 @@ export function CastRegistrationModal({
   });
 
   // Load available staff when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      loadAvailableStaff();
-      form.reset(); // Reset form when opening
-    }
-  }, [isOpen, form]);
-
-  const loadAvailableStaff = async () => {
+  const loadAvailableStaff = useCallback(async () => {
     setIsLoadingStaff(true);
     try {
       // Get all staff
@@ -94,7 +81,14 @@ export function CastRegistrationModal({
     } finally {
       setIsLoadingStaff(false);
     }
-  };
+  }, [form]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAvailableStaff();
+      form.reset(); // Reset form when opening
+    }
+  }, [isOpen, form, loadAvailableStaff]);
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
@@ -120,12 +114,7 @@ export function CastRegistrationModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="新規キャスト登録"
-      size="medium"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="新規キャスト登録" size="md">
       <form
         onSubmit={form.handleAsyncSubmit(handleSubmit)}
         className="space-y-6"
@@ -152,7 +141,7 @@ export function CastRegistrationModal({
               <option value="">スタッフを選択してください</option>
               {availableStaff.map((staff) => (
                 <option key={staff.id} value={staff.id}>
-                  {staff.name} ({staff.email})
+                  {staff.fullName} ({staff.role})
                 </option>
               ))}
             </select>
