@@ -30,12 +30,18 @@ export default function LoginPage() {
       if (result.success) {
         router.push("/dashboard");
       } else {
+        // Show detailed error for debugging
+        console.error("Login error:", result.error);
         setError(
           result.error || "メールアドレスまたはパスワードが間違っています"
         );
       }
-    } catch {
-      setError("ログイン中にエラーが発生しました");
+    } catch (error) {
+      console.error("Login exception:", error);
+      setError(
+        "ログイン中にエラーが発生しました: " +
+          (error instanceof Error ? error.message : String(error))
+      );
     } finally {
       setIsLoading(false);
     }
