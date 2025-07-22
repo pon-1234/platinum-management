@@ -5,14 +5,25 @@ import { useCastStore } from "@/stores/cast.store";
 import { PayrollExport } from "@/components/cast/PayrollExport";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { usePermission } from "@/hooks/usePermission";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
 import { LoadingSpinner, EmptyState } from "@/components/common";
 import { CastRegistrationModal } from "@/components/cast/CastRegistrationModal";
+import { CastEditModal } from "@/components/cast/CastEditModal";
+import { CastDeleteModal } from "@/components/cast/CastDeleteModal";
+import type { Cast } from "@/types/cast.types";
 
 export default function CastManagementPage() {
   const { casts, isLoading, error, fetchCasts } = useCastStore();
   const { can } = usePermission();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedCast, setSelectedCast] = useState<Cast | null>(null);
 
   useEffect(() => {
     fetchCasts({ isActive: true });
@@ -40,7 +51,7 @@ export default function CastManagementPage() {
             </h2>
             {can("cast", "manage") && (
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => setIsRegistrationModalOpen(true)}
                 className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2 transition-colors"
               >
                 <PlusIcon className="h-5 w-5" />
@@ -59,7 +70,7 @@ export default function CastManagementPage() {
               action={
                 can("cast", "manage") && (
                   <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => setIsRegistrationModalOpen(true)}
                     className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
                   >
                     初回キャスト追加
@@ -72,30 +83,80 @@ export default function CastManagementPage() {
               {casts.map((cast) => (
                 <div
                   key={cast.staffId}
-                  className="bg-white dark:bg-gray-800 shadow rounded-lg p-4"
+                  className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center space-x-4">
-                    {cast.profileImageUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={cast.profileImageUrl}
-                        alt={cast.stageName}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                        <span className="text-gray-600 dark:text-gray-300 font-medium">
-                          {cast.stageName.charAt(0)}
-                        </span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-4 flex-1">
+                      {cast.profileImageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={cast.profileImageUrl}
+                          alt={cast.stageName}
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                          <span className="text-gray-600 dark:text-gray-300 font-medium">
+                            {cast.stageName.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {cast.stageName}
+                          </h3>
+                          {!cast.isActive && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              無効
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          時給: ¥{cast.hourlyRate?.toLocaleString() || "-"}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          バック率: {cast.backPercentage}%
+                        </p>
                       </div>
-                    )}
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {cast.stageName}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        時給: ¥{cast.hourlyRate?.toLocaleString() || "-"}
-                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => {
+                          setSelectedCast(cast);
+                          // TODO: Add view details functionality
+                        }}
+                        className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+                        title="詳細を見る"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </button>
+                      {can("cast", "manage") && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setSelectedCast(cast);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-2 text-gray-400 hover:text-indigo-600 rounded-md hover:bg-gray-100 transition-colors"
+                            title="編集"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedCast(cast);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-gray-100 transition-colors"
+                            title="削除"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -109,13 +170,47 @@ export default function CastManagementPage() {
 
         {/* Cast Registration Modal */}
         <CastRegistrationModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          isOpen={isRegistrationModalOpen}
+          onClose={() => setIsRegistrationModalOpen(false)}
           onSuccess={() => {
-            setIsModalOpen(false);
+            setIsRegistrationModalOpen(false);
             fetchCasts({ isActive: true });
           }}
         />
+
+        {/* Cast Edit Modal */}
+        {selectedCast && (
+          <CastEditModal
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setSelectedCast(null);
+            }}
+            onSuccess={() => {
+              setIsEditModalOpen(false);
+              setSelectedCast(null);
+              fetchCasts({ isActive: true });
+            }}
+            cast={selectedCast}
+          />
+        )}
+
+        {/* Cast Delete Modal */}
+        {selectedCast && (
+          <CastDeleteModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setSelectedCast(null);
+            }}
+            onSuccess={() => {
+              setIsDeleteModalOpen(false);
+              setSelectedCast(null);
+              fetchCasts({ isActive: true });
+            }}
+            cast={selectedCast}
+          />
+        )}
       </div>
     </RoleGate>
   );
