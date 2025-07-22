@@ -104,7 +104,13 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-export function RoleBasedNavigation() {
+interface RoleBasedNavigationProps {
+  onNavigate?: () => void;
+}
+
+export function RoleBasedNavigation({
+  onNavigate,
+}: RoleBasedNavigationProps = {}) {
   const pathname = usePathname();
   const { canAccessRoute } = usePermission();
   const { user, signOut } = useAuthStore();
@@ -140,11 +146,8 @@ export function RoleBasedNavigation() {
                       }
                     `}
                     onClick={() => {
-                      const sidebar = document.getElementById("sidebar");
-                      const overlay = document.getElementById("overlay");
-                      if (window.innerWidth < 1024) {
-                        sidebar?.classList.add("-translate-x-full");
-                        if (overlay) overlay.style.display = "none";
+                      if (window.innerWidth < 1024 && onNavigate) {
+                        onNavigate();
                       }
                     }}
                   >
@@ -179,11 +182,8 @@ export function RoleBasedNavigation() {
               <button
                 onClick={() => {
                   signOut();
-                  const sidebar = document.getElementById("sidebar");
-                  const overlay = document.getElementById("overlay");
-                  if (window.innerWidth < 1024) {
-                    sidebar?.classList.add("-translate-x-full");
-                    if (overlay) overlay.style.display = "none";
+                  if (window.innerWidth < 1024 && onNavigate) {
+                    onNavigate();
                   }
                 }}
                 className="group flex w-full gap-x-3 rounded-md px-2 py-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
