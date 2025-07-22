@@ -29,12 +29,15 @@ export default function QRAttendancePage() {
     if (!user) return;
 
     try {
-      const staffs = await staffService.getAllStaff();
-      const userStaffs = staffs.filter((s) => s.userId === user.id); // eslint-disable-line @typescript-eslint/no-unused-vars
-      if (staffs.length > 0) {
+      // Load the first page of staff data
+      const result = await staffService.getAllStaff(1, 100);
+      const staffs = result.data;
+      const userStaff = staffs.find((s) => s.userId === user.id);
+
+      if (userStaff) {
         setStaffInfo({
-          id: staffs[0].id,
-          name: staffs[0].fullName,
+          id: userStaff.id,
+          name: userStaff.fullName,
         });
       }
     } catch (error) {
