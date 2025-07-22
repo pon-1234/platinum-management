@@ -193,15 +193,17 @@ describe("StaffService", () => {
       ];
 
       // Mock count query
-      mockDbMethods.select.mockImplementation((columns: any, options: any) => {
-        if (options?.count === "exact" && options?.head === true) {
-          return Promise.resolve({
-            count: 2,
-            error: null,
-          });
+      mockDbMethods.select.mockImplementation(
+        (columns: string, options: { count?: string; head?: boolean }) => {
+          if (options?.count === "exact" && options?.head === true) {
+            return Promise.resolve({
+              count: 2,
+              error: null,
+            });
+          }
+          return mockDbMethods;
         }
-        return mockDbMethods;
-      });
+      );
 
       // Mock data query
       mockDbMethods.range.mockResolvedValue({

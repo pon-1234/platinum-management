@@ -9,6 +9,7 @@ import {
   QRAttendanceDashboard,
 } from "@/components/qr-code";
 import { toast } from "react-hot-toast";
+import { usePermission } from "@/hooks/usePermission";
 
 type TabType = "generate" | "scan" | "dashboard";
 
@@ -19,11 +20,15 @@ export default function QRAttendancePage() {
     name: string;
   } | null>(null);
   const { user } = useAuthStore();
+  const { can } = usePermission();
+  const canViewAttendance = can("attendance", "view");
 
   useEffect(() => {
-    loadStaffInfo();
+    if (canViewAttendance) {
+      loadStaffInfo();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, canViewAttendance]);
 
   const loadStaffInfo = async () => {
     if (!user) return;
@@ -53,6 +58,18 @@ export default function QRAttendancePage() {
   const handleScanError = (error: string) => {
     toast.error(`エラー: ${error}`);
   };
+
+  // 権限がない場合のメッセージ
+  if (!canViewAttendance) {
+    return (
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          アクセス権限がありません
+        </h1>
+        <p className="text-gray-600">勤怠情報を表示する権限がありません。</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

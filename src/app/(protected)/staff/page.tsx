@@ -16,6 +16,7 @@ import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 
 export default function StaffPage() {
   const { can } = usePermission();
+  const canViewStaff = can("staff", "view");
   const [staff, setStaff] = useState<Staff[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
@@ -62,8 +63,12 @@ export default function StaffPage() {
   }, [currentPage, searchQuery, roleFilter]);
 
   useEffect(() => {
-    loadStaff();
-  }, [loadStaff]);
+    if (canViewStaff) {
+      loadStaff();
+    } else {
+      setIsLoading(false);
+    }
+  }, [loadStaff, canViewStaff]);
 
   const handleCreate = () => {
     setEditingStaff(null);
@@ -128,6 +133,20 @@ export default function StaffPage() {
     { value: "cashier", label: "会計担当" },
     { value: "cast", label: "キャスト" },
   ];
+
+  // 権限がない場合のメッセージ
+  if (!canViewStaff) {
+    return (
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          アクセス権限がありません
+        </h1>
+        <p className="text-gray-600">
+          スタッフ情報を表示する権限がありません。
+        </p>
+      </div>
+    );
+  }
 
   if (showForm) {
     return (
