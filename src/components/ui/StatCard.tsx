@@ -4,7 +4,7 @@ import { ComponentType } from "react";
 interface StatCardProps {
   title: string;
   value: string | number;
-  icon?: ComponentType<any> | ReactNode;
+  icon?: ComponentType<{ className?: string }> | ReactNode;
   iconColor?: string;
   valueFormatter?: (value: string | number) => string;
   className?: string;
@@ -29,7 +29,7 @@ export function StatCard({
 
     // If icon is a component type, render it as JSX
     if (typeof icon === "function") {
-      const IconComponent = icon as ComponentType<any>;
+      const IconComponent = icon as ComponentType<{ className?: string }>;
       return <IconComponent className="h-5 w-5" />;
     }
 
