@@ -9,6 +9,14 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // Temporarily skip middleware for authentication debugging
+  const skipMiddleware = true;
+
+  if (skipMiddleware) {
+    console.log(`Middleware: Temporarily disabled for debugging`);
+    return response;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -50,6 +58,12 @@ export async function middleware(request: NextRequest) {
   if (!user && !isPublicRoute) {
     console.log(`Middleware: No user found, redirecting to login`);
     return NextResponse.redirect(new URL("/auth/login", request.url));
+  }
+
+  // If user session is missing but we're on the login page, allow access
+  if (!user && request.nextUrl.pathname === "/auth/login") {
+    console.log(`Middleware: No user session on login page, allowing access`);
+    return response;
   }
 
   // If user is authenticated and trying to access auth pages, redirect to dashboard
