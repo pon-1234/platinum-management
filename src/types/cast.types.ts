@@ -13,6 +13,7 @@ export type Cast = {
   profileImageUrl: string | null;
   hourlyRate: number;
   backPercentage: number;
+  memo: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,6 +47,7 @@ export type CreateCastData = {
   profileImageUrl?: string | null;
   hourlyRate: number;
   backPercentage: number;
+  memo?: string | null;
   isActive?: boolean;
 };
 
