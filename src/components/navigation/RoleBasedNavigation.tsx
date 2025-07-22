@@ -104,7 +104,13 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-export function RoleBasedNavigation() {
+interface RoleBasedNavigationProps {
+  onNavigate?: () => void;
+}
+
+export function RoleBasedNavigation({
+  onNavigate,
+}: RoleBasedNavigationProps = {}) {
   const pathname = usePathname();
   const { canAccessRoute } = usePermission();
   const { user, signOut } = useAuthStore();
@@ -139,6 +145,11 @@ export function RoleBasedNavigation() {
                           : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
                       }
                     `}
+                    onClick={() => {
+                      if (window.innerWidth < 1024 && onNavigate) {
+                        onNavigate();
+                      }
+                    }}
                   >
                     <Icon
                       className={`
@@ -147,7 +158,7 @@ export function RoleBasedNavigation() {
                       `}
                       aria-hidden="true"
                     />
-                    {item.name}
+                    <span className="truncate">{item.name}</span>
                   </Link>
                 </li>
               );
@@ -159,8 +170,8 @@ export function RoleBasedNavigation() {
           <li className="mt-auto">
             <div className="border-t border-gray-200 pt-4">
               <div className="flex items-center gap-x-4 px-2 py-3">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
                     {user.email}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -169,7 +180,12 @@ export function RoleBasedNavigation() {
                 </div>
               </div>
               <button
-                onClick={() => signOut()}
+                onClick={() => {
+                  signOut();
+                  if (window.innerWidth < 1024 && onNavigate) {
+                    onNavigate();
+                  }
+                }}
                 className="group flex w-full gap-x-3 rounded-md px-2 py-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
               >
                 <ArrowRightOnRectangleIcon
