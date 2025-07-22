@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCastStore } from "@/stores/cast.store";
 import { PayrollExport } from "@/components/cast/PayrollExport";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { usePermission } from "@/hooks/usePermission";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import { LoadingSpinner, EmptyState } from "@/components/common";
+import { CastRegistrationModal } from "@/components/cast/CastRegistrationModal";
 
 export default function CastManagementPage() {
   const { casts, isLoading, error, fetchCasts } = useCastStore();
+  const { can } = usePermission();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCasts({ isActive: true });
@@ -28,17 +34,39 @@ export default function CastManagementPage() {
 
         {/* Cast List */}
         <div className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-            キャスト一覧
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              キャスト一覧
+            </h2>
+            {can("cast", "manage") && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2 transition-colors"
+              >
+                <PlusIcon className="h-5 w-5" />
+                新規追加
+              </button>
+            )}
+          </div>
           {isLoading ? (
             <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+              <LoadingSpinner size="lg" />
             </div>
           ) : casts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              キャストが登録されていません
-            </div>
+            <EmptyState
+              title="キャストが登録されていません"
+              description="新しいキャストを追加して開始しましょう"
+              action={
+                can("cast", "manage") && (
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                  >
+                    初回キャスト追加
+                  </button>
+                )
+              }
+            />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {casts.map((cast) => (
@@ -78,6 +106,16 @@ export default function CastManagementPage() {
 
         {/* Payroll Export Section */}
         {casts.length > 0 && <PayrollExport casts={casts} />}
+
+        {/* Cast Registration Modal */}
+        <CastRegistrationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            fetchCasts({ isActive: true });
+          }}
+        />
       </div>
     </RoleGate>
   );

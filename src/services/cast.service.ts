@@ -48,6 +48,7 @@ export class CastService extends BaseService {
         profile_image_url: validatedData.profileImageUrl || null,
         hourly_rate: validatedData.hourlyRate,
         back_percentage: validatedData.backPercentage,
+        memo: validatedData.memo || null,
         is_active: validatedData.isActive ?? true,
         created_by: staffId,
         updated_by: staffId,
@@ -164,6 +165,21 @@ export class CastService extends BaseService {
     return this.searchCasts(params);
   }
 
+  async getAllCasts(): Promise<Cast[]> {
+    const { data, error } = await this.supabase
+      .from("casts_profile")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(
+        this.handleDatabaseError(error, "全キャスト情報の取得に失敗しました")
+      );
+    }
+
+    return data.map(this.mapToCast);
+  }
+
   async searchCasts(params: CastSearchParams = {}): Promise<Cast[]> {
     // Validate search parameters
     const validatedParams = castSearchSchema.parse(params);
@@ -219,6 +235,7 @@ export class CastService extends BaseService {
       profileImageUrl: data.profile_image_url || null,
       hourlyRate: data.hourly_rate,
       backPercentage: data.back_percentage,
+      memo: data.memo || null,
       isActive: data.is_active,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
