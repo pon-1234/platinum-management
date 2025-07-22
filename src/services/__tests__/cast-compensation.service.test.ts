@@ -6,6 +6,19 @@ import type { Cast, CastPerformance } from "@/types/cast.types";
 
 vi.mock("../cast.service");
 vi.mock("../cast-performance.service");
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: "test-user-id" } },
+      }),
+    },
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn(),
+  })),
+}));
 
 describe("CastCompensationService", () => {
   let compensationService: CastCompensationService;

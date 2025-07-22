@@ -61,7 +61,7 @@ export const useCastPerformance = (castId?: string) => {
     const startDate = format(startOfMonth(now), "yyyy-MM-dd");
     const endDate = format(endOfMonth(now), "yyyy-MM-dd");
 
-    return performances.filter(
+    return (performances || []).filter(
       (perf) =>
         perf.castId === castId && perf.date >= startDate && perf.date <= endDate
     );

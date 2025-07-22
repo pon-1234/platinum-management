@@ -77,6 +77,7 @@ describe("CastService", () => {
         specialSkill: null,
         selfIntroduction: null,
         profileImageUrl: null,
+        memo: null,
         createdAt: "2024-01-01T00:00:00Z",
         updatedAt: "2024-01-01T00:00:00Z",
       });
