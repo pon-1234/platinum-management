@@ -112,25 +112,10 @@ export function RoleBasedNavigation() {
   const filteredItems = navigationItems.filter((item) => {
     // Admin should see all items
     if (user?.role === "admin") {
-      console.log(`Admin user showing item: ${item.name} (${item.href})`);
       return true;
     }
-    const hasAccess = canAccessRoute(item.href);
-    console.log(
-      `Non-admin access check for ${item.name}: ${hasAccess}, user role: ${user?.role}`
-    );
-    return hasAccess;
+    return canAccessRoute(item.href);
   });
-
-  // Debug log for admin user
-  if (user?.role === "admin") {
-    console.log(
-      "Admin user detected, total navigation items:",
-      navigationItems.length
-    );
-    console.log("Admin user details:", user);
-    console.log("Filtered items count:", filteredItems.length);
-  }
 
   return (
     <nav className="flex flex-1 flex-col">

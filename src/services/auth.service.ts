@@ -94,19 +94,14 @@ export class AuthService {
     // Get role from staff table directly
     try {
       const { data: staffData, error: staffError } = await this.supabase
-        .from("staff")
+        .from("staffs")
         .select("role")
         .eq("auth_user_id", user.id)
         .single();
 
       if (staffError || !staffData) {
-        console.log(
-          "No staff record found, checking for admin user:",
-          user.email
-        );
         // Special case for admin@platinum-demo.com
         if (user.email === "admin@platinum-demo.com") {
-          console.log("Admin user detected, setting role to admin");
           return {
             id: user.id,
             email: user.email!,
@@ -126,12 +121,6 @@ export class AuthService {
       }
 
       const role = (staffData.role || "cast") as UserRole;
-      console.log(
-        "AuthService: Retrieved role for user",
-        user.email,
-        ":",
-        role
-      );
 
       return {
         id: user.id,
@@ -140,10 +129,8 @@ export class AuthService {
         staffId: user.user_metadata?.staffId,
       };
     } catch (dbError) {
-      console.error("Database error fetching role:", dbError);
       // Special case for admin@platinum-demo.com
       if (user.email === "admin@platinum-demo.com") {
-        console.log("Admin user detected (fallback), setting role to admin");
         return {
           id: user.id,
           email: user.email!,
