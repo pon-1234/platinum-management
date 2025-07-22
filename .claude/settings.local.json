@@ -48,8 +48,17 @@
       "Bash(gemini:*)",
       "Bash(gemini-search:*)",
       "Bash(gemini-analyze:*)",
+<<<<<<< Updated upstream
       "Bash(npx supabase db push:*)",
       "Bash(psql:*)"
+=======
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)"
+>>>>>>> Stashed changes
     ],
     "deny": []
   },
