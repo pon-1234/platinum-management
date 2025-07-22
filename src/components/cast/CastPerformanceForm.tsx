@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createCastPerformanceFormSchema } from "@/lib/validations/cast";
-import { castService } from "@/services/cast.service";
+import { useCastPerformance } from "@/hooks/useCastPerformance";
 import type { CreateCastPerformanceFormInput } from "@/lib/validations/cast";
 import { format } from "date-fns";
 
@@ -20,7 +20,7 @@ export function CastPerformanceForm({
   onCancel,
 }: CastPerformanceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { createPerformance, error, setError } = useCastPerformance();
 
   const {
     register,
@@ -44,7 +44,7 @@ export function CastPerformanceForm({
       setIsSubmitting(true);
       setError(null);
 
-      await castService.createCastPerformance(data);
+      await createPerformance(data);
 
       reset();
       onSuccess?.();

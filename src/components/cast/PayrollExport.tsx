@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Calendar, Download, Users } from "lucide-react";
-import { castService } from "@/services/cast.service";
+import { castCompensationService } from "@/services/cast-compensation.service";
 import {
   exportCastCompensationToCSV,
   formatDateRange,
@@ -41,14 +41,14 @@ export function PayrollExport({ casts }: PayrollExportProps) {
     setIsExporting(true);
     try {
       const compensations =
-        await castService.calculateMultipleCastsCompensation(
+        await castCompensationService.calculateMultipleCastsCompensation(
           selectedCasts,
           dateRange.startDate,
           dateRange.endDate
         );
 
       const period = formatDateRange(dateRange.startDate, dateRange.endDate);
-      const compensationsWithPeriod = compensations.map((comp) => ({
+      const compensationsWithPeriod = compensations.map((comp: any) => ({
         ...comp,
         period,
       }));

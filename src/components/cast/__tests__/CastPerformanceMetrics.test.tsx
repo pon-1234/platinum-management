@@ -2,9 +2,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CastPerformanceMetrics } from "../CastPerformanceMetrics";
 import { CastService } from "@/services/cast.service";
+import { CastPerformanceService } from "@/services/cast-performance.service";
 
-// Mock the CastService
+// Mock the services
 vi.mock("@/services/cast.service");
+vi.mock("@/services/cast-performance.service");
 
 describe("CastPerformanceMetrics", () => {
   const mockCast = {
@@ -67,6 +69,13 @@ describe("CastPerformanceMetrics", () => {
       () =>
         ({
           getCastById: mockGetCastById,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any
+    );
+
+    vi.mocked(CastPerformanceService).mockImplementation(
+      () =>
+        ({
           getCastPerformances: mockGetCastPerformances,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }) as any
@@ -104,6 +113,13 @@ describe("CastPerformanceMetrics", () => {
       () =>
         ({
           getCastById: mockGetCastById,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any
+    );
+
+    vi.mocked(CastPerformanceService).mockImplementation(
+      () =>
+        ({
           getCastPerformances: vi.fn(),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }) as any
@@ -129,6 +145,14 @@ describe("CastPerformanceMetrics", () => {
         }) as any
     );
 
+    vi.mocked(CastPerformanceService).mockImplementation(
+      () =>
+        ({
+          getCastPerformances: vi.fn(),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any
+    );
+
     render(
       <CastPerformanceMetrics castId="123e4567-e89b-12d3-a456-426614174000" />
     );
@@ -146,6 +170,13 @@ describe("CastPerformanceMetrics", () => {
       () =>
         ({
           getCastById: mockGetCastById,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any
+    );
+
+    vi.mocked(CastPerformanceService).mockImplementation(
+      () =>
+        ({
           getCastPerformances: mockGetCastPerformances,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }) as any

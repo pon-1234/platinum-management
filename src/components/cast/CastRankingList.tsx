@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { castService } from "@/services/cast.service";
+import { castPerformanceService } from "@/services/cast-performance.service";
 import type { CastRanking } from "@/types/cast.types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { TrophyIcon } from "@heroicons/react/24/solid";
@@ -31,7 +31,11 @@ export function CastRankingList({
         const start = startDate || format(startOfMonth(now), "yyyy-MM-dd");
         const end = endDate || format(endOfMonth(now), "yyyy-MM-dd");
 
-        const data = await castService.getCastRanking(start, end, limit);
+        const data = await castPerformanceService.getCastRanking(
+          start,
+          end,
+          limit
+        );
         setRankings(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "エラーが発生しました");

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { castService } from "@/services/cast.service";
+import { castPerformanceService } from "@/services/cast-performance.service";
 import type { Cast, CastPerformance } from "@/types/cast.types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -35,11 +36,12 @@ export function CastPerformanceMetrics({
         const startDate = format(startOfMonth(now), "yyyy-MM-dd");
         const endDate = format(endOfMonth(now), "yyyy-MM-dd");
 
-        const performanceData = await castService.getCastPerformances({
-          castId,
-          startDate,
-          endDate,
-        });
+        const performanceData =
+          await castPerformanceService.getCastPerformances({
+            castId,
+            startDate,
+            endDate,
+          });
         setPerformances(performanceData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "エラーが発生しました");
