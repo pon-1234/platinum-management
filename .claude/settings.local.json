@@ -69,5 +69,42 @@
       "Bash(git rebase:*)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit.*\\.(spec|test)\\.(ts|tsx)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔴 Red Phase: Running test to confirm failure...' && npm run test -- --run --reporter=verbose --testNamePattern='%(file_path)s' || echo '✅ Test failed as expected (Red phase complete)'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit.*\\.(ts|tsx)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🟢 Green Phase: Formatting and linting...' && npx prettier --write '%(file_path)s' && npm run lint -- --fix '%(file_path)s'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🛑 Stop Hook: Running full CI pipeline...' && npm run lint && npm run typecheck && npm run test && npm run build"
+          },
+          {
+            "type": "command",
+            "command": "echo '📊 Coverage Check: Verifying test coverage...' && npm run test:coverage"
+          }
+        ]
+      }
+    ]
   }
 }
