@@ -224,8 +224,7 @@ export const useAttendanceStore = create<AttendanceState>()(
           if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.createShiftRequest({
-            castId: staffId,
-            requestDate: data.requestDate,
+            requestedDate: data.requestDate,
             startTime: data.startTime,
             endTime: data.endTime,
             notes: data.reason,

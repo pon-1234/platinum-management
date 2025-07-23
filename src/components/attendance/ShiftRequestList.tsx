@@ -175,11 +175,12 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
                     <div className="flex items-center space-x-4 mb-2">
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                         <UserIcon className="w-4 h-4 mr-1" />
-                        {request.castId} {/* TODO: Get actual cast name */}
+                        {request.staffName || request.staffId}{" "}
+                        {/* Display staff name or ID */}
                       </div>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                         <CalendarIcon className="w-4 h-4 mr-1" />
-                        {format(new Date(request.requestDate), "M月d日(E)", {
+                        {format(new Date(request.requestedDate), "M月d日(E)", {
                           locale: ja,
                         })}
                       </div>
