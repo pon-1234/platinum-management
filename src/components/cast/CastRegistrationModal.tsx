@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
@@ -62,12 +62,11 @@ export function CastRegistrationModal({
   // Removed loadAvailableStaff callback to prevent infinite loops
 
   useEffect(() => {
-    if (isOpen && canCreateCast && !hasLoadedStaff.current && !isLoadingStaff) {
+    // Load staff when modal opens and hasn't been loaded yet
+    if (isOpen && canCreateCast && !hasLoadedStaff.current) {
       hasLoadedStaff.current = true;
       // Call the function directly to avoid dependency issues
       (async () => {
-        if (isLoadingStaff) return;
-
         setIsLoadingStaff(true);
         console.log(
           "CastRegistrationModal: Starting to load available staff..."
@@ -110,6 +109,7 @@ export function CastRegistrationModal({
       })();
     }
 
+    // Reset load state when modal closes
     if (!isOpen) {
       hasLoadedStaff.current = false;
     }
