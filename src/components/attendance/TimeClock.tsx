@@ -71,7 +71,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
   }, []);
 
   const handleClockAction = useCallback(
-    async (actionType: ClockAction["type"]) => {
+    async (actionType: ClockAction) => {
       if (!currentStaff) {
         toast.error("スタッフ情報が見つかりません");
         return;
