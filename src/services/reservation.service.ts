@@ -221,7 +221,27 @@ export class ReservationService {
 
     let query = this.supabase
       .from("reservations")
-      .select("*")
+      .select(
+        `
+        *,
+        customer:customers(
+          id,
+          name,
+          phone_number,
+          email
+        ),
+        table:tables(
+          id,
+          table_number,
+          capacity,
+          location
+        ),
+        assigned_cast:casts_profile(
+          id,
+          stage_name
+        )
+      `
+      )
       .order("reservation_date", { ascending: true })
       .order("reservation_time", { ascending: true });
 
