@@ -5,7 +5,12 @@ export const bloodTypeSchema = z.enum(["A", "B", "O", "AB"]);
 
 // キャストプロフィール作成用スキーマ
 export const createCastSchema = z.object({
-  staffId: z.string().uuid("有効なスタッフIDを指定してください"),
+  staffId: z
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      "UUID形式で入力してください"
+    ),
   stageName: z
     .string()
     .min(1, "ステージ名は必須です")
