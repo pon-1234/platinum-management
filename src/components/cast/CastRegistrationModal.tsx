@@ -113,7 +113,7 @@ export function CastRegistrationModal({
       setIsLoadingStaff(false);
       console.log("CastRegistrationModal: Finished loading staff");
     }
-  }, [isLoadingStaff, form]);
+  }, [isLoadingStaff]);
 
   useEffect(() => {
     if (
@@ -123,9 +123,21 @@ export function CastRegistrationModal({
       availableStaff.length === 0
     ) {
       loadAvailableStaff();
-      form.reset(); // Reset form when opening
     }
-  }, [isOpen, canCreateCast]);
+  }, [
+    isOpen,
+    canCreateCast,
+    isLoadingStaff,
+    availableStaff.length,
+    loadAvailableStaff,
+  ]);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      form.reset();
+    }
+  }, [isOpen, form]);
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);

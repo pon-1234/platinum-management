@@ -41,7 +41,7 @@ export class CastService extends BaseService {
       if (validationError instanceof Error && "issues" in validationError) {
         console.error(
           "CastService: Validation issues:",
-          (validationError as any).issues
+          (validationError as { issues: unknown[] }).issues
         );
       }
       throw validationError;
