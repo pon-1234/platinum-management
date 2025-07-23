@@ -27,7 +27,20 @@ export class CastService extends BaseService {
 
   // Cast CRUD operations
   async createCast(data: CreateCastData): Promise<Cast> {
-    // Validate input
+    console.log("CastService: Creating cast with data:", data);
+
+    try {
+      // Validate input
+      const validatedData = createCastSchema.parse(data);
+      console.log(
+        "CastService: Validation passed, validated data:",
+        validatedData
+      );
+    } catch (validationError) {
+      console.error("CastService: Validation failed:", validationError);
+      throw validationError;
+    }
+
     const validatedData = createCastSchema.parse(data);
 
     // Get current user's staff ID
