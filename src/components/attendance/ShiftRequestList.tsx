@@ -57,7 +57,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
   const handleApproval = async (requestId: string, approved: boolean) => {
     try {
       await attendanceService.approveShiftRequest(requestId, {
-        status: approved ? "approved" : "rejected",
+        approved: approved,
         rejectionReason: approved ? undefined : rejectionReason,
       });
 

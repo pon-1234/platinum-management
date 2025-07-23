@@ -247,7 +247,7 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({ requestsLoading: true, error: null });
         try {
           await attendanceService.approveShiftRequest(requestId, {
-            status: "approved",
+            approved: true,
           });
           // Refresh shift requests after approval
           const { fetchShiftRequests } = get();
@@ -266,7 +266,7 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({ requestsLoading: true, error: null });
         try {
           await attendanceService.approveShiftRequest(requestId, {
-            status: "rejected",
+            approved: false,
             rejectionReason: reason,
           });
           // Refresh shift requests after rejection
