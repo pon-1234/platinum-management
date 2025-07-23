@@ -266,20 +266,40 @@ export class StaffService extends BaseService {
       throw new Error("認証が必要です。ログインしてください。");
     }
 
-    console.log("User authenticated, calling get_unregistered_staff...");
+    console.log("User authenticated, querying unregistered staff directly...");
 
-    // Call the debug Supabase function temporarily
-    const { data, error } = await this.supabase.rpc(
-      "get_unregistered_staff_debug",
-      {
-        p_page: page,
-        p_limit: limit,
-        p_search_query: searchQuery || null,
-      }
-    );
+    // Use direct query instead of RPC function to avoid auth issues
+    const offset = (page - 1) * limit;
+
+    // Get paginated data with LEFT JOIN to find unregistered staff
+    let query = this.supabase
+      .from("staffs")
+      .select(
+        `
+        id,
+        user_id,
+        full_name,
+        role,
+        hire_date,
+        is_active,
+        created_at,
+        updated_at,
+        casts_profile!left(staff_id)
+      `
+      )
+      .eq("is_active", true)
+      .is("casts_profile.staff_id", null)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (searchQuery) {
+      query = query.ilike("full_name", `%${searchQuery}%`);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
-      console.error("RPC Error details:", error);
+      console.error("Query Error details:", error);
       this.handleError(error, "未登録スタッフの取得に失敗しました");
     }
 
@@ -287,12 +307,8 @@ export class StaffService extends BaseService {
       return { data: [], totalCount: 0, hasMore: false };
     }
 
-    // Extract total count and hasMore from the first row
-    const totalCount = data[0].total_count || 0;
-    const hasMore = data[0].has_more || false;
-
     // Map the data to Staff type
-    const staffList = data.map((item: Record<string, unknown>) => ({
+    const staffList = data.map((item) => ({
       id: item.id,
       userId: item.user_id,
       fullName: item.full_name,
@@ -302,6 +318,9 @@ export class StaffService extends BaseService {
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
+
+    const totalCount = count || data.length;
+    const hasMore = data.length === limit;
 
     return { data: staffList, totalCount, hasMore };
   }
