@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { castService } from "@/services/cast.service";
-import { getUnregisteredStaff } from "@/app/actions/staff.actions";
+import { staffService } from "@/services/staff.service";
 import type { Staff } from "@/types/staff.types";
 import { z } from "zod";
 import { usePermission } from "@/hooks/usePermission";
@@ -62,8 +62,8 @@ export function CastRegistrationModal({
   const loadAvailableStaff = useCallback(async () => {
     setIsLoadingStaff(true);
     try {
-      // Use server action to get unregistered staff with proper authentication
-      const result = await getUnregisteredStaff(1, 100);
+      // Use client-side service with better error handling
+      const result = await staffService.getUnregisteredStaff(1, 100);
 
       // Filter out admin role
       const available = result.data.filter(

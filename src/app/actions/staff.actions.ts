@@ -10,6 +10,19 @@ export async function getUnregisteredStaff(
   const supabase = await createClient();
 
   try {
+    // Check if user is authenticated
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error("Authentication error:", authError);
+      throw new Error("認証が必要です");
+    }
+
+    console.log("Authenticated user:", user.id);
+
     // Server-side call with proper authentication context
     const { data, error } = await supabase.rpc("get_unregistered_staff", {
       p_page: page,

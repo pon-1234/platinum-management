@@ -53,7 +53,8 @@
       "Bash(supabase link:*)",
       "Bash(supabase login:*)",
       "Bash(git checkout:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(PGPASSWORD:*)"
     ],
     "deny": []
   }
