@@ -88,7 +88,9 @@ export function CastRegistrationModal({
       setAvailableStaff(available);
 
       // Clear any previous errors if successful
-      form.clearErrors("root");
+      if (form.formState.errors.root) {
+        form.clearErrors("root");
+      }
     } catch (error) {
       console.error(
         "CastRegistrationModal: Failed to load available staff:",
@@ -113,7 +115,7 @@ export function CastRegistrationModal({
       setIsLoadingStaff(false);
       console.log("CastRegistrationModal: Finished loading staff");
     }
-  }, [isLoadingStaff]);
+  }, [isLoadingStaff, form]);
 
   useEffect(() => {
     if (
