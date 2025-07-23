@@ -2,10 +2,26 @@
 
 const { createClient } = require("@supabase/supabase-js");
 
-// Supabase connection
-const supabaseUrl = "https://pdomeeyvatachcothudq.supabase.co";
-const supabaseServiceKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkb21lZXl2YXRhY2hjb3RodWRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzA5MzI3MiwiZXhwIjoyMDY4NjY5MjcyfQ.HhYDbfwZeSUmKmkftQZ492LKdTTHP_ORwmqnEyxZVNA";
+// Supabase connection from environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Validate environment variables
+function validateEnvironment() {
+  const missing = [];
+  if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (missing.length > 0) {
+    console.error("❌ Missing required environment variables:");
+    missing.forEach((var_name) => console.error(`  - ${var_name}`));
+    console.error("\n💡 Please set these in your .env.local file");
+    console.error("📋 For more details, see DATABASE_SETUP.md");
+    process.exit(1);
+  }
+}
+
+validateEnvironment();
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
