@@ -148,7 +148,9 @@ export class QRStatisticsService extends BaseService {
       if (!staffStats.has(staffId)) {
         staffStats.set(staffId, {
           staffId,
-          staffName: log.staff?.full_name || "未知",
+          staffName:
+            (log.staff as unknown as { full_name: string } | null)?.full_name ||
+            "未知",
           totalScans: 0,
           successfulScans: 0,
           failedScans: 0,
@@ -254,7 +256,9 @@ export class QRStatisticsService extends BaseService {
         const staffId = log.staff_id;
         if (!staffErrors.has(staffId)) {
           staffErrors.set(staffId, {
-            name: log.staff?.full_name || "未知",
+            name:
+              (log.staff as unknown as { full_name: string } | null)
+                ?.full_name || "未知",
             count: 0,
           });
         }

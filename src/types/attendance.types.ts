@@ -166,6 +166,8 @@ export interface CreateAttendanceRecordData {
   staffId: string;
   confirmedShiftId?: string;
   attendanceDate: string;
+  scheduledStartTime?: string;
+  scheduledEndTime?: string;
   clockInTime?: string;
   clockOutTime?: string;
   breakStartTime?: string;
@@ -281,7 +283,8 @@ export interface CalendarShift {
   startTime: string;
   endTime: string;
   shiftType: ShiftType;
-  status?: AttendanceStatus;
+  shiftStatus?: "scheduled" | "completed" | "cancelled"; // ConfirmedShiftのstatus
+  attendanceStatus?: AttendanceStatus; // 出勤記録のstatus
   isConfirmed: boolean;
 }
 

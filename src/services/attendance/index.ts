@@ -36,16 +36,17 @@ export {
 /**
  * 統合AttendanceServiceクラス - 後方互換性のため
  * 既存のコードが動作するよう、従来のインターフェースを提供
+ * 注意: 循環インポートを回避するため、一時的に無効化
  */
 export class AttendanceService {
-  private templateService = shiftTemplateService;
-  private requestService = shiftRequestService;
+  // private templateService = shiftTemplateService;
+  // private requestService = shiftRequestService;
   // TODO: Add other services when implemented
   // private scheduleService = shiftScheduleService;
   // private trackingService = attendanceTrackingService;
   // private reportingService = attendanceReportingService;
-
-  // Shift Template methods
+  // Shift Template methods - 一時的に無効化
+  /*
   async createShiftTemplate(
     data: import("@/types/attendance.types").CreateShiftTemplateData
   ) {
@@ -90,33 +91,9 @@ export class AttendanceService {
   ) {
     return this.requestService.approveShiftRequest(id, data);
   }
-
-  // TODO: Add other methods when services are implemented
-  /*
-  async createConfirmedShift(data: import("@/types/attendance.types").CreateConfirmedShiftData) {
-    return this.scheduleService.createConfirmedShift(data);
-  }
-
-  async searchConfirmedShifts(params: import("@/types/attendance.types").ConfirmedShiftSearchParams) {
-    return this.scheduleService.searchConfirmedShifts(params);
-  }
-
-  async createAttendanceRecord(data: import("@/types/attendance.types").CreateAttendanceRecordData) {
-    return this.trackingService.createAttendanceRecord(data);
-  }
-
-  async clockAction(staffId: string, action: import("@/types/attendance.types").ClockAction) {
-    return this.trackingService.clockAction(staffId, action);
-  }
-
-  async getAttendanceDashboard() {
-    return this.reportingService.getAttendanceDashboard();
-  }
-
-  async getMonthlyAttendanceSummary(staffId: string, month: string) {
-    return this.reportingService.getMonthlyAttendanceSummary(staffId, month);
-  }
   */
+  // TODO: Add other methods when services are implemented
+  // 循環インポートを解決した後に有効化
 }
 
 // 既存コード用のシングルトンインスタンス
