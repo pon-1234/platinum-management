@@ -1,14 +1,11 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
-// 環境変数の設定
-process.env.NEXT_PUBLIC_SUPABASE_URL =
-  "https://pdomeeyvatachcothudq.supabase.co";
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkb21lZXl2YXRhY2hjb3RodWRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwOTMyNzIsImV4cCI6MjA2ODY2OTI3Mn0.fFmyB6vBbZMDoV732iAaqGr4WDsb9In8K-87gp0E5Ak";
-process.env.SUPABASE_URL = "https://pdomeeyvatachcothudq.supabase.co";
-process.env.SUPABASE_SERVICE_ROLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkb21lZXl2YXRhY2hjb3RodWRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzA5MzI3MiwiZXhwIjoyMDY4NjY5MjcyfQ.HhYDbfwZeSUmKmkftQZ492LKdTTHP_ORwmqnEyxZVNA";
+// 環境変数の設定（実際の値は使用しない）
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+process.env.SUPABASE_URL = "https://test.supabase.co";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 
 // Supabaseクライアントのモック
 vi.mock("@/lib/supabase/client", () => ({

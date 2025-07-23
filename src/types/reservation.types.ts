@@ -86,6 +86,7 @@ export type ReservationSearchParams = {
 };
 
 export type TableSearchParams = {
+  search?: string;
   status?: TableStatus;
   isVip?: boolean;
   isActive?: boolean;

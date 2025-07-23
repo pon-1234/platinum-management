@@ -185,6 +185,9 @@ export class TableService extends BaseService {
       .order("table_name", { ascending: true });
 
     // Add filters
+    if (validatedParams.search) {
+      query = query.ilike("table_name", `%${validatedParams.search}%`);
+    }
     if (validatedParams.status !== undefined) {
       query = query.eq("current_status", validatedParams.status);
     }

@@ -3,12 +3,9 @@
 import { useState, useEffect } from "react";
 import { Calendar, Clock, Users, Phone, Check, X } from "lucide-react";
 import { reservationService } from "@/services/reservation.service";
-import { customerService } from "@/services/customer.service";
-import { tableService } from "@/services/table.service";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import type { ReservationWithDetails, Table } from "@/types/reservation.types";
-import type { Customer } from "@/types/customer.types";
+import type { ReservationWithDetails } from "@/types/reservation.types";
 import { toast } from "react-hot-toast";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -28,8 +25,6 @@ export function ReservationList({
     []
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [customerMap, setCustomerMap] = useState<Record<string, Customer>>({});
-  const [tableMap, setTableMap] = useState<Record<string, Table>>({});
 
   useEffect(() => {
     loadReservations();
@@ -39,45 +34,12 @@ export function ReservationList({
   const loadReservations = async () => {
     setIsLoading(true);
     try {
-      const data = await reservationService.searchReservations({
+      const data = await reservationService.searchReservationsWithDetails({
         startDate: date,
         endDate: date,
         status,
       });
 
-      // Load customer and table details
-      const customerIds = [...new Set(data.map((r) => r.customerId))];
-      const tableIds = [...new Set(data.map((r) => r.tableId))];
-
-      const [customers, tables] = await Promise.all([
-        Promise.all(
-          customerIds.map((id) => customerService.getCustomerById(id))
-        ),
-        Promise.all(
-          tableIds
-            .filter((id) => id !== null)
-            .map((id) => tableService.getTableById(id!))
-        ),
-      ]);
-
-      const customerMapData = customers.reduce(
-        (acc, customer) => {
-          if (customer) acc[customer.id] = customer;
-          return acc;
-        },
-        {} as Record<string, Customer>
-      );
-
-      const tableMapData = tables.reduce(
-        (acc, table) => {
-          if (table) acc[table.id] = table;
-          return acc;
-        },
-        {} as Record<string, Table>
-      );
-
-      setCustomerMap(customerMapData);
-      setTableMap(tableMapData);
       setReservations(data);
     } catch (error) {
       console.error("Failed to load reservations:", error);
@@ -142,10 +104,8 @@ export function ReservationList({
   return (
     <div className="space-y-4">
       {reservations.map((reservation) => {
-        const customer = customerMap[reservation.customerId];
-        const table = reservation.tableId
-          ? tableMap[reservation.tableId]
-          : null;
+        const customer = reservation.customer;
+        const table = reservation.table;
 
         return (
           <Card

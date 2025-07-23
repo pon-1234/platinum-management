@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
+import { authManager } from "@/lib/auth/authManager";
 
 export abstract class BaseService {
   protected supabase: SupabaseClient<Database>;
@@ -15,6 +16,13 @@ export abstract class BaseService {
    * @returns The staff ID or null if not authenticated
    */
   protected async getCurrentStaffId(): Promise<string | null> {
+    // First, try to get from auth manager (cached value)
+    const cachedStaffId = authManager.getStaffId();
+    if (cachedStaffId) {
+      return cachedStaffId;
+    }
+
+    // Fallback: If not in cache, fetch from database (for backward compatibility)
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
