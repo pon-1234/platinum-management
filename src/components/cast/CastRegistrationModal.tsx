@@ -87,10 +87,7 @@ export function CastRegistrationModal({
       );
       setAvailableStaff(available);
 
-      // Clear any previous errors if successful
-      if (form.formState.errors.root) {
-        form.clearErrors("root");
-      }
+      // Successfully loaded staff
     } catch (error) {
       console.error(
         "CastRegistrationModal: Failed to load available staff:",
@@ -103,11 +100,7 @@ export function CastRegistrationModal({
           ? error.message
           : "スタッフ情報の読み込みに失敗しました";
 
-      console.error("CastRegistrationModal: Setting error:", errorMessage);
-
-      form.setError("root", {
-        message: `スタッフ情報の読み込みエラー: ${errorMessage}。コンソールで詳細を確認してください。`,
-      });
+      console.error("CastRegistrationModal: Error:", errorMessage);
 
       // Set empty array to prevent infinite loading
       setAvailableStaff([]);
@@ -115,7 +108,7 @@ export function CastRegistrationModal({
       setIsLoadingStaff(false);
       console.log("CastRegistrationModal: Finished loading staff");
     }
-  }, [isLoadingStaff, form]);
+  }, [isLoadingStaff]);
 
   useEffect(() => {
     if (
