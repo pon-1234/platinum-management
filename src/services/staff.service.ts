@@ -259,15 +259,52 @@ export class StaffService extends BaseService {
     console.log("Starting simplified getUnregisteredStaff...");
 
     try {
-      // Simple approach: Get all active staff
-      console.log("Step 1: Getting all active staff...");
-      const { data: allStaff, error: staffError } = await this.supabase
+      // Step 1: Get registered cast staff IDs
+      console.log("Step 1: Getting registered cast staff IDs...");
+      const { data: castStaffIds, error: castError } = await this.supabase
+        .from("casts_profile")
+        .select("staff_id");
+
+      if (castError) {
+        console.error("Error getting cast IDs:", castError);
+      }
+
+      const registeredStaffIds =
+        castStaffIds?.map((cast) => cast.staff_id).filter(Boolean) || [];
+
+      console.log(
+        "Step 1 complete: Found",
+        registeredStaffIds.length,
+        "registered casts"
+      );
+
+      // Step 2: Build the query for unregistered staff
+      const offset = (page - 1) * limit;
+      let query = this.supabase
         .from("staffs")
         .select(
-          "id, user_id, full_name, role, hire_date, is_active, created_at, updated_at"
+          "id, user_id, full_name, role, hire_date, is_active, created_at, updated_at",
+          { count: "exact" }
         )
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .eq("is_active", true);
+
+      // Exclude registered casts
+      if (registeredStaffIds.length > 0) {
+        query = query.not("id", "in", `(${registeredStaffIds.join(",")})`);
+      }
+
+      // Apply search filter
+      if (searchQuery) {
+        query = query.ilike("full_name", `%${searchQuery}%`);
+      }
+
+      // Apply ordering and pagination
+      query = query
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      console.log("Step 2: Executing optimized query...");
+      const { data: staffData, error: staffError, count } = await query;
 
       if (staffError) {
         console.error("Error getting staff:", staffError);
@@ -281,77 +318,20 @@ export class StaffService extends BaseService {
       }
 
       console.log(
-        "Step 1 complete: Got",
-        allStaff?.length || 0,
-        "active staff"
+        "Step 2 complete: Retrieved",
+        staffData?.length || 0,
+        "unregistered staff for page",
+        page,
+        "out of",
+        count,
+        "total"
       );
 
-      if (allStaff && allStaff.length > 0) {
-        console.log("Sample staff data:", allStaff[0]);
-      } else {
-        console.log("No staff data returned from database");
-      }
-
-      // Get all cast staff IDs
-      console.log("Step 2: Getting cast staff IDs...");
-      const { data: castStaffIds, error: castError } = await this.supabase
-        .from("casts_profile")
-        .select("staff_id");
-
-      if (castError) {
-        console.error("Error getting cast IDs (continuing anyway):", castError);
-      }
-
-      console.log(
-        "Step 2 complete: Got",
-        castStaffIds?.length || 0,
-        "registered casts"
-      );
-
-      if (!allStaff) {
-        console.log("No staff found, returning empty");
+      if (!staffData) {
         return { data: [], totalCount: 0, hasMore: false };
       }
 
-      // Filter out staff who are already casts
-      const castIds = new Set(
-        castStaffIds?.map((cast) => cast.staff_id).filter(Boolean) || []
-      );
-      const unregisteredStaff = allStaff.filter(
-        (staff) => !castIds.has(staff.id)
-      );
-
-      console.log(
-        "Step 3 complete: After filtering out casts:",
-        unregisteredStaff.length,
-        "unregistered staff"
-      );
-
-      // Apply search filter if provided
-      let filteredStaff = unregisteredStaff;
-      if (searchQuery) {
-        filteredStaff = unregisteredStaff.filter((staff) =>
-          staff.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        console.log(
-          "Step 4 complete: After search filter:",
-          filteredStaff.length,
-          "staff match"
-        );
-      }
-
-      // Apply pagination
-      const offset = (page - 1) * limit;
-      const paginatedStaff = filteredStaff.slice(offset, offset + limit);
-
-      console.log(
-        "Step 5 complete: Final result:",
-        paginatedStaff.length,
-        "staff for page",
-        page
-      );
-
-      const staffList = paginatedStaff.map((item) => ({
+      const staffList = staffData.map((item) => ({
         id: item.id,
         userId: item.user_id,
         fullName: item.full_name,
@@ -362,17 +342,14 @@ export class StaffService extends BaseService {
         updatedAt: item.updated_at,
       }));
 
-      console.log("Returning staff list with", staffList.length, "items");
-
       return {
         data: staffList,
-        totalCount: filteredStaff.length,
-        hasMore: offset + limit < filteredStaff.length,
+        totalCount: count || 0,
+        hasMore: offset + limit < (count || 0),
       };
     } catch (error) {
-      console.error("Error in getUnregisteredStaff:", error);
-      // Don't throw error - return empty result to prevent infinite loading
-      return { data: [], totalCount: 0, hasMore: false };
+      console.error("Unexpected error in getUnregisteredStaff:", error);
+      throw error;
     }
   }
 

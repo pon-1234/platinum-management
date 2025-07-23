@@ -2,9 +2,13 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
+import { useAuthStore } from "@/stores/auth.store";
 
 export abstract class BaseService {
   protected supabase: SupabaseClient<Database>;
+  private _cachedStaffId: string | null = null;
+  private _cacheExpiry: number = 0;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分間キャッシュ
 
   constructor() {
     this.supabase = createClient();
@@ -12,14 +16,32 @@ export abstract class BaseService {
 
   /**
    * Get the current authenticated staff ID
+   * ストアからキャッシュされたスタッフIDを取得、ない場合はデータベースから取得
    * @returns The staff ID or null if not authenticated
    */
   protected async getCurrentStaffId(): Promise<string | null> {
+    // まずストアからスタッフIDを取得してみる
+    const authState = useAuthStore.getState();
+    if (authState.user?.staffId) {
+      return authState.user.staffId;
+    }
+
+    // キャッシュが有効かどうかチェック
+    const now = Date.now();
+    if (this._cachedStaffId && now < this._cacheExpiry) {
+      return this._cachedStaffId;
+    }
+
+    // キャッシュが無いか期限切れの場合、データベースから取得
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
 
-    if (!user) return null;
+    if (!user) {
+      this._cachedStaffId = null;
+      this._cacheExpiry = 0;
+      return null;
+    }
 
     const { data: staff } = await this.supabase
       .from("staffs")
@@ -27,7 +49,21 @@ export abstract class BaseService {
       .eq("user_id", user.id)
       .single();
 
-    return staff?.id || null;
+    const staffId = staff?.id || null;
+
+    // キャッシュを更新
+    this._cachedStaffId = staffId;
+    this._cacheExpiry = now + this.CACHE_DURATION;
+
+    return staffId;
+  }
+
+  /**
+   * キャッシュされたスタッフIDをクリアする（サインアウト時などに使用）
+   */
+  protected clearStaffIdCache(): void {
+    this._cachedStaffId = null;
+    this._cacheExpiry = 0;
   }
 
   /**
