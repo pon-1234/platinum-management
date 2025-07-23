@@ -1,8 +1,6 @@
 import { BaseService } from "../base.service";
-import type { Database } from "@/types/database.types";
 import { createHmac } from "crypto";
 import type {
-  QRCode,
   GenerateQRCodeRequest,
   QRValidationResult,
 } from "@/types/qr-code.types";
@@ -21,7 +19,7 @@ export class QRGenerationService extends BaseService {
   /**
    * QRコードを生成
    */
-  async generateQRCode(request: GenerateQRCodeRequest): Promise<QRCode> {
+  async generateQRCode(request: GenerateQRCodeRequest) {
     const expiresIn = request.expiresIn || 60; // デフォルト60分
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + expiresIn);
@@ -49,7 +47,7 @@ export class QRGenerationService extends BaseService {
       this.handleError(error, "QRコードの生成に失敗しました");
     }
 
-    return this.mapToQRCode(data);
+    return data;
   }
 
   /**
@@ -57,9 +55,7 @@ export class QRGenerationService extends BaseService {
    */
   async validateQRCode(qrData: string): Promise<QRValidationResult> {
     try {
-      const decoded = JSON.parse(
-        Buffer.from(qrData, "base64").toString("utf-8")
-      );
+      JSON.parse(Buffer.from(qrData, "base64").toString("utf-8")); // QRコードの形式検証
 
       const { data: qrCode, error } = await this.supabase
         .from("qr_codes")
@@ -71,7 +67,7 @@ export class QRGenerationService extends BaseService {
       if (error || !qrCode) {
         return {
           isValid: false,
-          error: "QRコードが見つからないか、無効です",
+          errorMessage: "QRコードが見つからないか、無効です",
         };
       }
 
@@ -85,7 +81,7 @@ export class QRGenerationService extends BaseService {
 
         return {
           isValid: false,
-          error: "QRコードの有効期限が切れています",
+          errorMessage: "QRコードの有効期限が切れています",
         };
       }
 
@@ -94,7 +90,7 @@ export class QRGenerationService extends BaseService {
       if (qrCode.signature !== expectedSignature) {
         return {
           isValid: false,
-          error: "QRコードの署名が無効です",
+          errorMessage: "QRコードの署名が無効です",
         };
       }
 
@@ -108,24 +104,19 @@ export class QRGenerationService extends BaseService {
       if (staffError || !staff || !staff.is_active) {
         return {
           isValid: false,
-          error: "スタッフ情報が見つからないか、非アクティブです",
+          errorMessage: "スタッフ情報が見つからないか、非アクティブです",
         };
       }
 
       return {
         isValid: true,
-        qrCode: this.mapToQRCode(qrCode),
-        staffInfo: {
-          id: staff.id,
-          fullName: staff.full_name,
-          role: staff.role,
-        },
-        qrData: decoded,
+        staffId: staff.id,
+        expiresAt: qrCode.expires_at,
       };
     } catch {
       return {
         isValid: false,
-        error: "QRコードの形式が無効です",
+        errorMessage: "QRコードの形式が無効です",
       };
     }
   }
@@ -159,23 +150,6 @@ export class QRGenerationService extends BaseService {
    */
   private generateSignature(qrData: string): string {
     return createHmac("sha256", this.secretKey).update(qrData).digest("hex");
-  }
-
-  /**
-   * データベースレコードをQRCodeオブジェクトにマップ
-   */
-  private mapToQRCode(
-    data: Database["public"]["Tables"]["qr_codes"]["Row"]
-  ): QRCode {
-    return {
-      id: data.id,
-      staffId: data.staff_id,
-      qrData: data.qr_data,
-      signature: data.signature,
-      expiresAt: data.expires_at,
-      isActive: data.is_active,
-      createdAt: data.created_at,
-    };
   }
 }
 

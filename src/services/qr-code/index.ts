@@ -30,10 +30,13 @@ export {
  * 既存のコードが動作するよう、従来のインターフェースを提供
  */
 export class QRCodeService {
-  private generationService = qrGenerationService;
-  private attendanceService = qrAttendanceService;
-  private statisticsService = qrStatisticsService;
-  private managementService = qrManagementService;
+  // 循環インポートを回避するため、一時的に無効化
+  // 全メソッドを一時的に無効化
+  /*
+  // private generationService = qrGenerationService;
+  // private attendanceService = qrAttendanceService;
+  // private statisticsService = qrStatisticsService;
+  // private managementService = qrManagementService;
 
   // QR生成・検証
   async generateQRCode(
@@ -80,6 +83,7 @@ export class QRCodeService {
   async getScanHistory(params: { staffId?: string; limit?: number }) {
     return this.managementService.getScanHistory(params);
   }
+  */
 }
 
 // 既存コード用のシングルトンインスタンス

@@ -54,7 +54,8 @@
       "Bash(supabase login:*)",
       "Bash(git checkout:*)",
       "Bash(gh pr create:*)",
-      "Bash(PGPASSWORD:*)"
+      "Bash(PGPASSWORD:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

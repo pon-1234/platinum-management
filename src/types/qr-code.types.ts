@@ -60,6 +60,7 @@ export interface QRAttendanceResponse {
   action: QRAttendanceAction;
   staffName?: string;
   errorCode?: string;
+  error?: string; // エラーメッセージ
 }
 
 // QRコード統計

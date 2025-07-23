@@ -20,6 +20,7 @@ import type {
   WeeklySchedule,
   CalendarShift,
   DailySchedule,
+  ShiftType,
 } from "@/types/attendance.types";
 
 export class AttendanceService extends BaseService {
@@ -296,6 +297,50 @@ export class AttendanceService extends BaseService {
     return data.map(this.mapToConfirmedShift);
   }
 
+  /**
+   * ConfirmedShiftをCalendarShiftに変換するヘルパーメソッド
+   */
+  private mapConfirmedShiftToCalendarShift(
+    shift: ConfirmedShift
+  ): CalendarShift {
+    return {
+      id: shift.id,
+      staffId: shift.staffId,
+      staffName: shift.staffName || shift.staffId, // スタッフ名があれば使用、なければIDを使用
+      date: shift.date,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      shiftType: this.determineShiftType(shift), // より適切なshiftType決定ロジック
+      shiftStatus: shift.status, // ConfirmedShiftのstatusを保持
+      isConfirmed: shift.status !== "cancelled",
+    };
+  }
+
+  /**
+   * ConfirmedShiftからShiftTypeを決定するロジック
+   */
+  private determineShiftType(shift: ConfirmedShift): ShiftType {
+    // 時間帯や曜日に基づいてシフトタイプを決定
+    const startHour = parseInt(shift.startTime.split(":")[0]);
+    const endHour = parseInt(shift.endTime.split(":")[0]);
+    const workHours = endHour - startHour;
+
+    // 簡単なロジック例（必要に応じて調整）
+    if (workHours > 8) {
+      return "overtime";
+    }
+
+    const shiftDate = new Date(shift.date);
+    const dayOfWeek = shiftDate.getDay();
+
+    // 土日の場合は休日出勤とみなす
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return "holiday";
+    }
+
+    return "regular";
+  }
+
   async getWeeklySchedule(weekStart: string): Promise<WeeklySchedule> {
     const weekStartDate = new Date(weekStart);
     const weekEndDate = new Date(weekStartDate);
@@ -316,16 +361,9 @@ export class AttendanceService extends BaseService {
         shiftsByDate[shift.date] = [];
       }
 
-      shiftsByDate[shift.date].push({
-        id: shift.id,
-        staffId: shift.staffId,
-        staffName: shift.staffId, // TODO: Get actual staff name
-        date: shift.date,
-        startTime: shift.startTime,
-        endTime: shift.endTime,
-        shiftType: shift.status as any, // Map status to shiftType for compatibility
-        isConfirmed: true,
-      });
+      shiftsByDate[shift.date].push(
+        this.mapConfirmedShiftToCalendarShift(shift)
+      );
     });
 
     // Create daily schedules for all 7 days
@@ -581,12 +619,15 @@ export class AttendanceService extends BaseService {
 
     const totalWorkHours =
       records.reduce((sum, record) => {
-        return sum + (record.totalWorkMinutes || 0);
+        return sum + (record.totalWorkingMinutes || 0);
       }, 0) / 60;
 
     const totalOvertimeHours =
       records.reduce((sum, record) => {
-        return sum + (record.overtimeMinutes || 0);
+        // 標準勤務時間を8時間（480分）と仮定し、それを超えた分を残業時間とする
+        const workingMinutes = record.totalWorkingMinutes || 0;
+        const overtimeMinutes = Math.max(0, workingMinutes - 480);
+        return sum + overtimeMinutes;
       }, 0) / 60;
 
     return {
@@ -621,10 +662,11 @@ export class AttendanceService extends BaseService {
   private mapToShiftRequest(
     data: Database["public"]["Tables"]["shift_requests"]["Row"]
   ): ShiftRequest {
-    return this.toCamelCase({
+    return {
       id: data.id,
-      castId: data.cast_id,
-      requestDate: data.request_date,
+      staffId: data.cast_id, // データベースではcast_idを使用
+      shiftTemplateId: null, // デフォルト値
+      requestedDate: data.request_date,
       startTime: data.start_time,
       endTime: data.end_time,
       status: data.status as "pending" | "approved" | "rejected",
@@ -634,7 +676,7 @@ export class AttendanceService extends BaseService {
       rejectionReason: data.rejection_reason,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    }) as ShiftRequest;
+    };
   }
 
   private mapToConfirmedShift(
@@ -643,10 +685,12 @@ export class AttendanceService extends BaseService {
     return {
       id: data.id,
       staffId: data.staff_id,
-      date: data.date,
+      shiftTemplateId: null, // デフォルト値
+      shiftRequestId: null, // デフォルト値
+      date: data.shift_date,
       startTime: data.start_time,
       endTime: data.end_time,
-      status: data.status as "scheduled" | "completed" | "cancelled",
+      status: "scheduled" as const, // デフォルト値（実際のデータベースにstatusフィールドがない場合）
       notes: data.notes,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
@@ -664,16 +708,15 @@ export class AttendanceService extends BaseService {
       attendanceDate: data.attendance_date,
       clockInTime: data.clock_in_time,
       clockOutTime: data.clock_out_time,
-      scheduledStartTime: data.scheduled_start_time,
-      scheduledEndTime: data.scheduled_end_time,
+      scheduledStartTime: data.scheduled_start_time || undefined,
+      scheduledEndTime: data.scheduled_end_time || undefined,
       breakStartTime: data.break_start_time,
       breakEndTime: data.break_end_time,
-      totalWorkMinutes: data.total_work_minutes,
-      overtimeMinutes: data.overtime_minutes,
-      status: data.status as "present" | "absent" | "late" | "early_leave",
+      confirmedShiftId: null, // デフォルト値
+      totalWorkingMinutes: null, // 計算される値
+      totalBreakMinutes: null, // 計算される値
+      status: "present" as "present" | "absent" | "late" | "early_leave", // デフォルト値
       notes: data.notes,
-      approvedBy: data.approved_by,
-      approvedAt: data.approved_at,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
