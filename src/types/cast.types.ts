@@ -47,7 +47,6 @@ export type CreateCastData = {
   profileImageUrl?: string | null;
   hourlyRate: number;
   backPercentage: number;
-  memo?: string | null;
   isActive?: boolean;
 };
 

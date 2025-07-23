@@ -81,6 +81,10 @@ export function CastRegistrationModal({
       console.log(
         `CastRegistrationModal: Found ${available.length} available staff members`
       );
+      console.log(
+        "CastRegistrationModal: Available staff IDs:",
+        available.map((s) => ({ id: s.id, name: s.fullName }))
+      );
       setAvailableStaff(available);
 
       // Clear any previous errors if successful
@@ -126,6 +130,12 @@ export function CastRegistrationModal({
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
     console.log("CastRegistrationModal: Submitting cast data:", data);
+    console.log(
+      "CastRegistrationModal: staffId type and value:",
+      typeof data.staffId,
+      data.staffId
+    );
+    console.log("CastRegistrationModal: staffId length:", data.staffId.length);
 
     const castData = {
       staffId: data.staffId,
