@@ -38,6 +38,12 @@ export class CastService extends BaseService {
       );
     } catch (validationError) {
       console.error("CastService: Validation failed:", validationError);
+      if (validationError instanceof Error && "issues" in validationError) {
+        console.error(
+          "CastService: Validation issues:",
+          (validationError as any).issues
+        );
+      }
       throw validationError;
     }
 
