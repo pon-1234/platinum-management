@@ -306,12 +306,21 @@ export type ClockAction =
   | "break_end";
 
 export interface AttendanceDashboard {
-  totalStaff: number;
-  presentToday: number;
-  absentToday: number;
-  lateToday: number;
-  pendingShiftRequests: number;
-  upcomingShifts: number;
+  today: {
+    totalStaff: number;
+    presentStaff: number;
+    lateStaff: number;
+    absentStaff: number;
+  };
+  thisWeek: {
+    averageAttendance: number;
+    totalWorkHours: number;
+    totalOvertimeHours: number;
+  };
+  pendingRequests: {
+    shiftRequests: number;
+    corrections: number;
+  };
 }
 
 // Validation and utility types
