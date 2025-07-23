@@ -12,7 +12,10 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { attendanceService } from "@/services/attendance.service";
 import { staffService } from "@/services/staff.service";
-import type { ClockAction, AttendanceRecord } from "@/types/attendance.types";
+import type {
+  ClockActionType,
+  AttendanceRecord,
+} from "@/types/attendance.types";
 import type { Staff } from "@/types/staff.types";
 import { toast } from "react-hot-toast";
 
@@ -71,7 +74,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
   }, []);
 
   const handleClockAction = useCallback(
-    async (actionType: ClockAction) => {
+    async (actionType: ClockActionType) => {
       if (!currentStaff) {
         toast.error("スタッフ情報が見つかりません");
         return;
@@ -80,7 +83,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
       try {
         setIsLoading(true);
 
-        const action: ClockAction = {
+        const action = {
           type: actionType,
           timestamp: new Date().toISOString(),
           notes: notes || undefined,

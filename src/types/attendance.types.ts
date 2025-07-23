@@ -299,11 +299,17 @@ export interface WeeklySchedule {
 }
 
 // Time clock types
-export type ClockAction =
+export type ClockActionType =
   | "clock_in"
   | "clock_out"
   | "break_start"
   | "break_end";
+
+export interface ClockAction {
+  type: ClockActionType;
+  timestamp: string;
+  notes?: string;
+}
 
 export interface AttendanceDashboard {
   today: {

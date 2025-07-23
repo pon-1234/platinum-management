@@ -132,8 +132,8 @@ export class AttendanceService extends BaseService {
       .from("shift_requests")
       .insert(
         this.toSnakeCase({
-          staffId: data.staffId || data.castId, // Support both old and new property names
-          requestedDate: data.requestedDate || data.requestDate,
+          staffId: await this.getCurrentStaffId(), // Get current staff ID
+          requestedDate: data.requestedDate,
           startTime: data.startTime,
           endTime: data.endTime,
           notes: data.notes || null,
@@ -157,8 +157,8 @@ export class AttendanceService extends BaseService {
       .select("*")
       .order("request_date", { ascending: false });
 
-    if (params.staffId || params.castId) {
-      query = query.eq("staff_id", params.staffId || params.castId);
+    if (params.staffId) {
+      query = query.eq("staff_id", params.staffId);
     }
 
     if (params.status) {
@@ -200,7 +200,7 @@ export class AttendanceService extends BaseService {
     const staffId = await this.getCurrentStaffId();
 
     const updateData: Record<string, unknown> = {
-      status: data.status,
+      status: data.approved ? "approved" : "rejected",
       approved_by: staffId,
       approved_at: new Date().toISOString(),
     };
