@@ -61,29 +61,53 @@ export function CastRegistrationModal({
   // Load available staff when modal opens
   const loadAvailableStaff = useCallback(async () => {
     setIsLoadingStaff(true);
+    console.log("CastRegistrationModal: Starting to load available staff...");
+
     try {
       // Use client-side service with better error handling
+      console.log(
+        "CastRegistrationModal: Calling staffService.getUnregisteredStaff..."
+      );
       const result = await staffService.getUnregisteredStaff(1, 100);
+      console.log("CastRegistrationModal: Received result:", result);
 
       // Filter out admin role
       const available = result.data.filter(
         (staff: Staff) => staff.role !== "admin" // Don't allow admin to be cast
       );
 
+      console.log(
+        `CastRegistrationModal: Found ${available.length} available staff members`
+      );
       setAvailableStaff(available);
+
+      // Clear any previous errors if successful
+      if (form.formState.errors.root) {
+        form.clearErrors("root");
+      }
     } catch (error) {
-      console.error("Failed to load available staff:", error);
+      console.error(
+        "CastRegistrationModal: Failed to load available staff:",
+        error
+      );
+
       // より詳細なエラー情報を表示
       const errorMessage =
         error instanceof Error
           ? error.message
           : "スタッフ情報の読み込みに失敗しました";
 
+      console.error("CastRegistrationModal: Setting error:", errorMessage);
+
       form.setError("root", {
-        message: `スタッフ情報の読み込みエラー: ${errorMessage}`,
+        message: `スタッフ情報の読み込みエラー: ${errorMessage}。コンソールで詳細を確認してください。`,
       });
+
+      // Set empty array to prevent infinite loading
+      setAvailableStaff([]);
     } finally {
       setIsLoadingStaff(false);
+      console.log("CastRegistrationModal: Finished loading staff");
     }
   }, [form]);
 
