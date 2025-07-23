@@ -24,8 +24,11 @@ Platinum Management Systemでは、データベースの初期セットアップ
 
 ```bash
 # 環境変数から接続URLを取得して実行
-psql "$(grep POSTGRES_URL_NON_POOLING .env.local | cut -d= -f2- | tr -d '"')" \
-  -f supabase/V1_init_schema.sql
+psql "$POSTGRES_URL_NON_POOLING" -f supabase/V1_init_schema.sql
+
+# または、.env.localファイルから読み込む場合：
+# psql "$(grep POSTGRES_URL_NON_POOLING .env.local | cut -d= -f2- | tr -d '"')" \
+#   -f supabase/V1_init_schema.sql
 ```
 
 ### 3. セットアップの確認
