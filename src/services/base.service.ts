@@ -109,7 +109,19 @@ export abstract class BaseService {
     error: unknown,
     defaultMessage = "操作に失敗しました"
   ): never {
+    console.error("Database error details:", error);
     const message = this.handleDatabaseError(error, defaultMessage);
-    throw new Error(message);
+
+    // より詳細なエラー情報を含む
+    const errorDetails = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+    };
+    const detailedMessage = errorDetails.message
+      ? `${message}: ${errorDetails.message}`
+      : message;
+
+    throw new Error(detailedMessage);
   }
 }

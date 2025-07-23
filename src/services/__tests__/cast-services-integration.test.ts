@@ -46,11 +46,19 @@ describe("Cast Services Integration", () => {
 
     castService = new CastService();
     performanceService = new CastPerformanceService();
-    compensationService = new CastCompensationService();
+    compensationService = new CastCompensationService(
+      castService,
+      performanceService
+    );
   });
 
   describe("Service Chain Integration", () => {
     it("should calculate compensation using complete service chain", async () => {
+      // Setup mock chain for getCastById
+      mockSupabase.from.mockReturnValueOnce(mockSupabase);
+      mockSupabase.select.mockReturnValueOnce(mockSupabase);
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
+
       // Mock cast data
       mockSupabase.single.mockResolvedValueOnce({
         data: {
@@ -65,6 +73,14 @@ describe("Cast Services Integration", () => {
         },
         error: null,
       });
+
+      // Setup mock chain for getCastPerformances
+      mockSupabase.from.mockReturnValueOnce(mockSupabase);
+      mockSupabase.select.mockReturnValueOnce(mockSupabase);
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
+      mockSupabase.gte.mockReturnValueOnce(mockSupabase);
+      mockSupabase.lte.mockReturnValueOnce(mockSupabase);
+      mockSupabase.order.mockReturnValueOnce(mockSupabase);
 
       // Mock performance data
       mockSupabase.range.mockResolvedValueOnce({
@@ -169,6 +185,11 @@ describe("Cast Services Integration", () => {
     });
 
     it("should handle service errors gracefully", async () => {
+      // Setup mock chain for getCastById with error
+      mockSupabase.from.mockReturnValueOnce(mockSupabase);
+      mockSupabase.select.mockReturnValueOnce(mockSupabase);
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
+
       // Mock service error
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
@@ -187,13 +208,13 @@ describe("Cast Services Integration", () => {
 
   describe("Data Consistency", () => {
     it("should maintain data consistency across services", async () => {
-      const castId = "cast-123";
+      const castId = "123e4567-e89b-12d3-a456-426614174000";
 
       // Mock cast retrieval
       mockSupabase.single.mockResolvedValue({
         data: {
           id: castId,
-          staff_id: "staff-123",
+          staff_id: "223e4567-e89b-12d3-a456-426614174001",
           stage_name: "テストキャスト",
           hourly_rate: 3000,
           back_percentage: 50,
@@ -211,7 +232,7 @@ describe("Cast Services Integration", () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: {
           id: castId,
-          staff_id: "staff-123",
+          staff_id: "223e4567-e89b-12d3-a456-426614174001",
           stage_name: "テストキャスト",
           hourly_rate: 3000,
           back_percentage: 50,
@@ -242,14 +263,18 @@ describe("Cast Services Integration", () => {
 
   describe("Performance Optimization", () => {
     it("should handle multiple service calls efficiently", async () => {
-      const castIds = ["cast-1", "cast-2", "cast-3"];
+      const castIds = [
+        "123e4567-e89b-12d3-a456-426614174001",
+        "123e4567-e89b-12d3-a456-426614174002",
+        "123e4567-e89b-12d3-a456-426614174003",
+      ];
 
       // Mock multiple compensation calculations
       castIds.forEach((castId, index) => {
         mockSupabase.single.mockResolvedValueOnce({
           data: {
             id: castId,
-            staff_id: `staff-${index + 1}`,
+            staff_id: `223e4567-e89b-12d3-a456-42661417400${index + 1}`,
             stage_name: `キャスト${index + 1}`,
             hourly_rate: 3000,
             back_percentage: 50,
