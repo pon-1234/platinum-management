@@ -317,12 +317,30 @@ export class StaffService extends BaseService {
       const castIds = new Set(
         castStaffIds?.map((cast) => cast.staff_id).filter(Boolean) || []
       );
-      const unregisteredStaff = allStaff.filter(
+
+      // Also filter out staff with invalid UUIDs
+      const validStaff = allStaff.filter((staff) => {
+        // Check if UUID is valid format (36 characters, proper pattern)
+        const uuidPattern =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const isValidUuid =
+          staff.id && staff.id.length === 36 && uuidPattern.test(staff.id);
+
+        if (!isValidUuid) {
+          console.warn(
+            `Filtering out staff with invalid UUID: ${staff.full_name} (${staff.id})`
+          );
+        }
+
+        return isValidUuid;
+      });
+
+      const unregisteredStaff = validStaff.filter(
         (staff) => !castIds.has(staff.id)
       );
 
       console.log(
-        "Step 3 complete: After filtering out casts:",
+        "Step 3 complete: After filtering invalid UUIDs and casts:",
         unregisteredStaff.length,
         "unregistered staff"
       );
