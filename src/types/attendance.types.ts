@@ -31,26 +31,31 @@ export interface UpdateShiftTemplateData {
 // Shift Request types
 export interface ShiftRequest {
   id: string;
-  castId: string;
-  requestDate: string; // YYYY-MM-DD format
-  startTime: string; // HH:MM format
-  endTime: string; // HH:MM format
-  status: ShiftRequestStatus;
+  staffId: string;
+  shiftTemplateId: string | null;
+  requestedDate: string; // YYYY-MM-DD format
+  startTime: string | null; // HH:MM format
+  endTime: string | null; // HH:MM format
+  status: "pending" | "approved" | "rejected";
   notes: string | null;
   approvedBy: string | null;
   approvedAt: string | null;
   rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
+  // Additional fields from joins
+  staffName?: string;
+  staffRole?: string;
+  templateName?: string;
 }
 
 export type ShiftRequestStatus = "pending" | "approved" | "rejected";
 
 export interface CreateShiftRequestData {
-  castId: string;
-  requestDate: string;
-  startTime: string;
-  endTime: string;
+  shiftTemplateId?: string;
+  requestedDate: string;
+  startTime?: string;
+  endTime?: string;
   notes?: string;
 }
 
@@ -61,15 +66,19 @@ export interface UpdateShiftRequestData {
 }
 
 export interface ApproveShiftRequestData {
-  status: "approved" | "rejected";
+  approved: boolean;
   rejectionReason?: string;
+  notes?: string;
 }
 
 export interface ShiftRequestSearchParams {
-  castId?: string;
-  status?: ShiftRequestStatus;
+  staffId?: string;
+  shiftTemplateId?: string;
+  status?: "pending" | "approved" | "rejected";
   startDate?: string;
   endDate?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }
@@ -78,25 +87,33 @@ export interface ShiftRequestSearchParams {
 export interface ConfirmedShift {
   id: string;
   staffId: string;
-  shiftDate: string; // YYYY-MM-DD format
+  shiftTemplateId: string | null;
+  shiftRequestId: string | null;
+  date: string; // YYYY-MM-DD format
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
-  shiftType: ShiftType;
+  status: "scheduled" | "completed" | "cancelled";
   notes: string | null;
   createdBy: string | null;
   updatedBy: string | null;
   createdAt: string;
   updatedAt: string;
+  // Additional fields from joins
+  staffName?: string;
+  staffRole?: string;
+  templateName?: string;
 }
 
 export type ShiftType = "regular" | "overtime" | "holiday";
 
 export interface CreateConfirmedShiftData {
   staffId: string;
-  shiftDate: string;
+  shiftTemplateId?: string;
+  shiftRequestId?: string;
+  date: string;
   startTime: string;
   endTime: string;
-  shiftType?: ShiftType;
+  status?: "scheduled" | "completed" | "cancelled";
   notes?: string;
 }
 
@@ -109,9 +126,12 @@ export interface UpdateConfirmedShiftData {
 
 export interface ConfirmedShiftSearchParams {
   staffId?: string;
+  shiftTemplateId?: string;
   startDate?: string;
   endDate?: string;
-  shiftType?: ShiftType;
+  status?: "scheduled" | "completed" | "cancelled";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }
@@ -120,30 +140,37 @@ export interface ConfirmedShiftSearchParams {
 export interface AttendanceRecord {
   id: string;
   staffId: string;
+  confirmedShiftId: string | null;
   attendanceDate: string; // YYYY-MM-DD format
-  clockInTime: string | null; // ISO timestamp
-  clockOutTime: string | null; // ISO timestamp
-  scheduledStartTime: string | null; // HH:MM format
-  scheduledEndTime: string | null; // HH:MM format
-  breakStartTime: string | null; // ISO timestamp
-  breakEndTime: string | null; // ISO timestamp
-  totalWorkMinutes: number | null;
-  overtimeMinutes: number | null;
-  status: AttendanceStatus;
+  clockInTime: string | null; // HH:MM format
+  clockOutTime: string | null; // HH:MM format
+  breakStartTime: string | null; // HH:MM format
+  breakEndTime: string | null; // HH:MM format
+  totalWorkingMinutes: number | null;
+  totalBreakMinutes: number | null;
+  status: "present" | "absent" | "late" | "early_leave";
   notes: string | null;
-  approvedBy: string | null;
-  approvedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Additional fields from joins
+  staffName?: string;
+  staffRole?: string;
+  scheduledStartTime?: string;
+  scheduledEndTime?: string;
+  shiftTemplateName?: string;
 }
 
 export type AttendanceStatus = "present" | "absent" | "late" | "early_leave";
 
 export interface CreateAttendanceRecordData {
   staffId: string;
+  confirmedShiftId?: string;
   attendanceDate: string;
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
+  clockInTime?: string;
+  clockOutTime?: string;
+  breakStartTime?: string;
+  breakEndTime?: string;
+  status?: "present" | "absent" | "late" | "early_leave";
   notes?: string;
 }
 
@@ -158,9 +185,12 @@ export interface UpdateAttendanceRecordData {
 
 export interface AttendanceSearchParams {
   staffId?: string;
+  confirmedShiftId?: string;
   startDate?: string;
   endDate?: string;
-  status?: AttendanceStatus;
+  status?: "present" | "absent" | "late" | "early_leave";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }
@@ -180,7 +210,12 @@ export interface AttendanceCorrection {
   createdAt: string;
 }
 
-export type CorrectionType = "clock_in" | "clock_out" | "break_start" | "break_end" | "manual_hours";
+export type CorrectionType =
+  | "clock_in"
+  | "clock_out"
+  | "break_start"
+  | "break_end"
+  | "manual_hours";
 export type CorrectionStatus = "pending" | "approved" | "rejected";
 
 export interface CreateAttendanceCorrectionData {
@@ -264,29 +299,19 @@ export interface WeeklySchedule {
 }
 
 // Time clock types
-export interface ClockAction {
-  type: "clock_in" | "clock_out" | "break_start" | "break_end";
-  timestamp: string;
-  notes?: string;
-}
+export type ClockAction =
+  | "clock_in"
+  | "clock_out"
+  | "break_start"
+  | "break_end";
 
-// Dashboard/summary types
 export interface AttendanceDashboard {
-  today: {
-    totalStaff: number;
-    presentStaff: number;
-    lateStaff: number;
-    absentStaff: number;
-  };
-  thisWeek: {
-    averageAttendance: number;
-    totalWorkHours: number;
-    totalOvertimeHours: number;
-  };
-  pendingRequests: {
-    shiftRequests: number;
-    corrections: number;
-  };
+  totalStaff: number;
+  presentToday: number;
+  absentToday: number;
+  lateToday: number;
+  pendingShiftRequests: number;
+  upcomingShifts: number;
 }
 
 // Validation and utility types
