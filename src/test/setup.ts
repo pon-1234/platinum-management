@@ -36,7 +36,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 // @supabase/ssrのモック
 vi.mock("@supabase/ssr", () => ({
-  createBrowserClient: vi.fn((url, key) => ({
+  createBrowserClient: vi.fn(() => ({
     auth: {
       getSession: vi.fn(() =>
         Promise.resolve({ data: { session: null }, error: null })

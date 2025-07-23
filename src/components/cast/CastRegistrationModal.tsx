@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { castService } from "@/services/cast.service";
-import { staffService } from "@/services/staff.service";
+import { getUnregisteredStaff } from "@/app/actions/staff.actions";
 import type { Staff } from "@/types/staff.types";
 import { z } from "zod";
 import { usePermission } from "@/hooks/usePermission";
@@ -62,19 +62,25 @@ export function CastRegistrationModal({
   const loadAvailableStaff = useCallback(async () => {
     setIsLoadingStaff(true);
     try {
-      // Use the new efficient function to get unregistered staff
-      const result = await staffService.getUnregisteredStaff(1, 100);
+      // Use server action to get unregistered staff with proper authentication
+      const result = await getUnregisteredStaff(1, 100);
 
       // Filter out admin role
       const available = result.data.filter(
-        (staff) => staff.role !== "admin" // Don't allow admin to be cast
+        (staff: Staff) => staff.role !== "admin" // Don't allow admin to be cast
       );
 
       setAvailableStaff(available);
     } catch (error) {
       console.error("Failed to load available staff:", error);
+      // より詳細なエラー情報を表示
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "スタッフ情報の読み込みに失敗しました";
+
       form.setError("root", {
-        message: "スタッフ情報の読み込みに失敗しました",
+        message: `スタッフ情報の読み込みエラー: ${errorMessage}`,
       });
     } finally {
       setIsLoadingStaff(false);

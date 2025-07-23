@@ -116,8 +116,17 @@ describe("AuthService", () => {
         error: null,
       });
 
+      mockSupabaseClient.auth.signOut.mockResolvedValue({
+        error: null,
+      });
+
       mockSupabaseClient.rpc.mockResolvedValue({
         data: "manager",
+        error: null,
+      });
+
+      mockSupabaseClient.single.mockResolvedValue({
+        data: { id: "staff-1" },
         error: null,
       });
 
@@ -127,6 +136,7 @@ describe("AuthService", () => {
         id: "user-1",
         email: "test@example.com",
         role: "manager",
+        staffId: "staff-1",
       });
     });
 

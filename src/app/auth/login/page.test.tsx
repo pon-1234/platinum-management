@@ -7,10 +7,11 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import LoginPage from "./page";
-import { AuthService } from "@/services/auth.service";
 
-// Mock the auth service
-vi.mock("@/services/auth.service");
+// Mock the actions file
+vi.mock("./actions", () => ({
+  signInWithValidation: vi.fn(),
+}));
 
 const mockPush = vi.fn();
 
@@ -22,18 +23,14 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-describe("LoginPage", () => {
-  let mockAuthService: {
-    signIn: ReturnType<typeof vi.fn>;
-  };
+// Import the mocked function from the module
+import { signInWithValidation } from "./actions";
+const mockSignInWithValidation = vi.mocked(signInWithValidation);
 
+describe("LoginPage", () => {
   beforeEach(() => {
-    mockAuthService = {
-      signIn: vi.fn(),
-    };
-    vi.mocked(AuthService).mockReturnValue(
-      mockAuthService as unknown as AuthService
-    );
+    vi.clearAllMocks();
+    mockSignInWithValidation.mockReset();
   });
 
   it("should render login form with email and password fields", () => {
@@ -82,8 +79,8 @@ describe("LoginPage", () => {
     expect(emailInput.validity.typeMismatch).toBe(true);
   });
 
-  it("should call authService.signIn with correct credentials", async () => {
-    mockAuthService.signIn.mockResolvedValue({ success: true });
+  it("should call signInWithValidation with correct credentials", async () => {
+    mockSignInWithValidation.mockResolvedValue(undefined);
 
     render(<LoginPage />);
 
@@ -98,19 +95,17 @@ describe("LoginPage", () => {
     });
 
     await waitFor(() => {
-      expect(mockAuthService.signIn).toHaveBeenCalledWith(
-        "test@example.com",
-        "password123"
-      );
-      expect(mockPush).toHaveBeenCalledWith("/dashboard");
+      expect(mockSignInWithValidation).toHaveBeenCalledWith({
+        email: "test@example.com",
+        password: "password123",
+      });
     });
   });
 
   it("should display error message when login fails", async () => {
-    mockAuthService.signIn.mockResolvedValue({
-      success: false,
-      error: "メールアドレスまたはパスワードが間違っています",
-    });
+    mockSignInWithValidation.mockRejectedValue(
+      new Error("メールアドレスまたはパスワードが間違っています")
+    );
 
     render(<LoginPage />);
 
@@ -132,11 +127,11 @@ describe("LoginPage", () => {
   });
 
   it("should disable submit button while logging in", async () => {
-    let resolveSignIn: (value: { success: boolean }) => void;
-    const signInPromise = new Promise((resolve) => {
+    let resolveSignIn: () => void;
+    const signInPromise = new Promise<void>((resolve) => {
       resolveSignIn = resolve;
     });
-    mockAuthService.signIn.mockReturnValue(signInPromise);
+    mockSignInWithValidation.mockReturnValue(signInPromise);
 
     render(<LoginPage />);
 
@@ -150,13 +145,15 @@ describe("LoginPage", () => {
       fireEvent.click(submitButton);
     });
 
-    // Button should be disabled immediately after click
-    expect(submitButton).toBeDisabled();
-    expect(screen.getByText(/ログイン中.../i)).toBeInTheDocument();
+    // Wait for form submission to process
+    await waitFor(() => {
+      expect(submitButton).toBeDisabled();
+      expect(screen.getByText(/ログイン中.../i)).toBeInTheDocument();
+    });
 
     // Resolve the promise
     await act(async () => {
-      resolveSignIn!({ success: true });
+      resolveSignIn!();
     });
 
     await waitFor(() => {

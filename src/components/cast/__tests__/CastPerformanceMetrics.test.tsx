@@ -96,10 +96,9 @@ describe("CastPerformanceMetrics", () => {
         salesAmount: 250000,
         drinkCount: 20,
       },
-      performanceLoading: false,
+      isLoading: false,
       error: null,
-      cast: mockCast,
-      castLoading: false,
+      getCastById: vi.fn().mockResolvedValue(mockCast),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
@@ -156,10 +155,9 @@ describe("CastPerformanceMetrics", () => {
         salesAmount: 0,
         drinkCount: 0,
       },
-      performanceLoading: true,
+      isLoading: true,
       error: null,
-      cast: null,
-      castLoading: true,
+      getCastById: vi.fn(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
@@ -200,10 +198,9 @@ describe("CastPerformanceMetrics", () => {
         salesAmount: 0,
         drinkCount: 0,
       },
-      performanceLoading: false,
+      isLoading: false,
       error: "Network error",
-      cast: null,
-      castLoading: false,
+      getCastById: vi.fn(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
@@ -245,10 +242,9 @@ describe("CastPerformanceMetrics", () => {
         salesAmount: 0,
         drinkCount: 0,
       },
-      performanceLoading: false,
+      isLoading: false,
       error: null,
-      cast: mockCast,
-      castLoading: false,
+      getCastById: vi.fn().mockResolvedValue(mockCast),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 

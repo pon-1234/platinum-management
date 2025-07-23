@@ -4,8 +4,7 @@ import { CastService } from "../cast.service";
 import { CastPerformanceService } from "../cast-performance.service";
 import type { Cast, CastPerformance } from "@/types/cast.types";
 
-vi.mock("../cast.service");
-vi.mock("../cast-performance.service");
+// モックは手動で作成するため、vi.mockは使用しない
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     auth: {
@@ -86,14 +85,11 @@ describe("CastCompensationService", () => {
       getCastPerformances: vi.fn(),
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (CastService as any).mockImplementation(() => mockCastService);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (CastPerformanceService as any).mockImplementation(
-      () => mockPerformanceService
+    // 依存性注入でモックを渡す
+    compensationService = new CastCompensationService(
+      mockCastService as unknown as CastService,
+      mockPerformanceService as unknown as CastPerformanceService
     );
-
-    compensationService = new CastCompensationService();
   });
 
   describe("calculateCastCompensation", () => {
