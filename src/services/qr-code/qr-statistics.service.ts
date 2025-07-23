@@ -83,14 +83,6 @@ export class QRStatisticsService extends BaseService {
   > {
     const { startDate, endDate, groupBy } = params;
 
-    // PostgreSQLの日付トランケート関数を使用
-    const dateFormat =
-      groupBy === "day"
-        ? "YYYY-MM-DD"
-        : groupBy === "week"
-          ? 'YYYY-"WW"'
-          : "YYYY-MM";
-
     const { data, error } = await this.supabase.rpc("get_qr_stats_by_period", {
       start_date: startDate.toISOString(),
       end_date: endDate.toISOString(),

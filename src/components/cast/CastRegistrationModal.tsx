@@ -89,14 +89,14 @@ export function CastRegistrationModal({
       .finally(() => {
         setIsLoadingStaff(false);
       });
-  }, [isOpen]); // Only depend on isOpen
+  }, [isOpen, canCreateCast]); // Include canCreateCast dependency
 
   // Reset form when modal opens - separate effect to avoid conflicts
   useEffect(() => {
     if (isOpen) {
       form.reset();
     }
-  }, [isOpen]); // Remove form dependency
+  }, [isOpen, form]); // Include form dependency
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);

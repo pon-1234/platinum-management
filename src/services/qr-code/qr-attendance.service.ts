@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import type { Database } from "@/types/database.types";
 import { qrGenerationService } from "./qr-generation.service";
 import type {
   QRAttendanceRequest,
@@ -168,18 +169,25 @@ export class QRAttendanceService extends BaseService {
       this.handleError(error, "出勤履歴の取得に失敗しました");
     }
 
-    const history: QRAttendanceHistory[] = data.map((item: any) => ({
-      id: item.id,
-      staffId: item.staff_id,
-      staffName: item.staff?.full_name || "未知",
-      actionType: item.action_type,
-      success: item.success,
-      error: item.error,
-      locationData: item.location_data,
-      deviceInfo: item.device_info,
-      createdAt: item.created_at,
-      qrCodeData: item.qr_code?.qr_data,
-    }));
+    const history: QRAttendanceHistory[] = data.map(
+      (
+        item: Database["public"]["Tables"]["qr_attendance_logs"]["Row"] & {
+          staff?: { full_name: string } | null;
+          qr_code?: { qr_data: string; expires_at: string } | null;
+        }
+      ) => ({
+        id: item.id,
+        staffId: item.staff_id,
+        staffName: item.staff?.full_name || "未知",
+        actionType: item.action_type,
+        success: item.success,
+        error: item.error,
+        locationData: item.location_data,
+        deviceInfo: item.device_info,
+        createdAt: item.created_at,
+        qrCodeData: item.qr_code?.qr_data,
+      })
+    );
 
     return {
       data: history,
@@ -259,10 +267,10 @@ export class QRAttendanceService extends BaseService {
   private async createAttendanceRecord(params: {
     staffId: string;
     actionType: "check_in" | "check_out";
-    locationData?: any;
-    deviceInfo?: any;
+    locationData?: Record<string, unknown>;
+    deviceInfo?: Record<string, unknown>;
     qrCodeId: string;
-  }): Promise<any> {
+  }): Promise<Database["public"]["Tables"]["attendances"]["Row"]> {
     const { data, error } = await this.supabase
       .from("attendances")
       .insert({
@@ -293,8 +301,8 @@ export class QRAttendanceService extends BaseService {
     qrCodeId: string;
     success: boolean;
     actionType: "check_in" | "check_out";
-    locationData?: any;
-    deviceInfo?: any;
+    locationData?: Record<string, unknown>;
+    deviceInfo?: Record<string, unknown>;
     error?: string;
   }): Promise<void> {
     await this.supabase.from("qr_attendance_logs").insert({
