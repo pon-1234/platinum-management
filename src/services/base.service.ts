@@ -20,6 +20,7 @@ export abstract class BaseService {
    * @returns The staff ID or null if not authenticated
    */
   protected async getCurrentStaffId(): Promise<string | null> {
+<<<<<<< HEAD
     // まずストアからスタッフIDを取得してみる
     const authState = useAuthStore.getState();
     if (authState.user?.staffId) {
@@ -33,6 +34,21 @@ export abstract class BaseService {
     }
 
     // キャッシュが無いか期限切れの場合、データベースから取得
+=======
+    // First, try to get from auth manager (cached value)
+    const cachedStaffId = authManager.getStaffId();
+    if (cachedStaffId) {
+      return cachedStaffId;
+    }
+
+    // Fallback: If not in cache, fetch from database (for backward compatibility)
+    console.warn(
+      "AuthManager cache miss in getCurrentStaffId(). " +
+        "This may indicate an initialization issue or the user is not yet fully authenticated. " +
+        "Falling back to database query."
+    );
+
+>>>>>>> origin/main
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
@@ -43,12 +59,13 @@ export abstract class BaseService {
       return null;
     }
 
-    const { data: staff } = await this.supabase
+    const { data: staff, error } = await this.supabase
       .from("staffs")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
+<<<<<<< HEAD
     const staffId = staff?.id || null;
 
     // キャッシュを更新
@@ -64,6 +81,47 @@ export abstract class BaseService {
   protected clearStaffIdCache(): void {
     this._cachedStaffId = null;
     this._cacheExpiry = 0;
+  }
+
+  /**
+   * Check if the current user has permission for a resource and action
+   * Note: This is a client-side check. Real permission enforcement happens via RLS on the server
+   * @param resource The resource to check permission for
+   * @param action The action to perform
+   * @returns Whether the user has permission
+   */
+  protected async hasPermission(
+    resource: string,
+    action: string
+  ): Promise<boolean> {
+    try {
+      const { data } = await this.supabase.rpc("has_permission", {
+        user_id: (await this.supabase.auth.getUser()).data.user?.id,
+        resource,
+        action,
+      });
+
+      return data || false;
+    } catch (error) {
+      console.error("Permission check failed:", error);
+      return false;
+    }
+=======
+    if (error) {
+      console.error("Failed to fetch staff ID from database:", error);
+      return null;
+    }
+
+    // Log for debugging if there's a mismatch between expected auth state
+    if (staff?.id) {
+      console.info(
+        `Retrieved staff ID from database: ${staff.id} for user: ${user.id}. ` +
+          "Consider ensuring AuthManager is properly initialized to avoid this fallback."
+      );
+    }
+
+    return staff?.id || null;
+>>>>>>> origin/main
   }
 
   /**

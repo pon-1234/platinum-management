@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/bin/bash
 
 # gemini-analyze wrapper script
@@ -46,3 +47,40 @@ Be specific and provide actionable feedback."
 
 # Execute gemini with the analysis prompt
 gemini -p "$PROMPT"
+=======
+#\!/bin/bash
+# Gemini analyze wrapper for code review
+
+if [ $# -eq 0 ]; then
+    echo "Usage: gemini-analyze <file> [prompt]"
+    exit 1
+fi
+
+FILE="$1"
+PROMPT="${2:-Please analyze this code and provide feedback.}"
+
+# Check if file exists
+if [ \! -f "$FILE" ]; then
+    echo "Error: File '$FILE' not found"
+    exit 1
+fi
+
+# Create a temporary file with the prompt and code
+TEMP_FILE=$(mktemp)
+cat > "$TEMP_FILE" << EOFC
+You are an expert code reviewer. Please analyze the following code carefully.
+
+$PROMPT
+
+Here is the code to analyze:
+
+$(cat "$FILE")
+EOFC
+
+# Run gemini with the file as input
+gemini -p "Code review task" < "$TEMP_FILE"
+
+# Clean up
+rm -f "$TEMP_FILE"
+EOF < /dev/null
+>>>>>>> origin/main

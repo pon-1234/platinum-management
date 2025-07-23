@@ -280,6 +280,63 @@ export class ReservationService {
     return data.map(this.mapToReservation);
   }
 
+  async searchReservationsWithDetails(
+    params: ReservationSearchParams = {}
+  ): Promise<ReservationWithDetails[]> {
+    // Validate search parameters
+    const validatedParams = reservationSearchSchema.parse(params);
+
+    let query = this.supabase
+      .from("reservations")
+      .select(
+        `
+        *,
+        customer:customers(id, name, phone_number),
+        table:tables(*),
+        assigned_cast:staffs!assigned_cast_id(
+          id,
+          casts_profile(stage_name)
+        )
+      `
+      )
+      .order("reservation_date", { ascending: true })
+      .order("reservation_time", { ascending: true });
+
+    // Add filters
+    if (validatedParams.customerId) {
+      query = query.eq("customer_id", validatedParams.customerId);
+    }
+    if (validatedParams.tableId) {
+      query = query.eq("table_id", validatedParams.tableId);
+    }
+    if (validatedParams.assignedCastId) {
+      query = query.eq("assigned_cast_id", validatedParams.assignedCastId);
+    }
+    if (validatedParams.status) {
+      query = query.eq("status", validatedParams.status);
+    }
+    if (validatedParams.startDate) {
+      query = query.gte("reservation_date", validatedParams.startDate);
+    }
+    if (validatedParams.endDate) {
+      query = query.lte("reservation_date", validatedParams.endDate);
+    }
+
+    // Apply pagination
+    query = query.range(
+      validatedParams.offset,
+      validatedParams.offset + validatedParams.limit - 1
+    );
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`予約検索に失敗しました: ${error.message}`);
+    }
+
+    return data.map((item) => this.mapToReservationWithDetails(item));
+  }
+
   // Reservation actions
   async checkInReservation(id: string, tableId: string): Promise<Reservation> {
     // Validate input

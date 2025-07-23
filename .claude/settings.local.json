@@ -59,7 +59,13 @@
       "Bash(npm run type-check:*)",
       "Bash(gh pr reopen:*)",
       "Bash(git cherry-pick:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git rm:*)",
+      "Bash(git status)",
+      "WebFetch(domain:github.com)",
+      "Bash(/Users/pon/dev/platinum-management/bin/gemini-analyze:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)"
     ],
     "deny": []
   }

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { createClient } = require("@supabase/supabase-js");
+<<<<<<< HEAD
 
 // Supabase connection from environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,6 +23,31 @@ function validateEnvironment() {
 }
 
 validateEnvironment();
+=======
+const dotenv = require("dotenv");
+
+// Load environment variables from .env.local file
+dotenv.config({ path: ".env.local" });
+
+// Validate required environment variables
+if (
+  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  !process.env.SUPABASE_SERVICE_ROLE_KEY
+) {
+  console.error("❌ Missing required environment variables!");
+  console.error("Please ensure your .env.local file contains:");
+  console.error("- NEXT_PUBLIC_SUPABASE_URL");
+  console.error("- SUPABASE_SERVICE_ROLE_KEY");
+  console.error(
+    "\nCopy .env.local.example to .env.local and fill in the values."
+  );
+  process.exit(1);
+}
+
+// Supabase connection using environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+>>>>>>> origin/main
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -292,7 +318,11 @@ async function insertDemoData() {
     console.log("\n📋 Next steps:");
     console.log("1. Go to Supabase Dashboard > Authentication > Users");
     console.log("2. Create demo users with these credentials:");
+<<<<<<< HEAD
     console.log("   - ***REMOVED*** / DemoAdmin123!");
+=======
+    console.log("   - admin@platinum-demo.com / DemoAdmin123!");
+>>>>>>> origin/main
     console.log("   - manager@platinum-demo.com / DemoManager123!");
     console.log("   - hall@platinum-demo.com / DemoHall123!");
     console.log("   - cashier@platinum-demo.com / DemoCashier123!");
