@@ -273,7 +273,7 @@ export class CastService extends BaseService {
 
   // Helper methods
 
-  private mapToCast(
+  public mapToCast(
     data: Database["public"]["Tables"]["casts_profile"]["Row"]
   ): Cast {
     return {

@@ -630,27 +630,71 @@ export class QRCodeService extends BaseService {
   }
 
   private async getActiveStaffsWithQR(): Promise<StaffQRInfo[]> {
+    // スタッフ、QRコード、スキャン履歴を一度に取得
     const { data, error } = await this.supabase
       .from("staffs")
       .select(
         `
         *,
-        qr_codes!inner(*)
+        qr_codes!inner (
+          id,
+          qr_data,
+          signature,
+          expires_at,
+          created_at,
+          is_active
+        ),
+        qr_attendance_logs (
+          id,
+          created_at,
+          scan_type,
+          location
+        )
       `
       )
       .eq("is_active", true)
       .eq("qr_codes.is_active", true)
-      .gt("qr_codes.expires_at", new Date().toISOString());
+      .gt("qr_codes.expires_at", new Date().toISOString())
+      .order("qr_attendance_logs.created_at", { ascending: false });
 
     if (error) {
+      console.error("アクティブスタッフ取得エラー:", error);
       return [];
     }
 
-    const result: StaffQRInfo[] = [];
-    for (const staff of data || []) {
-      const qrInfo = await this.getStaffQRInfo(staff.id);
-      result.push(qrInfo);
-    }
+    const result: StaffQRInfo[] = (data || []).map((staff) => {
+      const qrCode = staff.qr_codes?.[0]; // 最初のQRコードを使用
+      const scanHistory = staff.qr_attendance_logs || [];
+
+      // Calculate today's scans
+      const today = new Date().toISOString().split("T")[0];
+      const todayScans = scanHistory.filter((log: { created_at: string }) =>
+        log.created_at.startsWith(today)
+      ).length;
+
+      // Extract staff properties without the relation fields
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { qr_codes, qr_attendance_logs, ...staffData } = staff;
+
+      return {
+        staff: staffData,
+        qrCode: qrCode
+          ? {
+              id: qrCode.id,
+              staff_id: staff.id,
+              qr_data: qrCode.qr_data,
+              signature: qrCode.signature,
+              expires_at: qrCode.expires_at,
+              created_at: qrCode.created_at,
+              is_active: qrCode.is_active,
+            }
+          : undefined,
+        hasActiveQR: !!qrCode,
+        lastGenerated: qrCode?.created_at,
+        scanHistory: scanHistory,
+        todayScans,
+      };
+    });
 
     return result;
   }

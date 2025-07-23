@@ -39,15 +39,42 @@ export class InventoryService {
     }
 
     if (filter?.isLowStock) {
-      // Get products where stock_quantity < low_stock_threshold
-      // Since Supabase doesn't have raw() method, we'll filter in post-processing
-      const { data: allProducts, error } = await query;
-      if (error) {
-        throw new Error(`商品取得エラー: ${error.message}`);
-      }
-      return (allProducts || []).filter(
-        (product) => product.stock_quantity < product.low_stock_threshold
+      // RPC関数で低在庫商品を取得
+      const { data: lowStockProducts, error } = await this.supabase.rpc(
+        "get_low_stock_products"
       );
+
+      if (error) {
+        // RPCが存在しない場合は従来の方法でフォールバック
+        console.warn(
+          "RPC get_low_stock_productsが存在しません。クライアントサイドで処理します。"
+        );
+        const { data: allProducts, error: queryError } = await query;
+        if (queryError) {
+          throw new Error(`商品取得エラー: ${queryError.message}`);
+        }
+        return (allProducts || []).filter(
+          (product) => product.stock_quantity < product.low_stock_threshold
+        );
+      }
+
+      let filteredProducts = lowStockProducts || [];
+
+      // 他のフィルタを適用
+      if (filter.category) {
+        filteredProducts = filteredProducts.filter(
+          (product) => product.category === filter.category
+        );
+      }
+
+      if (filter.searchTerm) {
+        const searchLower = filter.searchTerm.toLowerCase();
+        filteredProducts = filteredProducts.filter((product) =>
+          product.name.toLowerCase().includes(searchLower)
+        );
+      }
+
+      return filteredProducts;
     }
 
     if (filter?.isOutOfStock) {
@@ -251,24 +278,50 @@ export class InventoryService {
 
   // 在庫統計
   async getInventoryStats(): Promise<InventoryStats> {
-    const products = await this.getProducts();
+    // データベースで直接カウントと集計を実行
+    const { count: totalProducts } = await this.supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true);
 
-    const totalProducts = products.length;
-    const lowStockItems = products.filter(
-      (p) => p.stock_quantity <= p.low_stock_threshold
-    ).length;
-    const outOfStockItems = products.filter(
-      (p) => p.stock_quantity === 0
-    ).length;
-    const totalValue = products.reduce(
-      (sum, p) => sum + p.stock_quantity * p.cost,
-      0
-    );
+    const { count: outOfStockItems } = await this.supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("stock_quantity", 0);
+
+    // 低在庫アイテムは計算列を使用できないため、RPCまたはクライアント側処理
+    let lowStockItems = 0;
+    const { data: lowStockData, error: lowStockError } =
+      await this.supabase.rpc("count_low_stock_products");
+
+    if (lowStockError) {
+      // RPCが存在しない場合はフォールバック
+      const { data: productsData } = await this.supabase
+        .from("products")
+        .select("stock_quantity, low_stock_threshold")
+        .eq("is_active", true);
+
+      lowStockItems =
+        productsData?.filter((p) => p.stock_quantity <= p.low_stock_threshold)
+          .length || 0;
+    } else {
+      lowStockItems = lowStockData || 0;
+    }
+
+    // 在庫価値の合計
+    const { data: valueData } = await this.supabase
+      .from("products")
+      .select("stock_quantity, cost")
+      .eq("is_active", true);
+
+    const totalValue =
+      valueData?.reduce((sum, p) => sum + p.stock_quantity * p.cost, 0) || 0;
 
     return {
-      totalProducts,
+      totalProducts: totalProducts || 0,
       lowStockItems,
-      outOfStockItems,
+      outOfStockItems: outOfStockItems || 0,
       totalValue,
     };
   }
