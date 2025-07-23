@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
@@ -44,6 +44,7 @@ export function CastRegistrationModal({
   const [availableStaff, setAvailableStaff] = useState<Staff[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasLoadedStaff = useRef(false);
   const { can } = usePermission();
   const canCreateCast = can("cast", "create");
 
@@ -58,74 +59,61 @@ export function CastRegistrationModal({
     },
   });
 
-  // Load available staff when modal opens
-  const loadAvailableStaff = useCallback(async () => {
-    if (isLoadingStaff) return; // Prevent multiple concurrent calls
-
-    setIsLoadingStaff(true);
-    console.log("CastRegistrationModal: Starting to load available staff...");
-
-    try {
-      // Use client-side service with better error handling
-      console.log(
-        "CastRegistrationModal: Calling staffService.getUnregisteredStaff..."
-      );
-      const result = await staffService.getUnregisteredStaff(1, 100);
-      console.log("CastRegistrationModal: Received result:", result);
-
-      // Filter out admin role
-      const available = result.data.filter(
-        (staff: Staff) => staff.role !== "admin" // Don't allow admin to be cast
-      );
-
-      console.log(
-        `CastRegistrationModal: Found ${available.length} available staff members`
-      );
-      console.log(
-        "CastRegistrationModal: Available staff IDs:",
-        available.map((s) => ({ id: s.id, name: s.fullName }))
-      );
-      setAvailableStaff(available);
-
-      // Successfully loaded staff
-    } catch (error) {
-      console.error(
-        "CastRegistrationModal: Failed to load available staff:",
-        error
-      );
-
-      // より詳細なエラー情報を表示
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "スタッフ情報の読み込みに失敗しました";
-
-      console.error("CastRegistrationModal: Error:", errorMessage);
-
-      // Set empty array to prevent infinite loading
-      setAvailableStaff([]);
-    } finally {
-      setIsLoadingStaff(false);
-      console.log("CastRegistrationModal: Finished loading staff");
-    }
-  }, [isLoadingStaff]);
+  // Removed loadAvailableStaff callback to prevent infinite loops
 
   useEffect(() => {
-    if (
-      isOpen &&
-      canCreateCast &&
-      !isLoadingStaff &&
-      availableStaff.length === 0
-    ) {
-      loadAvailableStaff();
+    if (isOpen && canCreateCast && !hasLoadedStaff.current && !isLoadingStaff) {
+      hasLoadedStaff.current = true;
+      // Call the function directly to avoid dependency issues
+      (async () => {
+        if (isLoadingStaff) return;
+
+        setIsLoadingStaff(true);
+        console.log(
+          "CastRegistrationModal: Starting to load available staff..."
+        );
+
+        try {
+          console.log(
+            "CastRegistrationModal: Calling staffService.getUnregisteredStaff..."
+          );
+          const result = await staffService.getUnregisteredStaff(1, 100);
+          console.log("CastRegistrationModal: Received result:", result);
+
+          const available = result.data.filter(
+            (staff: Staff) => staff.role !== "admin"
+          );
+
+          console.log(
+            `CastRegistrationModal: Found ${available.length} available staff members`
+          );
+          console.log(
+            "CastRegistrationModal: Available staff IDs:",
+            available.map((s) => ({ id: s.id, name: s.fullName }))
+          );
+          setAvailableStaff(available);
+        } catch (error) {
+          console.error(
+            "CastRegistrationModal: Failed to load available staff:",
+            error
+          );
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "スタッフ情報の読み込みに失敗しました";
+          console.error("CastRegistrationModal: Error:", errorMessage);
+          setAvailableStaff([]);
+        } finally {
+          setIsLoadingStaff(false);
+          console.log("CastRegistrationModal: Finished loading staff");
+        }
+      })();
     }
-  }, [
-    isOpen,
-    canCreateCast,
-    isLoadingStaff,
-    availableStaff.length,
-    loadAvailableStaff,
-  ]);
+
+    if (!isOpen) {
+      hasLoadedStaff.current = false;
+    }
+  }, [isOpen, canCreateCast]);
 
   // Reset form when modal opens
   useEffect(() => {
