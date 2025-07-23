@@ -125,21 +125,32 @@ export function CastRegistrationModal({
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
-    try {
-      await castService.createCast({
-        staffId: data.staffId,
-        stageName: data.stageName,
-        hourlyRate: data.hourlyRate,
-        backPercentage: data.backPercentage,
-        memo: data.memo || "",
-        isActive: true,
-      });
+    console.log("CastRegistrationModal: Submitting cast data:", data);
 
+    const castData = {
+      staffId: data.staffId,
+      stageName: data.stageName,
+      hourlyRate: data.hourlyRate,
+      backPercentage: data.backPercentage,
+      selfIntroduction: data.memo || "",
+      isActive: true,
+    };
+
+    console.log("CastRegistrationModal: Transformed cast data:", castData);
+
+    try {
+      await castService.createCast(castData);
+      console.log("CastRegistrationModal: Cast created successfully");
       onSuccess();
     } catch (error) {
-      console.error("Failed to create cast:", error);
+      console.error("CastRegistrationModal: Failed to create cast:", error);
+
+      // Show more detailed error message
+      const errorMessage =
+        error instanceof Error ? error.message : "キャストの登録に失敗しました";
+
       form.setError("root", {
-        message: "キャストの登録に失敗しました",
+        message: errorMessage,
       });
     } finally {
       setIsSubmitting(false);
