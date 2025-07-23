@@ -2,13 +2,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
-import { useAuthStore } from "@/stores/auth.store";
+import { authManager } from "@/lib/auth/authManager";
 
 export abstract class BaseService {
   protected supabase: SupabaseClient<Database>;
-  private _cachedStaffId: string | null = null;
-  private _cacheExpiry: number = 0;
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分間キャッシュ
 
   constructor() {
     this.supabase = createClient();
@@ -16,54 +13,48 @@ export abstract class BaseService {
 
   /**
    * Get the current authenticated staff ID
-   * ストアからキャッシュされたスタッフIDを取得、ない場合はデータベースから取得
    * @returns The staff ID or null if not authenticated
    */
   protected async getCurrentStaffId(): Promise<string | null> {
-    // まずストアからスタッフIDを取得してみる
-    const authState = useAuthStore.getState();
-    if (authState.user?.staffId) {
-      return authState.user.staffId;
+    // First, try to get from auth manager (cached value)
+    const cachedStaffId = authManager.getStaffId();
+    if (cachedStaffId) {
+      return cachedStaffId;
     }
 
-    // キャッシュが有効かどうかチェック
-    const now = Date.now();
-    if (this._cachedStaffId && now < this._cacheExpiry) {
-      return this._cachedStaffId;
-    }
+    // Fallback: If not in cache, fetch from database (for backward compatibility)
+    console.warn(
+      "AuthManager cache miss in getCurrentStaffId(). " +
+        "This may indicate an initialization issue or the user is not yet fully authenticated. " +
+        "Falling back to database query."
+    );
 
-    // キャッシュが無いか期限切れの場合、データベースから取得
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
 
-    if (!user) {
-      this._cachedStaffId = null;
-      this._cacheExpiry = 0;
-      return null;
-    }
+    if (!user) return null;
 
-    const { data: staff } = await this.supabase
+    const { data: staff, error } = await this.supabase
       .from("staffs")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    const staffId = staff?.id || null;
+    if (error) {
+      console.error("Failed to fetch staff ID from database:", error);
+      return null;
+    }
 
-    // キャッシュを更新
-    this._cachedStaffId = staffId;
-    this._cacheExpiry = now + this.CACHE_DURATION;
+    // Log for debugging if there's a mismatch between expected auth state
+    if (staff?.id) {
+      console.info(
+        `Retrieved staff ID from database: ${staff.id} for user: ${user.id}. ` +
+          "Consider ensuring AuthManager is properly initialized to avoid this fallback."
+      );
+    }
 
-    return staffId;
-  }
-
-  /**
-   * キャッシュされたスタッフIDをクリアする（サインアウト時などに使用）
-   */
-  protected clearStaffIdCache(): void {
-    this._cachedStaffId = null;
-    this._cacheExpiry = 0;
+    return staff?.id || null;
   }
 
   /**

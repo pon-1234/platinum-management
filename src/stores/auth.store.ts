@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { AuthService } from "@/services/auth.service";
+import { authManager } from "@/lib/auth/authManager";
 import type { User } from "@/types/auth.types";
 
 interface AuthState {
@@ -27,6 +28,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (result.success) {
         const user = await authService.getCurrentUser();
+        authManager.setUser(user); // Sync with auth manager
         set({ user, isLoading: false, error: null });
       } else {
         set({
@@ -49,9 +51,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       await authService.signOut();
+      authManager.clearUser(); // Clear from auth manager
       set({ user: null, isLoading: false, error: null });
     } catch (error) {
       // Clear user even if sign out fails (e.g., network error)
+      authManager.clearUser(); // Clear from auth manager
       set({
         user: null,
         isLoading: false,
@@ -65,6 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const user = await authService.getCurrentUser();
+      authManager.setUser(user); // Sync with auth manager
       set({ user, isLoading: false, error: null });
     } catch (error) {
       set({

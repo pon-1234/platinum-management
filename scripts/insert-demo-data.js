@@ -1,11 +1,29 @@
 #!/usr/bin/env node
 
 const { createClient } = require("@supabase/supabase-js");
+const dotenv = require("dotenv");
 
-// Supabase connection
-const supabaseUrl = "https://pdomeeyvatachcothudq.supabase.co";
-const supabaseServiceKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkb21lZXl2YXRhY2hjb3RodWRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzA5MzI3MiwiZXhwIjoyMDY4NjY5MjcyfQ.HhYDbfwZeSUmKmkftQZ492LKdTTHP_ORwmqnEyxZVNA";
+// Load environment variables from .env.local file
+dotenv.config({ path: ".env.local" });
+
+// Validate required environment variables
+if (
+  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  !process.env.SUPABASE_SERVICE_ROLE_KEY
+) {
+  console.error("❌ Missing required environment variables!");
+  console.error("Please ensure your .env.local file contains:");
+  console.error("- NEXT_PUBLIC_SUPABASE_URL");
+  console.error("- SUPABASE_SERVICE_ROLE_KEY");
+  console.error(
+    "\nCopy .env.local.example to .env.local and fill in the values."
+  );
+  process.exit(1);
+}
+
+// Supabase connection using environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

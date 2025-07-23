@@ -135,6 +135,7 @@ export const reservationSearchSchema = z.object({
 
 // テーブル検索用スキーマ
 export const tableSearchSchema = z.object({
+  search: z.string().optional(),
   status: tableStatusSchema.optional(),
   isVip: z.boolean().optional(),
   isActive: z.boolean().optional(),
