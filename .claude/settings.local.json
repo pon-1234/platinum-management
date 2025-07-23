@@ -56,7 +56,8 @@
       "Bash(gh pr create:*)",
       "Bash(PGPASSWORD:*)",
       "Bash(npx eslint:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(/Users/pon/dev/platinum-management/bin/gemini-analyze:*)"
     ],
     "deny": []
   }

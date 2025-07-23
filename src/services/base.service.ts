@@ -23,17 +23,36 @@ export abstract class BaseService {
     }
 
     // Fallback: If not in cache, fetch from database (for backward compatibility)
+    console.warn(
+      "AuthManager cache miss in getCurrentStaffId(). " +
+        "This may indicate an initialization issue or the user is not yet fully authenticated. " +
+        "Falling back to database query."
+    );
+
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
 
     if (!user) return null;
 
-    const { data: staff } = await this.supabase
+    const { data: staff, error } = await this.supabase
       .from("staffs")
       .select("id")
       .eq("user_id", user.id)
       .single();
+
+    if (error) {
+      console.error("Failed to fetch staff ID from database:", error);
+      return null;
+    }
+
+    // Log for debugging if there's a mismatch between expected auth state
+    if (staff?.id) {
+      console.info(
+        `Retrieved staff ID from database: ${staff.id} for user: ${user.id}. ` +
+          "Consider ensuring AuthManager is properly initialized to avoid this fallback."
+      );
+    }
 
     return staff?.id || null;
   }

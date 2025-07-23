@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
+const { createClient } = require("@supabase/supabase-js");
+const dotenv = require("dotenv");
 
 // Load environment variables from .env.local file
 dotenv.config({ path: ".env.local" });
@@ -25,7 +25,7 @@ Object.entries(requiredEnvVars).forEach(([key, value]) => {
 });
 
 // Create Supabase client with service role key
-export const supabase = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   {
@@ -36,5 +36,8 @@ export const supabase = createClient(
   }
 );
 
-export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+module.exports = {
+  supabase,
+  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+};
