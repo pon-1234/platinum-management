@@ -1,6 +1,29 @@
 #!/usr/bin/env node
 
 const { createClient } = require("@supabase/supabase-js");
+<<<<<<< HEAD
+
+// Supabase connection from environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Validate environment variables
+function validateEnvironment() {
+  const missing = [];
+  if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (missing.length > 0) {
+    console.error("❌ Missing required environment variables:");
+    missing.forEach((var_name) => console.error(`  - ${var_name}`));
+    console.error("\n💡 Please set these in your .env.local file");
+    console.error("📋 For more details, see DATABASE_SETUP.md");
+    process.exit(1);
+  }
+}
+
+validateEnvironment();
+=======
 const dotenv = require("dotenv");
 
 // Load environment variables from .env.local file
@@ -24,6 +47,7 @@ if (
 // Supabase connection using environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+>>>>>>> origin/main
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

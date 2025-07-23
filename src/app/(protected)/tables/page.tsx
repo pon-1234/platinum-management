@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { TableLayout } from "@/components/table/TableLayout";
 import { TableStatusModal } from "@/components/table/TableStatusModal";
@@ -18,25 +18,83 @@ export default function TablesPage() {
   const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
+<<<<<<< HEAD
+  const [filteredTables, setFilteredTables] = useState<Table[]>([]);
+=======
+>>>>>>> origin/main
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<TableSearchParams>({ isActive: true });
   const { can } = usePermission();
 
+<<<<<<< HEAD
+  // Load tables on mount
+  useEffect(() => {
+    loadTables();
+  }, []);
+
+  const applyFiltersAndSearch = useCallback(() => {
+    let filtered = tables;
+
+    // Apply search
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((table) =>
+        table.tableName.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply filters
+    if (filters.status) {
+      filtered = filtered.filter(
+        (table) => table.currentStatus === filters.status
+      );
+    }
+    if (filters.isVip !== undefined) {
+      filtered = filtered.filter((table) => table.isVip === filters.isVip);
+    }
+    if (filters.isActive !== undefined) {
+      filtered = filtered.filter(
+        (table) => table.isActive === filters.isActive
+      );
+    }
+    if (filters.minCapacity) {
+      filtered = filtered.filter(
+        (table) => table.capacity >= filters.minCapacity!
+      );
+    }
+    if (filters.maxCapacity) {
+      filtered = filtered.filter(
+        (table) => table.capacity <= filters.maxCapacity!
+      );
+    }
+
+    setFilteredTables(filtered);
+  }, [tables, filters, searchQuery]);
+
+  // Apply filters and search
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [applyFiltersAndSearch]);
+=======
   // Load tables when filters or search changes
   useEffect(() => {
     loadTables();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, searchQuery]);
+>>>>>>> origin/main
 
   const loadTables = async () => {
     setIsLoading(true);
     try {
+<<<<<<< HEAD
+      const allTables = await tableService.searchTables({});
+=======
       const searchParams: TableSearchParams = {
         ...filters,
         search: searchQuery || undefined,
       };
       const allTables = await tableService.searchTables(searchParams);
+>>>>>>> origin/main
       setTables(allTables);
     } catch (error) {
       console.error("Failed to load tables:", error);
@@ -128,7 +186,11 @@ export default function TablesPage() {
 
         {/* Table Layout */}
         <TableLayout
+<<<<<<< HEAD
+          tables={filteredTables}
+=======
           tables={tables}
+>>>>>>> origin/main
           onTableSelect={handleTableSelect}
           onEditTable={can("table", "manage") ? handleEditTable : undefined}
           selectedTableId={selectedTable?.id}

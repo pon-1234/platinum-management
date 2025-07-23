@@ -2,10 +2,13 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
-import { authManager } from "@/lib/auth/authManager";
+import { useAuthStore } from "@/stores/auth.store";
 
 export abstract class BaseService {
   protected supabase: SupabaseClient<Database>;
+  private _cachedStaffId: string | null = null;
+  private _cacheExpiry: number = 0;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分間キャッシュ
 
   constructor() {
     this.supabase = createClient();
@@ -13,9 +16,25 @@ export abstract class BaseService {
 
   /**
    * Get the current authenticated staff ID
+   * ストアからキャッシュされたスタッフIDを取得、ない場合はデータベースから取得
    * @returns The staff ID or null if not authenticated
    */
   protected async getCurrentStaffId(): Promise<string | null> {
+<<<<<<< HEAD
+    // まずストアからスタッフIDを取得してみる
+    const authState = useAuthStore.getState();
+    if (authState.user?.staffId) {
+      return authState.user.staffId;
+    }
+
+    // キャッシュが有効かどうかチェック
+    const now = Date.now();
+    if (this._cachedStaffId && now < this._cacheExpiry) {
+      return this._cachedStaffId;
+    }
+
+    // キャッシュが無いか期限切れの場合、データベースから取得
+=======
     // First, try to get from auth manager (cached value)
     const cachedStaffId = authManager.getStaffId();
     if (cachedStaffId) {
@@ -29,11 +48,16 @@ export abstract class BaseService {
         "Falling back to database query."
     );
 
+>>>>>>> origin/main
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
 
-    if (!user) return null;
+    if (!user) {
+      this._cachedStaffId = null;
+      this._cacheExpiry = 0;
+      return null;
+    }
 
     const { data: staff, error } = await this.supabase
       .from("staffs")
@@ -41,6 +65,48 @@ export abstract class BaseService {
       .eq("user_id", user.id)
       .single();
 
+<<<<<<< HEAD
+    const staffId = staff?.id || null;
+
+    // キャッシュを更新
+    this._cachedStaffId = staffId;
+    this._cacheExpiry = now + this.CACHE_DURATION;
+
+    return staffId;
+  }
+
+  /**
+   * キャッシュされたスタッフIDをクリアする（サインアウト時などに使用）
+   */
+  protected clearStaffIdCache(): void {
+    this._cachedStaffId = null;
+    this._cacheExpiry = 0;
+  }
+
+  /**
+   * Check if the current user has permission for a resource and action
+   * Note: This is a client-side check. Real permission enforcement happens via RLS on the server
+   * @param resource The resource to check permission for
+   * @param action The action to perform
+   * @returns Whether the user has permission
+   */
+  protected async hasPermission(
+    resource: string,
+    action: string
+  ): Promise<boolean> {
+    try {
+      const { data } = await this.supabase.rpc("has_permission", {
+        user_id: (await this.supabase.auth.getUser()).data.user?.id,
+        resource,
+        action,
+      });
+
+      return data || false;
+    } catch (error) {
+      console.error("Permission check failed:", error);
+      return false;
+    }
+=======
     if (error) {
       console.error("Failed to fetch staff ID from database:", error);
       return null;
@@ -55,6 +121,7 @@ export abstract class BaseService {
     }
 
     return staff?.id || null;
+>>>>>>> origin/main
   }
 
   /**

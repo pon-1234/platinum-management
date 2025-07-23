@@ -11,7 +11,11 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "playwright": "playwright test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:check-tables": "node scripts/check-tables.js",
+    "db:check-data": "node scripts/check-data.js",
+    "db:insert-demo": "node scripts/insert-demo-data.js",
+    "security:audit": "node scripts/security-audit.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

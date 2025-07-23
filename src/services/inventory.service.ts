@@ -63,13 +63,13 @@ export class InventoryService {
       // 他のフィルタを適用
       if (filter.category) {
         filteredProducts = filteredProducts.filter(
-          (product) => product.category === filter.category
+          (product: Product) => product.category === filter.category
         );
       }
 
       if (filter.searchTerm) {
         const searchLower = filter.searchTerm.toLowerCase();
-        filteredProducts = filteredProducts.filter((product) =>
+        filteredProducts = filteredProducts.filter((product: Product) =>
           product.name.toLowerCase().includes(searchLower)
         );
       }
