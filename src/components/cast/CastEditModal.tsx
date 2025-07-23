@@ -103,7 +103,6 @@ export function CastEditModal({
         specialSkill: data.specialSkill || null,
         selfIntroduction: data.selfIntroduction || null,
         profileImageUrl: data.profileImageUrl || null,
-        memo: data.memo || null,
         isActive: data.isActive,
       });
 
