@@ -104,9 +104,7 @@ export function CastRegistrationModal({
           setAvailableStaff([]);
         } finally {
           setIsLoadingStaff(false);
-          console.log(
-            "CastRegistrationModal: Finished loading staff, isLoadingStaff set to false"
-          );
+          console.log("CastRegistrationModal: Finished loading staff");
         }
       })();
     }
@@ -185,16 +183,6 @@ export function CastRegistrationModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               スタッフ選択 <span className="text-red-500">*</span>
             </label>
-            {/* Debug: isLoadingStaff: {isLoadingStaff.toString()}, availableStaff.length: {availableStaff.length} */}
-            {(() => {
-              console.log(
-                "CastRegistrationModal: Render - isLoadingStaff:",
-                isLoadingStaff,
-                "availableStaff.length:",
-                availableStaff.length
-              );
-              return null;
-            })()}
             {isLoadingStaff ? (
               <div className="flex justify-center py-4">
                 <LoadingSpinner size="sm" />
