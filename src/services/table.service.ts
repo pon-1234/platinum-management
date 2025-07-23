@@ -243,38 +243,74 @@ export class TableService extends BaseService {
     date?: string,
     time?: string
   ): Promise<Table[]> {
-    // Get all active tables
-    let tables = await this.searchTables({
+    // 日時が指定されている場合は一括チェック用のRPCを使用
+    if (date && time) {
+      const { data: availableTableIds, error } = await this.supabase.rpc(
+        "get_available_tables",
+        {
+          p_reservation_date: date,
+          p_reservation_time: time,
+          p_min_capacity: capacity || 1,
+        }
+      );
+
+      if (error) {
+        // RPCが存在しない場合は従来の方法でフォールバック
+        console.warn(
+          "RPC get_available_tablesが存在しません。従来の方法で処理します。"
+        );
+
+        const tables = await this.searchTables({
+          isActive: true,
+          minCapacity: capacity,
+        });
+
+        const availableTableIdsList: string[] = [];
+        for (const table of tables) {
+          const isAvailable = await this.supabase.rpc(
+            "check_table_availability",
+            {
+              p_table_id: table.id,
+              p_reservation_date: date,
+              p_reservation_time: time,
+            }
+          );
+
+          if (isAvailable.data) {
+            availableTableIdsList.push(table.id);
+          }
+        }
+
+        return tables.filter((table) =>
+          availableTableIdsList.includes(table.id)
+        );
+      }
+
+      // RPCが成功した場合、返されたIDでテーブルを取得
+      if (availableTableIds && availableTableIds.length > 0) {
+        const { data: tablesData, error: tableError } = await this.supabase
+          .from("tables")
+          .select("*")
+          .in("id", availableTableIds)
+          .eq("is_active", true);
+
+        if (tableError) {
+          throw new Error(
+            `テーブル情報の取得に失敗しました: ${tableError.message}`
+          );
+        }
+
+        return (tablesData || []).map(this.mapToTable);
+      }
+
+      return [];
+    }
+
+    // 日時が指定されていない場合は単純にアクティブなテーブルを返す
+    return await this.searchTables({
       isActive: true,
       minCapacity: capacity,
     });
-
-    // If date and time are provided, filter out reserved tables
-    if (date && time) {
-      const availableTableIds: string[] = [];
-
-      for (const table of tables) {
-        const isAvailable = await this.supabase.rpc(
-          "check_table_availability",
-          {
-            p_table_id: table.id,
-            p_reservation_date: date,
-            p_reservation_time: time,
-          }
-        );
-
-        if (isAvailable.data) {
-          availableTableIds.push(table.id);
-        }
-      }
-
-      tables = tables.filter((table) => availableTableIds.includes(table.id));
-    } else {
-      // If no date/time provided, only return currently available tables
-      tables = tables.filter((table) => table.currentStatus === "available");
-    }
-
-    return tables;
   }
 
   // Realtime subscriptions

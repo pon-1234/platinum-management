@@ -67,8 +67,11 @@ export class BottleKeepService {
     }
 
     if (filter?.searchTerm) {
-      // 顧客名または商品名で検索（結合後にフィルタリング）
-      // ここではクライアントサイドでフィルタリング
+      // 顧客名または商品名で検索をデータベース側で実行
+      const searchPattern = `%${filter.searchTerm}%`;
+      query = query.or(
+        `customer.name.ilike.${searchPattern},product.name.ilike.${searchPattern}`
+      );
     }
 
     if (filter?.sortBy) {
@@ -104,16 +107,6 @@ export class BottleKeepService {
           0
         ) || 0,
     }));
-
-    // クライアントサイド検索フィルタリング
-    if (filter?.searchTerm) {
-      const searchLower = filter.searchTerm.toLowerCase();
-      results = results.filter(
-        (bottle) =>
-          bottle.customer?.name.toLowerCase().includes(searchLower) ||
-          bottle.product?.name.toLowerCase().includes(searchLower)
-      );
-    }
 
     return results;
   }
@@ -258,101 +251,161 @@ export class BottleKeepService {
 
   // ボトルキープ統計
   async getBottleKeepStats(): Promise<BottleKeepStats> {
-    const allBottles = await this.getBottleKeeps();
+    // ステータス別のカウントをデータベースで集計
+    // ステータス別のカウントを個別に取得
+    const { count: totalBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select("*", { count: "exact", head: true });
 
-    const totalBottles = allBottles.length;
-    const activeBottles = allBottles.filter(
-      (b) => b.status === "active"
-    ).length;
-    const expiredBottles = allBottles.filter(
-      (b) => b.status === "expired"
-    ).length;
-    const consumedBottles = allBottles.filter(
-      (b) => b.status === "consumed"
-    ).length;
+    const { count: activeBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active");
 
-    const totalValue = allBottles
-      .filter((b) => b.status === "active")
-      .reduce(
-        (sum, b) => sum + (b.product?.price || 0) * b.remaining_amount,
+    const { count: expiredBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "expired");
+
+    const { count: consumedBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "consumed");
+
+    // アクティブなボトルの総価値を計算
+    const { data: activeBottlesData } = await this.supabase
+      .from("bottle_keeps")
+      .select("remaining_amount, product:products(price)")
+      .eq("status", "active");
+
+    const totalValue =
+      activeBottlesData?.reduce(
+        (sum, b) => sum + (b.product?.[0]?.price || 0) * b.remaining_amount,
         0
-      );
+      ) || 0;
 
     // 一週間以内に期限切れ
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-    const expiringTown = allBottles.filter(
-      (b) =>
-        b.status === "active" &&
-        b.expiry_date &&
-        new Date(b.expiry_date) <= oneWeekFromNow
-    ).length;
+    const { count: expiringTown } = await this.supabase
+      .from("bottle_keeps")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active")
+      .lte("expiry_date", oneWeekFromNow.toISOString().split("T")[0]);
 
     return {
-      totalBottles,
-      activeBottles,
-      expiredBottles,
-      consumedBottles,
+      totalBottles: totalBottles || 0,
+      activeBottles: activeBottles || 0,
+      expiredBottles: expiredBottles || 0,
+      consumedBottles: consumedBottles || 0,
       totalValue,
-      expiringTown,
+      expiringTown: expiringTown || 0,
     };
   }
 
   // ボトルキープアラート
   async getBottleKeepAlerts(): Promise<BottleKeepAlert[]> {
-    const bottles = await this.getBottleKeeps({ status: "active" });
     const alerts: BottleKeepAlert[] = [];
     const today = new Date();
+    const oneWeekFromNow = new Date();
+    oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
 
-    bottles.forEach((bottle) => {
-      if (!bottle.expiry_date) return;
+    // 期限切れアラートをデータベースから直接取得
+    const { data: expiredBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select(
+        `
+        id,
+        expiry_date,
+        remaining_amount,
+        customer:customers(name),
+        product:products(name)
+      `
+      )
+      .eq("status", "active")
+      .lt("expiry_date", today.toISOString().split("T")[0]);
 
-      const expiryDate = new Date(bottle.expiry_date);
+    // 期限間近アラートをデータベースから直接取得
+    const { data: expiringBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select(
+        `
+        id,
+        expiry_date,
+        remaining_amount,
+        customer:customers(name),
+        product:products(name)
+      `
+      )
+      .eq("status", "active")
+      .gte("expiry_date", today.toISOString().split("T")[0])
+      .lte("expiry_date", oneWeekFromNow.toISOString().split("T")[0]);
+
+    // 残量少量アラートをデータベースから直接取得
+    const { data: lowAmountBottles } = await this.supabase
+      .from("bottle_keeps")
+      .select(
+        `
+        id,
+        expiry_date,
+        remaining_amount,
+        customer:customers(name),
+        product:products(name)
+      `
+      )
+      .eq("status", "active")
+      .lte("remaining_amount", 0.25);
+
+    // 期限切れアラートを処理
+    expiredBottles?.forEach((bottle) => {
       const daysUntilExpiry = Math.ceil(
-        (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(bottle.expiry_date).getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24)
       );
+      alerts.push({
+        id: `expired-${bottle.id}`,
+        bottleKeepId: bottle.id,
+        customerName: bottle.customer?.[0]?.name || "不明",
+        productName: bottle.product?.[0]?.name || "不明",
+        alertType: "expired",
+        severity: "critical",
+        message: `期限切れ（${Math.abs(daysUntilExpiry)}日経過）`,
+        expiryDate: bottle.expiry_date,
+        daysUntilExpiry,
+      });
+    });
 
-      // 期限切れアラート
-      if (daysUntilExpiry < 0) {
-        alerts.push({
-          id: `expired-${bottle.id}`,
-          bottleKeepId: bottle.id,
-          customerName: bottle.customer?.name || "不明",
-          productName: bottle.product?.name || "不明",
-          alertType: "expired",
-          severity: "critical",
-          message: `期限切れ（${Math.abs(daysUntilExpiry)}日経過）`,
-          expiryDate: bottle.expiry_date,
-          daysUntilExpiry,
-        });
-      } else if (daysUntilExpiry <= 7) {
-        // 期限間近アラート
-        alerts.push({
-          id: `expiring-${bottle.id}`,
-          bottleKeepId: bottle.id,
-          customerName: bottle.customer?.name || "不明",
-          productName: bottle.product?.name || "不明",
-          alertType: "expiring",
-          severity: daysUntilExpiry <= 3 ? "critical" : "warning",
-          message: `期限まで${daysUntilExpiry}日`,
-          expiryDate: bottle.expiry_date,
-          daysUntilExpiry,
-        });
-      }
+    // 期限間近アラートを処理
+    expiringBottles?.forEach((bottle) => {
+      const daysUntilExpiry = Math.ceil(
+        (new Date(bottle.expiry_date).getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
+      alerts.push({
+        id: `expiring-${bottle.id}`,
+        bottleKeepId: bottle.id,
+        customerName: bottle.customer?.[0]?.name || "不明",
+        productName: bottle.product?.[0]?.name || "不明",
+        alertType: "expiring",
+        severity: daysUntilExpiry <= 3 ? "critical" : "warning",
+        message: `期限まで${daysUntilExpiry}日`,
+        expiryDate: bottle.expiry_date,
+        daysUntilExpiry,
+      });
+    });
 
-      // 残量少量アラート（25%以下）
-      if (bottle.remaining_amount <= 0.25) {
-        alerts.push({
-          id: `low-amount-${bottle.id}`,
-          bottleKeepId: bottle.id,
-          customerName: bottle.customer?.name || "不明",
-          productName: bottle.product?.name || "不明",
-          alertType: "low_amount",
-          severity: bottle.remaining_amount <= 0.1 ? "critical" : "warning",
-          message: `残量${Math.round(bottle.remaining_amount * 100)}%`,
-          remainingAmount: bottle.remaining_amount,
-        });
-      }
+    // 残量少量アラートを処理
+    lowAmountBottles?.forEach((bottle) => {
+      alerts.push({
+        id: `low-amount-${bottle.id}`,
+        bottleKeepId: bottle.id,
+        customerName: bottle.customer?.[0]?.name || "不明",
+        productName: bottle.product?.[0]?.name || "不明",
+        alertType: "low_amount",
+        severity: bottle.remaining_amount <= 0.1 ? "critical" : "warning",
+        message: `残量${Math.round(bottle.remaining_amount * 100)}%`,
+        remainingAmount: bottle.remaining_amount,
+      });
     });
 
     return alerts.sort((a, b) => {

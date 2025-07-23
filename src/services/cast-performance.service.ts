@@ -140,7 +140,7 @@ export class CastPerformanceService extends BaseService {
     return data || [];
   }
 
-  private mapToCastPerformance(
+  public mapToCastPerformance(
     data: Database["public"]["Tables"]["cast_performances"]["Row"]
   ): CastPerformance {
     return {
