@@ -234,10 +234,10 @@ export class AttendanceService extends BaseService {
       .from("confirmed_shifts")
       .insert({
         staff_id: data.staffId,
-        shift_date: data.shiftDate,
+        date: data.date,
         start_time: data.startTime,
         end_time: data.endTime,
-        shift_type: data.shiftType || "regular",
+        status: data.status || "scheduled",
         notes: data.notes || null,
         created_by: staffId,
         updated_by: staffId,
@@ -258,22 +258,22 @@ export class AttendanceService extends BaseService {
     let query = this.supabase
       .from("confirmed_shifts")
       .select("*")
-      .order("shift_date", { ascending: true });
+      .order("date", { ascending: true });
 
     if (params.staffId) {
       query = query.eq("staff_id", params.staffId);
     }
 
     if (params.startDate) {
-      query = query.gte("shift_date", params.startDate);
+      query = query.gte("date", params.startDate);
     }
 
     if (params.endDate) {
-      query = query.lte("shift_date", params.endDate);
+      query = query.lte("date", params.endDate);
     }
 
-    if (params.shiftType) {
-      query = query.eq("shift_type", params.shiftType);
+    if (params.status) {
+      query = query.eq("status", params.status);
     }
 
     if (params.limit) {
@@ -312,18 +312,18 @@ export class AttendanceService extends BaseService {
     const shiftsByDate: Record<string, CalendarShift[]> = {};
 
     shifts.forEach((shift) => {
-      if (!shiftsByDate[shift.shiftDate]) {
-        shiftsByDate[shift.shiftDate] = [];
+      if (!shiftsByDate[shift.date]) {
+        shiftsByDate[shift.date] = [];
       }
 
-      shiftsByDate[shift.shiftDate].push({
+      shiftsByDate[shift.date].push({
         id: shift.id,
         staffId: shift.staffId,
         staffName: shift.staffId, // TODO: Get actual staff name
-        date: shift.shiftDate,
+        date: shift.date,
         startTime: shift.startTime,
         endTime: shift.endTime,
-        shiftType: shift.shiftType,
+        shiftType: shift.status as any, // Map status to shiftType for compatibility
         isConfirmed: true,
       });
     });
@@ -643,10 +643,10 @@ export class AttendanceService extends BaseService {
     return {
       id: data.id,
       staffId: data.staff_id,
-      shiftDate: data.shift_date,
+      date: data.date,
       startTime: data.start_time,
       endTime: data.end_time,
-      shiftType: data.shift_type as "regular" | "overtime" | "holiday",
+      status: data.status as "scheduled" | "completed" | "cancelled",
       notes: data.notes,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
