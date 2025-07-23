@@ -271,6 +271,12 @@ export class StaffService extends BaseService {
 
       if (staffError) {
         console.error("Error getting staff:", staffError);
+        console.error("Staff error details:", {
+          message: staffError.message,
+          details: staffError.details,
+          hint: staffError.hint,
+          code: staffError.code,
+        });
         return { data: [], totalCount: 0, hasMore: false };
       }
 
@@ -279,6 +285,12 @@ export class StaffService extends BaseService {
         allStaff?.length || 0,
         "active staff"
       );
+
+      if (allStaff && allStaff.length > 0) {
+        console.log("Sample staff data:", allStaff[0]);
+      } else {
+        console.log("No staff data returned from database");
+      }
 
       // Get all cast staff IDs
       console.log("Step 2: Getting cast staff IDs...");

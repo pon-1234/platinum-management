@@ -60,6 +60,8 @@ export function CastRegistrationModal({
 
   // Load available staff when modal opens
   const loadAvailableStaff = useCallback(async () => {
+    if (isLoadingStaff) return; // Prevent multiple concurrent calls
+
     setIsLoadingStaff(true);
     console.log("CastRegistrationModal: Starting to load available staff...");
 
@@ -82,9 +84,7 @@ export function CastRegistrationModal({
       setAvailableStaff(available);
 
       // Clear any previous errors if successful
-      if (form.formState.errors.root) {
-        form.clearErrors("root");
-      }
+      form.clearErrors("root");
     } catch (error) {
       console.error(
         "CastRegistrationModal: Failed to load available staff:",
@@ -109,14 +109,19 @@ export function CastRegistrationModal({
       setIsLoadingStaff(false);
       console.log("CastRegistrationModal: Finished loading staff");
     }
-  }, [form]);
+  }, [isLoadingStaff, form]);
 
   useEffect(() => {
-    if (isOpen && canCreateCast) {
+    if (
+      isOpen &&
+      canCreateCast &&
+      !isLoadingStaff &&
+      availableStaff.length === 0
+    ) {
       loadAvailableStaff();
       form.reset(); // Reset form when opening
     }
-  }, [isOpen, form, loadAvailableStaff, canCreateCast]);
+  }, [isOpen, canCreateCast]);
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
