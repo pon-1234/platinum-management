@@ -62,65 +62,41 @@ export function CastRegistrationModal({
   // Removed loadAvailableStaff callback to prevent infinite loops
 
   useEffect(() => {
-    // Load staff when modal opens and hasn't been loaded yet
-    if (isOpen && canCreateCast && !hasLoadedStaff.current) {
-      hasLoadedStaff.current = true;
-      // Call the function directly to avoid dependency issues
-      (async () => {
-        setIsLoadingStaff(true);
-        console.log(
-          "CastRegistrationModal: Starting to load available staff..."
-        );
-
-        try {
-          console.log(
-            "CastRegistrationModal: Calling staffService.getUnregisteredStaff..."
-          );
-          const result = await staffService.getUnregisteredStaff(1, 100);
-          console.log("CastRegistrationModal: Received result:", result);
-
-          const available = result.data.filter(
-            (staff: Staff) => staff.role !== "admin"
-          );
-
-          console.log(
-            `CastRegistrationModal: Found ${available.length} available staff members`
-          );
-          console.log(
-            "CastRegistrationModal: Available staff IDs:",
-            available.map((s) => ({ id: s.id, name: s.fullName }))
-          );
-          setAvailableStaff(available);
-        } catch (error) {
-          console.error(
-            "CastRegistrationModal: Failed to load available staff:",
-            error
-          );
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "スタッフ情報の読み込みに失敗しました";
-          console.error("CastRegistrationModal: Error:", errorMessage);
-          setAvailableStaff([]);
-        } finally {
-          setIsLoadingStaff(false);
-          console.log("CastRegistrationModal: Finished loading staff");
-        }
-      })();
-    }
-
-    // Reset load state when modal closes
+    // Only run when modal opens, not on any other changes
     if (!isOpen) {
       hasLoadedStaff.current = false;
+      setAvailableStaff([]);
+      return;
     }
-  }, [isOpen, canCreateCast]);
 
-  // Reset form when modal opens
+    if (!canCreateCast || hasLoadedStaff.current) {
+      return;
+    }
+
+    hasLoadedStaff.current = true;
+    setIsLoadingStaff(true);
+
+    staffService
+      .getUnregisteredStaff(1, 100)
+      .then((result) => {
+        const available = result.data.filter((staff) => staff.role !== "admin");
+        setAvailableStaff(available);
+      })
+      .catch((error) => {
+        console.error("Failed to load staff:", error);
+        setAvailableStaff([]);
+      })
+      .finally(() => {
+        setIsLoadingStaff(false);
+      });
+  }, [isOpen]); // Only depend on isOpen
+
+  // Reset form when modal opens - separate effect to avoid conflicts
   useEffect(() => {
     if (isOpen) {
       form.reset();
     }
-  }, [isOpen, form]);
+  }, [isOpen]); // Remove form dependency
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
