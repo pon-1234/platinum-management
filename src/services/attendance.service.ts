@@ -132,8 +132,8 @@ export class AttendanceService extends BaseService {
       .from("shift_requests")
       .insert(
         this.toSnakeCase({
-          castId: data.castId,
-          requestDate: data.requestDate,
+          staffId: data.staffId || data.castId, // Support both old and new property names
+          requestedDate: data.requestedDate || data.requestDate,
           startTime: data.startTime,
           endTime: data.endTime,
           notes: data.notes || null,
@@ -157,8 +157,8 @@ export class AttendanceService extends BaseService {
       .select("*")
       .order("request_date", { ascending: false });
 
-    if (params.castId) {
-      query = query.eq("cast_id", params.castId);
+    if (params.staffId || params.castId) {
+      query = query.eq("staff_id", params.staffId || params.castId);
     }
 
     if (params.status) {
