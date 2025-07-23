@@ -1,4 +1,6 @@
 import { BaseService } from "../base.service";
+import type { Database } from "@/types/database.types";
+import { createHmac } from "crypto";
 import type {
   QRCode,
   GenerateQRCodeRequest,
@@ -120,7 +122,7 @@ export class QRGenerationService extends BaseService {
         },
         qrData: decoded,
       };
-    } catch (error) {
+    } catch {
       return {
         isValid: false,
         error: "QRコードの形式が無効です",
@@ -156,17 +158,15 @@ export class QRGenerationService extends BaseService {
    * 署名を生成（簡易版）
    */
   private generateSignature(qrData: string): string {
-    const crypto = require("crypto");
-    return crypto
-      .createHmac("sha256", this.secretKey)
-      .update(qrData)
-      .digest("hex");
+    return createHmac("sha256", this.secretKey).update(qrData).digest("hex");
   }
 
   /**
    * データベースレコードをQRCodeオブジェクトにマップ
    */
-  private mapToQRCode(data: any): QRCode {
+  private mapToQRCode(
+    data: Database["public"]["Tables"]["qr_codes"]["Row"]
+  ): QRCode {
     return {
       id: data.id,
       staffId: data.staff_id,
