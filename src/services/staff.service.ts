@@ -256,14 +256,30 @@ export class StaffService extends BaseService {
     limit: number = 20,
     searchQuery?: string
   ): Promise<{ data: Staff[]; totalCount: number; hasMore: boolean }> {
-    // Call the Supabase function
-    const { data, error } = await this.supabase.rpc("get_unregistered_staff", {
-      p_page: page,
-      p_limit: limit,
-      p_search_query: searchQuery || null,
-    });
+    // First check user authentication and permissions
+    const {
+      data: { user },
+      error: authError,
+    } = await this.supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw new Error("認証が必要です。ログインしてください。");
+    }
+
+    console.log("User authenticated, calling get_unregistered_staff...");
+
+    // Call the debug Supabase function temporarily
+    const { data, error } = await this.supabase.rpc(
+      "get_unregistered_staff_debug",
+      {
+        p_page: page,
+        p_limit: limit,
+        p_search_query: searchQuery || null,
+      }
+    );
 
     if (error) {
+      console.error("RPC Error details:", error);
       this.handleError(error, "未登録スタッフの取得に失敗しました");
     }
 
