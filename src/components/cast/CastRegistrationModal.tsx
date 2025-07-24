@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { castService } from "@/services/cast.service";
-import { staffService } from "@/services/staff.service";
-import type { Staff } from "@/types/staff.types";
+import { getAvailableStaffForCast } from "@/app/actions/staff.actions";
 import { z } from "zod";
 import { usePermission } from "@/hooks/usePermission";
 
@@ -30,6 +29,14 @@ const castRegistrationSchema = z.object({
 
 type CastRegistrationData = z.infer<typeof castRegistrationSchema>;
 
+interface AvailableStaff {
+  id: string;
+  fullName: string;
+  fullNameKana: string;
+  role: string;
+  status: string;
+}
+
 interface CastRegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,7 +48,7 @@ export function CastRegistrationModal({
   onClose,
   onSuccess,
 }: CastRegistrationModalProps) {
-  const [availableStaff, setAvailableStaff] = useState<Staff[]>([]);
+  const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { can } = usePermission();
@@ -59,28 +66,27 @@ export function CastRegistrationModal({
   });
 
   // Load available staff when modal opens
-  const loadAvailableStaff = useCallback(async () => {
-    setIsLoadingStaff(true);
-    try {
-      const result = await staffService.getUnregisteredStaff(1, 100);
-      const available = result.data.filter((staff) => staff.role !== "admin");
-      setAvailableStaff(available);
-    } catch (error) {
-      console.error("Failed to load available staff:", error);
-      form.setError("root", {
-        message: "スタッフ情報の読み込みに失敗しました",
-      });
-    } finally {
-      setIsLoadingStaff(false);
-    }
-  }, [form]);
-
   useEffect(() => {
     if (isOpen && canCreateCast) {
-      loadAvailableStaff();
+      setIsLoadingStaff(true);
+      getAvailableStaffForCast()
+        .then((staff) => {
+          setAvailableStaff(staff);
+        })
+        .catch((error) => {
+          console.error("Failed to load available staff:", error);
+          form.setError("root", {
+            message: "スタッフ情報の読み込みに失敗しました",
+          });
+        })
+        .finally(() => {
+          setIsLoadingStaff(false);
+        });
+
       form.reset(); // Reset form when opening
     }
-  }, [isOpen, canCreateCast, form, loadAvailableStaff]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, canCreateCast]); // Remove form from dependencies to avoid infinite loop
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
@@ -122,13 +128,11 @@ export function CastRegistrationModal({
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="キャスト新規登録"
-      size="lg"
-    >
-      <form onSubmit={form.handleAsyncSubmit(handleSubmit)} className="space-y-6">
+    <Modal isOpen={isOpen} onClose={onClose} title="キャスト新規登録" size="lg">
+      <form
+        onSubmit={form.handleAsyncSubmit(handleSubmit)}
+        className="space-y-6"
+      >
         {/* Root Error */}
         {form.formState.errors.root && (
           <ErrorMessage message={form.formState.errors.root.message!} />

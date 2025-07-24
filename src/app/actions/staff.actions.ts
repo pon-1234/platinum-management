@@ -2,6 +2,55 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+export async function getAvailableStaffForCast() {
+  const supabase = await createClient();
+
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("認証されていません");
+  }
+
+  // Get all staff that are not already casts and not admin
+  const { data: staffs, error } = await supabase
+    .from("staffs")
+    .select(
+      `
+      id,
+      full_name,
+      full_name_kana,
+      role,
+      status
+    `
+    )
+    .neq("role", "admin")
+    .eq("status", "active")
+    .order("full_name_kana");
+
+  if (error) {
+    throw new Error("スタッフ情報の取得に失敗しました");
+  }
+
+  // Get all existing cast staff IDs
+  const { data: casts } = await supabase.from("casts").select("staff_id");
+
+  const castStaffIds = new Set(casts?.map((c) => c.staff_id) || []);
+
+  // Filter out staff that are already casts
+  const availableStaff =
+    staffs?.filter((staff) => !castStaffIds.has(staff.id)) || [];
+
+  return availableStaff.map((staff) => ({
+    id: staff.id,
+    fullName: staff.full_name,
+    fullNameKana: staff.full_name_kana,
+    role: staff.role,
+    status: staff.status,
+  }));
+}
+
 export async function getUnregisteredStaff(
   page: number = 1,
   limit: number = 20,
