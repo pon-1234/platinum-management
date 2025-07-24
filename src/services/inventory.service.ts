@@ -162,8 +162,57 @@ export class InventoryService {
     }
   }
 
-  // 在庫変動管理
+  // 在庫変動管理（トランザクション制御付き）
   async createInventoryMovement(
+    data: CreateInventoryMovementRequest
+  ): Promise<InventoryMovement> {
+    try {
+      // RPC関数を使用してトランザクション内で在庫移動と在庫更新を実行
+      const { data: result, error } = await this.supabase.rpc(
+        "create_inventory_movement_with_stock_update",
+        {
+          p_product_id: data.productId,
+          p_movement_type: data.movementType,
+          p_quantity: data.quantity,
+          p_unit_cost: data.unitCost || null,
+          p_reason: data.reason || null,
+          p_reference_id: data.referenceId || null,
+        }
+      );
+
+      if (error) {
+        throw new Error(`在庫変動記録エラー: ${error.message}`);
+      }
+
+      // 作成された在庫移動レコードを取得
+      const { data: movement, error: fetchError } = await this.supabase
+        .from("inventory_movements")
+        .select("*")
+        .eq("id", result.movement_id)
+        .single();
+
+      if (fetchError || !movement) {
+        throw new Error("在庫移動レコードの取得に失敗しました");
+      }
+
+      return movement;
+    } catch (error) {
+      // RPC関数が存在しない場合のフォールバック
+      if (
+        error instanceof Error &&
+        error.message.includes(
+          "function create_inventory_movement_with_stock_update"
+        )
+      ) {
+        console.warn("RPC関数が存在しません。従来の方法で処理します。");
+        return this.createInventoryMovementFallback(data);
+      }
+      throw error;
+    }
+  }
+
+  // フォールバック用の従来の実装
+  private async createInventoryMovementFallback(
     data: CreateInventoryMovementRequest
   ): Promise<InventoryMovement> {
     const { data: movement, error } = await this.supabase

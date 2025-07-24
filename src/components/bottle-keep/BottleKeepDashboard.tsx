@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { bottleKeepService } from "@/services/bottle-keep.service";
+import {
+  getBottleKeepStats,
+  getBottleKeepAlerts,
+} from "@/app/actions/bottle-keep.actions";
 import type {
   BottleKeepStats,
   BottleKeepAlert,
 } from "@/types/bottle-keep.types";
+import { toast } from "react-hot-toast";
 import {
   ExclamationTriangleIcon,
   DocumentTextIcon,
@@ -37,16 +41,27 @@ export function BottleKeepDashboard({
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsData, alertsData] = await Promise.all([
-        bottleKeepService.getBottleKeepStats(),
-        bottleKeepService.getBottleKeepAlerts(),
+      const [statsResult, alertsResult] = await Promise.all([
+        getBottleKeepStats({}),
+        getBottleKeepAlerts({}),
       ]);
-      setStats(statsData);
-      setAlerts(alertsData);
+
+      if (statsResult.success) {
+        setStats(statsResult.data);
+      } else {
+        toast.error("統計データの取得に失敗しました");
+      }
+
+      if (alertsResult.success) {
+        setAlerts(alertsResult.data);
+      } else {
+        toast.error("アラートデータの取得に失敗しました");
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "データの取得に失敗しました"
       );
+      toast.error("データの取得に失敗しました");
     } finally {
       setLoading(false);
     }

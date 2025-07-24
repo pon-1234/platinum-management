@@ -547,6 +547,113 @@ export class BottleKeepService {
     ];
     return locations.sort();
   }
+
+  // 期限アラート送信機能
+  async sendExpiryAlerts(): Promise<{
+    success: boolean;
+    sentCount: number;
+    alerts: Array<{
+      customerName: string;
+      customerEmail?: string;
+      customerPhone?: string;
+      customerLineId?: string;
+      productName: string;
+      alertType: string;
+      alertMessage: string;
+    }>;
+  }> {
+    try {
+      // RPC関数を使用してアラート処理
+      const { data, error } = await this.supabase.rpc(
+        "process_bottle_keep_alerts"
+      );
+
+      if (error) {
+        console.error("アラート処理エラー:", error);
+        // フォールバック: 基本的なアラート取得のみ
+        const alerts = await this.getBottleKeepAlerts();
+        return {
+          success: false,
+          sentCount: 0,
+          alerts: alerts.map((alert) => ({
+            customerName: alert.customerName,
+            productName: alert.productName,
+            alertType: alert.alertType,
+            alertMessage: alert.message,
+          })),
+        };
+      }
+
+      const result = data as {
+        alerts: Array<{
+          customer_name: string;
+          customer_email?: string;
+          customer_phone?: string;
+          customer_line_id?: string;
+          product_name: string;
+          alert_type: string;
+          alert_message: string;
+        }>;
+        sent_count: number;
+      };
+
+      // 実際の通知送信処理はここで実装
+      // 例: メール送信、LINE通知、SMS送信など
+      // 現在は送信対象のアラート情報を返すのみ
+
+      return {
+        success: true,
+        sentCount: result.sent_count,
+        alerts: result.alerts.map((alert) => ({
+          customerName: alert.customer_name,
+          customerEmail: alert.customer_email,
+          customerPhone: alert.customer_phone,
+          customerLineId: alert.customer_line_id,
+          productName: alert.product_name,
+          alertType: alert.alert_type,
+          alertMessage: alert.alert_message,
+        })),
+      };
+    } catch (error) {
+      console.error("アラート送信エラー:", error);
+      return {
+        success: false,
+        sentCount: 0,
+        alerts: [],
+      };
+    }
+  }
+
+  // 未送信アラート取得
+  async getUnsentAlerts(): Promise<BottleKeepAlert[]> {
+    try {
+      const { data, error } = await this.supabase.rpc("get_unsent_alerts");
+
+      if (error) {
+        console.error("未送信アラート取得エラー:", error);
+        return [];
+      }
+
+      return (data || []).map((alert: any) => ({
+        id: `${alert.alert_type}-${alert.bottle_keep_id}`,
+        bottleKeepId: alert.bottle_keep_id,
+        customerName: alert.customer_name,
+        productName: alert.product_name,
+        alertType: alert.alert_type as "expired" | "expiring" | "low_amount",
+        severity:
+          alert.alert_type === "expired" || alert.days_until_expiry <= 3
+            ? "critical"
+            : "warning",
+        message: alert.alert_message,
+        expiryDate: alert.expiry_date,
+        daysUntilExpiry: alert.days_until_expiry,
+        remainingAmount: alert.remaining_amount,
+      }));
+    } catch (error) {
+      console.error("未送信アラート取得エラー:", error);
+      return [];
+    }
+  }
 }
 
 // Export singleton instance

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { LoadingSpinner, EmptyState } from "@/components/common";
@@ -9,76 +9,98 @@ import {
   PlusIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  minQuantity: number;
-  unit: string;
-  price: number;
-  supplier: string;
-  lastUpdated: string;
-}
-
-// Mock data for demonstration
-const mockInventoryItems: InventoryItem[] = [
-  {
-    id: "1",
-    name: "プレミアムウイスキー",
-    category: "アルコール",
-    quantity: 15,
-    minQuantity: 10,
-    unit: "本",
-    price: 8000,
-    supplier: "酒類卸業者A",
-    lastUpdated: "2024-01-20",
-  },
-  {
-    id: "2",
-    name: "高級ワイン",
-    category: "アルコール",
-    quantity: 5,
-    minQuantity: 8,
-    unit: "本",
-    price: 12000,
-    supplier: "ワイン専門店B",
-    lastUpdated: "2024-01-19",
-  },
-  {
-    id: "3",
-    name: "カクテル用グラス",
-    category: "グラス・食器",
-    quantity: 25,
-    minQuantity: 15,
-    unit: "個",
-    price: 800,
-    supplier: "食器用品店C",
-    lastUpdated: "2024-01-18",
-  },
-];
+import {
+  getProducts,
+  getInventoryStats,
+  getInventoryAlerts,
+  getCategories,
+} from "@/app/actions/inventory.actions";
+import type {
+  Product,
+  InventoryStats,
+  InventoryAlert,
+} from "@/types/inventory.types";
+import { toast } from "react-hot-toast";
+import { ProductFormModal } from "./components/ProductFormModal";
+import { InventoryMovementModal } from "./components/InventoryMovementModal";
 
 export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [stats, setStats] = useState<InventoryStats | null>(null);
+  const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [showMovementForm, setShowMovementForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const filteredItems = mockInventoryItems.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.supplier.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const loadInventoryData = useCallback(async () => {
+    try {
+      setIsLoading(true);
 
-  const categories = [
-    "all",
-    ...Array.from(new Set(mockInventoryItems.map((item) => item.category))),
-  ];
-  const lowStockItems = mockInventoryItems.filter(
-    (item) => item.quantity <= item.minQuantity
+      // Load all inventory data in parallel
+      const [productsResult, statsResult, alertsResult, categoriesResult] =
+        await Promise.all([
+          getProducts({
+            category: selectedCategory !== "all" ? selectedCategory : undefined,
+            searchTerm: searchTerm || undefined,
+          }),
+          getInventoryStats({}),
+          getInventoryAlerts({}),
+          getCategories({}),
+        ]);
+
+      if (productsResult.success) {
+        setProducts(productsResult.data);
+      }
+      if (statsResult.success) {
+        setStats(statsResult.data);
+      }
+      if (alertsResult.success) {
+        setAlerts(alertsResult.data);
+      }
+      if (categoriesResult.success) {
+        setCategories(categoriesResult.data);
+      }
+    } catch (error) {
+      toast.error("在庫データの取得に失敗しました");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchTerm, selectedCategory]);
+
+  useEffect(() => {
+    loadInventoryData();
+  }, [loadInventoryData]);
+
+  const handleAddProduct = () => {
+    setSelectedProduct(null);
+    setShowProductForm(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setShowProductForm(true);
+  };
+
+  const handleAddMovement = (product: Product) => {
+    setSelectedProduct(product);
+    setShowMovementForm(true);
+  };
+
+  const handleCloseModals = () => {
+    setShowProductForm(false);
+    setShowMovementForm(false);
+    setSelectedProduct(null);
+    loadInventoryData();
+  };
+
+  const lowStockAlerts = alerts.filter(
+    (alert) =>
+      alert.alertType === "low_stock" || alert.alertType === "out_of_stock"
   );
 
   if (isLoading) {
@@ -97,21 +119,24 @@ export default function InventoryPage() {
           <h1 className="text-2xl font-bold text-gray-900">在庫管理</h1>
           <p className="text-gray-600">店舗の在庫状況を管理します</p>
         </div>
-        <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2">
+        <button
+          onClick={handleAddProduct}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+        >
           <PlusIcon className="h-5 w-5" />
-          在庫追加
+          商品追加
         </button>
       </div>
 
       {/* Low Stock Alert */}
-      {lowStockItems.length > 0 && (
+      {lowStockAlerts.length > 0 && (
         <Card className="bg-yellow-50 border-yellow-200">
           <div className="flex items-center gap-3">
             <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
             <div>
               <h3 className="font-medium text-yellow-800">在庫不足アラート</h3>
               <p className="text-yellow-700">
-                {lowStockItems.length}個の商品が最小在庫数を下回っています
+                {lowStockAlerts.length}個の商品が在庫不足または在庫切れです
               </p>
             </div>
           </div>
@@ -128,7 +153,7 @@ export default function InventoryPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">総アイテム数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {mockInventoryItems.length}
+                {stats?.totalProducts || 0}
               </p>
             </div>
           </div>
@@ -142,10 +167,7 @@ export default function InventoryPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">在庫総額</p>
               <p className="text-2xl font-bold text-gray-900">
-                ¥
-                {mockInventoryItems
-                  .reduce((sum, item) => sum + item.quantity * item.price, 0)
-                  .toLocaleString()}
+                ¥{(stats?.totalValue || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -159,7 +181,7 @@ export default function InventoryPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">在庫不足</p>
               <p className="text-2xl font-bold text-gray-900">
-                {lowStockItems.length}
+                {stats?.lowStockItems || 0}
               </p>
             </div>
           </div>
@@ -171,9 +193,9 @@ export default function InventoryPage() {
               <CubeIcon className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">カテゴリー数</p>
+              <p className="text-sm font-medium text-gray-600">在庫切れ</p>
               <p className="text-2xl font-bold text-gray-900">
-                {categories.length - 1}
+                {stats?.outOfStockItems || 0}
               </p>
             </div>
           </div>
@@ -194,7 +216,7 @@ export default function InventoryPage() {
             className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">全カテゴリー</option>
-            {categories.slice(1).map((category) => (
+            {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>
@@ -205,7 +227,7 @@ export default function InventoryPage() {
 
       {/* Inventory Table */}
       <Card>
-        {filteredItems.length === 0 ? (
+        {products.length === 0 ? (
           <EmptyState
             title="在庫アイテムが見つかりません"
             description="検索条件を変更するか、新しい在庫アイテムを追加してください。"
@@ -226,10 +248,10 @@ export default function InventoryPage() {
                     在庫数
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    単価
+                    原価
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    仕入先
+                    販売価格
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     最終更新
@@ -237,40 +259,54 @@ export default function InventoryPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ステータス
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
+                {products.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">
-                        {item.name}
+                        {product.name}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {item.category}
+                        {product.category}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-gray-900">
-                        {item.quantity} {item.unit}
+                        {product.stock_quantity}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-gray-900">
-                        ¥{item.price.toLocaleString()}
+                        ¥{product.cost.toLocaleString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-gray-900">{item.supplier}</div>
+                      <div className="text-gray-900">
+                        ¥{product.price.toLocaleString()}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-gray-900">{item.lastUpdated}</div>
+                      <div className="text-gray-900">
+                        {new Date(product.updated_at).toLocaleDateString(
+                          "ja-JP"
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {item.quantity <= item.minQuantity ? (
+                      {product.stock_quantity === 0 ? (
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                          在庫切れ
+                        </span>
+                      ) : product.stock_quantity <=
+                        product.low_stock_threshold ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                           在庫不足
                         </span>
                       ) : (
@@ -279,6 +315,22 @@ export default function InventoryPage() {
                         </span>
                       )}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditProduct(product)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={() => handleAddMovement(product)}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          在庫調整
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -286,6 +338,22 @@ export default function InventoryPage() {
           </div>
         )}
       </Card>
+
+      {/* Modals */}
+      {showProductForm && (
+        <ProductFormModal
+          product={selectedProduct}
+          categories={categories}
+          onClose={handleCloseModals}
+        />
+      )}
+
+      {showMovementForm && selectedProduct && (
+        <InventoryMovementModal
+          product={selectedProduct}
+          onClose={handleCloseModals}
+        />
+      )}
     </div>
   );
 }
