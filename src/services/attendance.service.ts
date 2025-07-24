@@ -571,11 +571,18 @@ export class AttendanceService extends BaseService {
           100
         : 0;
 
+    // Calculate work hours for this week
+    const { totalWorkHours, totalOvertimeHours } =
+      this.calculateWeeklyWorkHours(weekAttendance);
+
     // Get pending requests counts
     const pendingShiftRequests = await this.searchShiftRequests({
       status: "pending",
       limit: 1000,
     });
+
+    // Get corrections count from staff notes or modifications
+    const corrections = await this.getCorrectionRequestsCount();
 
     return {
       today: {
@@ -586,12 +593,12 @@ export class AttendanceService extends BaseService {
       },
       thisWeek: {
         averageAttendance,
-        totalWorkHours: 0, // TODO: Calculate from attendance records
-        totalOvertimeHours: 0, // TODO: Calculate from attendance records
+        totalWorkHours,
+        totalOvertimeHours,
       },
       pendingRequests: {
         shiftRequests: pendingShiftRequests.length,
-        corrections: 0, // TODO: Implement corrections count
+        corrections,
       },
     };
   }
@@ -720,6 +727,108 @@ export class AttendanceService extends BaseService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
+  }
+
+  /**
+   * 週間の労働時間を計算
+   */
+  private calculateWeeklyWorkHours(attendanceRecords: AttendanceRecord[]): {
+    totalWorkHours: number;
+    totalOvertimeHours: number;
+  } {
+    let totalWorkMinutes = 0;
+    let totalOvertimeMinutes = 0;
+
+    const standardWorkDayMinutes = 8 * 60; // 8時間 = 480分
+
+    for (const record of attendanceRecords) {
+      if (
+        record.status !== "present" ||
+        !record.clockInTime ||
+        !record.clockOutTime
+      ) {
+        continue;
+      }
+
+      const workMinutes = this.calculateWorkMinutes(
+        record.clockInTime,
+        record.clockOutTime,
+        record.breakStartTime,
+        record.breakEndTime
+      );
+
+      totalWorkMinutes += workMinutes;
+
+      // 残業時間計算（8時間を超えた分）
+      if (workMinutes > standardWorkDayMinutes) {
+        totalOvertimeMinutes += workMinutes - standardWorkDayMinutes;
+      }
+    }
+
+    return {
+      totalWorkHours: Math.round((totalWorkMinutes / 60) * 100) / 100, // 小数点第2位まで
+      totalOvertimeHours: Math.round((totalOvertimeMinutes / 60) * 100) / 100,
+    };
+  }
+
+  /**
+   * 実働時間を分単位で計算
+   */
+  private calculateWorkMinutes(
+    clockInTime: string,
+    clockOutTime: string,
+    breakStartTime?: string | null,
+    breakEndTime?: string | null
+  ): number {
+    const clockInMinutes = this.timeToMinutes(clockInTime);
+    const clockOutMinutes = this.timeToMinutes(clockOutTime);
+
+    let workMinutes = clockOutMinutes - clockInMinutes;
+
+    // 休憩時間を差し引く
+    if (breakStartTime && breakEndTime) {
+      const breakStartMinutes = this.timeToMinutes(breakStartTime);
+      const breakEndMinutes = this.timeToMinutes(breakEndTime);
+      const breakDuration = breakEndMinutes - breakStartMinutes;
+      workMinutes -= breakDuration;
+    }
+
+    return Math.max(0, workMinutes);
+  }
+
+  /**
+   * HH:MM形式の時刻を分単位に変換
+   */
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  }
+
+  /**
+   * 修正依頼数を取得
+   */
+  private async getCorrectionRequestsCount(): Promise<number> {
+    try {
+      // 修正依頼は出勤記録のnotesに "修正依頼" が含まれているもので計算
+      const { data, error } = await this.supabase
+        .from("attendance_records")
+        .select("id")
+        .ilike("notes", "%修正依頼%")
+        .gte(
+          "created_at",
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        ); // 過去1週間
+
+      if (error) {
+        console.error("Error fetching correction requests:", error);
+        return 0;
+      }
+
+      return data?.length || 0;
+    } catch (error) {
+      console.error("Error in getCorrectionRequestsCount:", error);
+      return 0;
+    }
   }
 }
 
