@@ -19,6 +19,7 @@ export default function BillingPage() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAlreadyClosed, setIsAlreadyClosed] = useState(false);
 
   const loadBillingData = useCallback(async () => {
     try {
@@ -28,6 +29,11 @@ export default function BillingPage() {
       // Load daily report
       const report = await billingService.generateDailyReport(selectedDate);
       setTodayReport(report);
+
+      // Check if already closed
+      const closingStatus =
+        await billingService.getDailyClosingStatus(selectedDate);
+      setIsAlreadyClosed(closingStatus);
 
       // Load active visits for today
       const today = new Date().toISOString().split("T")[0];
@@ -54,22 +60,42 @@ export default function BillingPage() {
   }, [loadBillingData]);
 
   const handleClosingProcess = async () => {
-    if (!confirm("本日の売上を確定してレジ締めを実行しますか？")) {
+    // Check for open visits first
+    const openVisitsCount = await billingService.checkOpenVisits(selectedDate);
+
+    let confirmMessage = "本日の売上を確定してレジ締めを実行しますか？";
+    if (openVisitsCount > 0) {
+      confirmMessage = `現在${openVisitsCount}組のお客様が来店中です。すべての来店を終了してレジ締めを実行しますか？`;
+    }
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       setError(null);
-      // Implementation for closing process
-      // This would involve finalizing all active visits and generating final reports
+      setIsLoading(true);
 
-      await loadBillingData();
-      toast.success("レジ締めが完了しました");
+      // Perform daily closing
+      const finalReport =
+        await billingService.performDailyClosing(selectedDate);
+
+      // Update the display with final report
+      setTodayReport(finalReport);
+      setActiveVisits([]); // Clear active visits as they're now completed
+      setIsAlreadyClosed(true); // Mark as closed
+
+      toast.success(
+        `レジ締めが完了しました。総売上: ¥${finalReport.totalSales.toLocaleString()}`
+      );
     } catch (err) {
-      const errorMessage = "レジ締め処理に失敗しました";
+      const errorMessage =
+        err instanceof Error ? err.message : "レジ締め処理に失敗しました";
       setError(errorMessage);
       toast.error(errorMessage);
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -101,10 +127,15 @@ export default function BillingPage() {
             {selectedDate === new Date().toISOString().split("T")[0] && (
               <button
                 onClick={handleClosingProcess}
-                className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                disabled={isAlreadyClosed}
+                className={`inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isAlreadyClosed
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                }`}
               >
                 <ClipboardDocumentListIcon className="-ml-1 mr-2 h-5 w-5" />
-                レジ締め
+                {isAlreadyClosed ? "レジ締め済み" : "レジ締め"}
               </button>
             )}
           </div>
@@ -114,6 +145,32 @@ export default function BillingPage() {
       {error && (
         <div className="mt-4 rounded-md bg-red-50 p-4">
           <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
+      {/* Closing Status */}
+      {isAlreadyClosed && (
+        <div className="mt-4 rounded-md bg-green-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-green-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-800">
+                {selectedDate}のレジ締めは完了しています
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

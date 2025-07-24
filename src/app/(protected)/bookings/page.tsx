@@ -8,9 +8,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { ReservationList } from "@/components/reservation/ReservationList";
 import { ReservationCalendar } from "@/components/reservation/ReservationCalendar";
+import { CreateReservationModal } from "@/components/reservation/CreateReservationModal";
+import { ReservationDetailModal } from "@/components/reservation/ReservationDetailModal";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { format } from "date-fns";
-import type { Reservation } from "@/types/reservation.types";
+import type {
+  Reservation,
+  ReservationWithDetails,
+} from "@/types/reservation.types";
 
 type ViewMode = "list" | "calendar";
 
@@ -19,8 +24,10 @@ export default function BookingsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
-  // const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-  // const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] =
+    useState<ReservationWithDetails | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(format(date, "yyyy-MM-dd"));
@@ -29,10 +36,12 @@ export default function BookingsPage() {
     }
   };
 
-  const handleReservationSelect = (reservation: Reservation) => {
-    // setSelectedReservation(reservation);
-    // TODO: Open reservation detail modal
-    console.log("Selected reservation:", reservation);
+  const handleReservationSelect = (reservation: ReservationWithDetails) => {
+    setSelectedReservation(reservation);
+  };
+
+  const handleCreateSuccess = () => {
+    setRefreshKey((prev) => prev + 1);
   };
 
   return (
@@ -45,10 +54,7 @@ export default function BookingsPage() {
               予約管理
             </h1>
             <button
-              onClick={() => {
-                // setIsCreateModalOpen(true);
-                console.log("Create new reservation");
-              }}
+              onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <PlusIcon className="w-5 h-5 mr-2" />
@@ -112,19 +118,34 @@ export default function BookingsPage() {
         <div>
           {viewMode === "list" ? (
             <ReservationList
+              key={refreshKey}
               date={selectedDate}
               onReservationSelect={handleReservationSelect}
             />
           ) : (
             <ReservationCalendar
+              key={refreshKey}
               onDateSelect={handleDateSelect}
               onReservationSelect={handleReservationSelect}
             />
           )}
         </div>
 
-        {/* TODO: Add Create Reservation Modal */}
-        {/* TODO: Add Reservation Detail Modal */}
+        {/* Create Reservation Modal */}
+        <CreateReservationModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+          initialDate={selectedDate}
+        />
+
+        {/* Reservation Detail Modal */}
+        <ReservationDetailModal
+          reservation={selectedReservation}
+          isOpen={!!selectedReservation}
+          onClose={() => setSelectedReservation(null)}
+          onSuccess={handleCreateSuccess}
+        />
       </div>
     </RoleGate>
   );

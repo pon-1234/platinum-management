@@ -7,6 +7,7 @@ import type {
   CreateReservationData,
   UpdateReservationData,
   ReservationSearchParams,
+  Table,
 } from "@/types/reservation.types";
 import {
   createReservationSchema,
@@ -15,12 +16,15 @@ import {
   cancelReservationSchema,
   reservationSearchSchema,
 } from "@/lib/validations/reservation";
+import { TableService } from "./table.service";
 
 export class ReservationService {
   private supabase: SupabaseClient<Database>;
+  private tableService: TableService;
 
   constructor() {
     this.supabase = createClient();
+    this.tableService = new TableService();
   }
 
   // Reservation CRUD operations
@@ -485,6 +489,10 @@ export class ReservationService {
   }
 
   // Helper methods
+  async getAvailableTables(date: string, time: string): Promise<Table[]> {
+    return this.tableService.getAvailableTables(undefined, date, time);
+  }
+
   private async getCurrentStaffId(): Promise<string | null> {
     const {
       data: { user },

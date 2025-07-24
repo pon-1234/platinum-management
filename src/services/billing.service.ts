@@ -524,13 +524,66 @@ export class BillingService extends BaseService {
       )
       .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
 
-    // Get order items for the day
-    await this.searchOrderItems({
-      startDate,
-      endDate,
+    // Get order items for the day with product and cast details
+    const orderItems = await this.getOrderItemsWithDetails(startDate, endDate);
+
+    // Calculate top products
+    const productStats = new Map<
+      number,
+      {
+        productId: number;
+        productName: string;
+        quantity: number;
+        totalAmount: number;
+      }
+    >();
+
+    orderItems.forEach((item) => {
+      if (item.product) {
+        const current = productStats.get(item.productId) || {
+          productId: item.productId,
+          productName: item.product.name,
+          quantity: 0,
+          totalAmount: 0,
+        };
+        current.quantity += item.quantity;
+        current.totalAmount += item.totalPrice;
+        productStats.set(item.productId, current);
+      }
     });
 
-    // TODO: Implement top products and top casts aggregation
+    const topProducts = Array.from(productStats.values())
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, 5);
+
+    // Calculate top casts
+    const castStats = new Map<
+      string,
+      {
+        castId: string;
+        castName: string;
+        orderCount: number;
+        totalAmount: number;
+      }
+    >();
+
+    orderItems.forEach((item) => {
+      if (item.castId && item.cast) {
+        const current = castStats.get(item.castId) || {
+          castId: item.castId,
+          castName: item.cast.fullName,
+          orderCount: 0,
+          totalAmount: 0,
+        };
+        current.orderCount += 1;
+        current.totalAmount += item.totalPrice;
+        castStats.set(item.castId, current);
+      }
+    });
+
+    const topCasts = Array.from(castStats.values())
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, 5);
 
     return {
       date,
@@ -538,9 +591,40 @@ export class BillingService extends BaseService {
       totalSales,
       totalCash,
       totalCard,
-      topProducts: [],
-      topCasts: [],
+      topProducts,
+      topCasts,
     };
+  }
+
+  private async getOrderItemsWithDetails(startDate: string, endDate: string) {
+    const { data, error } = await this.supabase
+      .from("order_items")
+      .select(
+        `
+        *,
+        product:products(*),
+        cast:staffs!cast_id(id, full_name),
+        visit:visits!visit_id(check_in_at)
+      `
+      )
+      .gte("visit.check_in_at", startDate)
+      .lte("visit.check_in_at", endDate);
+
+    if (error) {
+      console.error("Failed to fetch order items with details:", error);
+      return [];
+    }
+
+    return (data || []).map((item) => ({
+      ...this.mapToOrderItem(item),
+      product: item.product ? this.mapToProduct(item.product) : undefined,
+      cast: item.cast
+        ? {
+            id: item.cast.id,
+            fullName: item.cast.full_name,
+          }
+        : undefined,
+    }));
   }
 
   // ============= MAPPING FUNCTIONS =============
@@ -656,6 +740,118 @@ export class BillingService extends BaseService {
             : undefined,
         })) || [],
     };
+  }
+  // ============= CASH CLOSING OPERATIONS =============
+
+  async performDailyClosing(date: string): Promise<DailyReport> {
+    try {
+      // 1. Get all active visits for the day and finalize them
+      const activeVisits = await this.searchVisits({
+        status: "active",
+        startDate: `${date}T00:00:00.000Z`,
+        endDate: `${date}T23:59:59.999Z`,
+      });
+
+      // 2. Finalize all active visits (set checkout time and calculate final bills)
+      for (const visit of activeVisits) {
+        await this.finalizeVisit(visit.id);
+      }
+
+      // 3. Generate final daily report
+      const dailyReport = await this.generateDailyReport(date);
+
+      // 4. Create a daily closing record (optional - for audit trail)
+      await this.createDailyClosingRecord(date, dailyReport);
+
+      return dailyReport;
+    } catch (error) {
+      console.error("Failed to perform daily closing:", error);
+      throw new Error("レジ締め処理に失敗しました");
+    }
+  }
+
+  private async finalizeVisit(visitId: string): Promise<void> {
+    const staffId = await this.getCurrentStaffId();
+
+    const { error } = await this.supabase
+      .from("visits")
+      .update({
+        check_out_at: new Date().toISOString(),
+        status: "completed",
+        updated_by: staffId,
+      })
+      .eq("id", visitId)
+      .eq("status", "active"); // Only update if still active
+
+    if (error) {
+      console.error(`Failed to finalize visit ${visitId}:`, error);
+      throw new Error(`来店記録 ${visitId} の確定に失敗しました`);
+    }
+  }
+
+  private async createDailyClosingRecord(
+    date: string,
+    report: DailyReport
+  ): Promise<void> {
+    const staffId = await this.getCurrentStaffId();
+
+    // Create a record in a daily_closings table (if it exists)
+    // This is optional and depends on your database schema
+    try {
+      const { error } = await this.supabase.from("daily_closings").insert({
+        closing_date: date,
+        total_sales: report.totalSales,
+        total_visits: report.totalVisits,
+        total_cash: report.totalCash,
+        total_card: report.totalCard,
+        closed_by: staffId,
+        closed_at: new Date().toISOString(),
+      });
+
+      // If the table doesn't exist, ignore the error
+      if (error && !error.message.includes("relation")) {
+        console.error("Failed to create daily closing record:", error);
+      }
+    } catch (error) {
+      // Silently fail if daily_closings table doesn't exist
+      console.warn("Daily closings table not available:", error);
+    }
+  }
+
+  async getDailyClosingStatus(date: string): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase
+        .from("daily_closings")
+        .select("id")
+        .eq("closing_date", date)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        // If table doesn't exist, consider as not closed
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      // If table doesn't exist, consider as not closed
+      return false;
+    }
+  }
+
+  async checkOpenVisits(date: string): Promise<number> {
+    const { data, error } = await this.supabase
+      .from("visits")
+      .select("id")
+      .eq("status", "active")
+      .gte("check_in_at", `${date}T00:00:00.000Z`)
+      .lt("check_in_at", `${date}T23:59:59.999Z`);
+
+    if (error) {
+      console.error("Failed to check open visits:", error);
+      return 0;
+    }
+
+    return data?.length || 0;
   }
 }
 
