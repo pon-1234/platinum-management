@@ -65,16 +65,33 @@ export function AddShiftModal({
   const loadStaffOptions = async () => {
     try {
       setIsLoading(true);
-      // スタッフ一覧を取得する実装（実際のAPIに合わせて調整）
-      // ここではダミーデータを使用
-      const mockStaff = [
-        { id: "staff1", name: "田中太郎", role: "manager" },
-        { id: "staff2", name: "佐藤花子", role: "staff" },
-        { id: "staff3", name: "鈴木次郎", role: "cast" },
-      ];
-      setStaffOptions(mockStaff);
+
+      // 実際のスタッフサービスを使用してスタッフ一覧を取得
+      const { data, error } = await attendanceService.supabase
+        .from("staffs")
+        .select("id, full_name, role")
+        .eq("is_active", true)
+        .order("full_name");
+
+      if (error) {
+        throw new Error(`スタッフ一覧の取得に失敗しました: ${error.message}`);
+      }
+
+      const staffList: StaffOption[] = (data || []).map((staff) => ({
+        id: staff.id,
+        name: staff.full_name,
+        role: staff.role,
+      }));
+
+      setStaffOptions(staffList);
     } catch (error) {
       console.error("スタッフ一覧の取得に失敗しました:", error);
+      setErrors({
+        submit:
+          error instanceof Error
+            ? error.message
+            : "スタッフ一覧の取得に失敗しました",
+      });
     } finally {
       setIsLoading(false);
     }
