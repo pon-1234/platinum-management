@@ -19,6 +19,7 @@ import type {
 import { SHIFT_REQUEST_STATUSES } from "@/types/attendance.types";
 import { toast } from "react-hot-toast";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import ShiftRequestForm from "./ShiftRequestForm";
 
 interface ShiftRequestListProps {
   onRequestUpdate: () => void;
@@ -115,12 +116,15 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             シフト申請管理
           </h2>
-          <button
-            onClick={loadRequests}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-          >
-            更新
-          </button>
+          <div className="flex space-x-2">
+            <ShiftRequestForm onRequestCreated={loadRequests} />
+            <button
+              onClick={loadRequests}
+              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+            >
+              更新
+            </button>
+          </div>
         </div>
 
         {/* Status Filter */}

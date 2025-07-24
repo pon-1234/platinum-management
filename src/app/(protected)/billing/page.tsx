@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import { StatCard } from "@/components/ui/StatCard";
+import OrderTicketManagement from "@/components/billing/OrderTicketManagement";
 
 export default function BillingPage() {
   const [todayReport, setTodayReport] = useState<DailyReport | null>(null);
@@ -182,7 +183,10 @@ export default function BillingPage() {
           </div>
         </div>
       ) : (
-        <div className="mt-8">
+        <div className="mt-8 space-y-8">
+          {/* Order Ticket Management */}
+          <OrderTicketManagement onVisitUpdate={loadBillingData} />
+
           {/* Daily Report Cards */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard

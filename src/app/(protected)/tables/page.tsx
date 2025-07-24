@@ -7,6 +7,7 @@ import { TableStatusModal } from "@/components/table/TableStatusModal";
 import { TableManagementModal } from "@/components/table/TableManagementModal";
 import { TableFilters } from "@/components/table/TableFilters";
 import { TableDashboard } from "@/components/table/TableDashboard";
+import RealTimeTableDashboard from "@/components/table/RealTimeTableDashboard";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { usePermission } from "@/hooks/usePermission";
 import { tableService } from "@/services/table.service";
@@ -115,8 +116,13 @@ export default function TablesPage() {
           )}
         </div>
 
-        {/* Dashboard */}
-        <TableDashboard tables={tables} isLoading={isLoading} />
+        {/* Real-time Dashboard */}
+        <RealTimeTableDashboard onTableSelect={handleTableSelect} />
+
+        {/* Traditional Dashboard */}
+        <div className="mt-8">
+          <TableDashboard tables={tables} isLoading={isLoading} />
+        </div>
 
         {/* Filters */}
         <div className="mb-6">
