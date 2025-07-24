@@ -5,6 +5,10 @@ import {
   getBottleKeepStats,
   getBottleKeepAlerts,
 } from "@/app/actions/bottle-keep.actions";
+import {
+  sendBottleKeepExpiryAlerts,
+  updateExpiredBottles,
+} from "@/app/actions/notification.actions";
 import type {
   BottleKeepStats,
   BottleKeepAlert,
@@ -33,6 +37,8 @@ export function BottleKeepDashboard({
   const [alerts, setAlerts] = useState<BottleKeepAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sendingAlerts, setSendingAlerts] = useState(false);
+  const [updatingExpired, setUpdatingExpired] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -64,6 +70,46 @@ export function BottleKeepDashboard({
       toast.error("データの取得に失敗しました");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendAlerts = async () => {
+    try {
+      setSendingAlerts(true);
+      const result = await sendBottleKeepExpiryAlerts();
+
+      if (result.success) {
+        toast.success(`アラートを送信しました（${result.data.sentCount}件）`);
+        // データを再読み込み
+        loadDashboardData();
+      } else {
+        toast.error(result.error || "アラート送信に失敗しました");
+      }
+    } catch (error) {
+      toast.error("アラート送信中にエラーが発生しました");
+    } finally {
+      setSendingAlerts(false);
+    }
+  };
+
+  const handleUpdateExpired = async () => {
+    try {
+      setUpdatingExpired(true);
+      const result = await updateExpiredBottles();
+
+      if (result.success) {
+        toast.success(
+          `期限切れボトルを更新しました（${result.data.updatedCount}件）`
+        );
+        // データを再読み込み
+        loadDashboardData();
+      } else {
+        toast.error(result.error || "ステータス更新に失敗しました");
+      }
+    } catch (error) {
+      toast.error("ステータス更新中にエラーが発生しました");
+    } finally {
+      setUpdatingExpired(false);
     }
   };
 
@@ -304,6 +350,24 @@ export function BottleKeepDashboard({
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* アラート送信ボタン */}
+            <div className="mt-6 flex space-x-3">
+              <button
+                onClick={handleSendAlerts}
+                disabled={sendingAlerts}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                {sendingAlerts ? "送信中..." : "期限アラートを送信"}
+              </button>
+              <button
+                onClick={handleUpdateExpired}
+                disabled={updatingExpired}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                {updatingExpired ? "更新中..." : "期限切れを更新"}
+              </button>
             </div>
           </div>
         </div>
