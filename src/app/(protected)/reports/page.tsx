@@ -3,31 +3,25 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/common";
-import {
-  getMonthlySalesReport,
-  getCastPerformanceReport,
-  getCustomerReport,
-  getInventoryReport,
-} from "@/app/actions/report.actions";
+import { reportService } from "@/services/report.service";
 import type {
   MonthlySalesReport,
   CastPerformanceReport,
   CustomerReport,
   InventoryReport,
+  MonthlyReportSummary,
 } from "@/types/report.types";
 import { toast } from "react-hot-toast";
 
 export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [monthlySales, setMonthlySales] = useState<MonthlySalesReport | null>(
-    null
-  );
-  const [castPerformance, setCastPerformance] = useState<
-    CastPerformanceReport[]
+  const [monthlyReport, setMonthlyReport] =
+    useState<MonthlyReportSummary | null>(null);
+  const [salesTrend, setSalesTrend] = useState<
+    Array<{ month: string; sales: number }>
   >([]);
-  const [customerReport, setCustomerReport] = useState<CustomerReport | null>(
-    null
-  );
+  const [castPerformance, setCastPerformance] =
+    useState<CastPerformanceReport | null>(null);
   const [inventoryReport, setInventoryReport] =
     useState<InventoryReport | null>(null);
 
@@ -41,34 +35,30 @@ export default function ReportsPage() {
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth() + 1;
+      const today = currentDate.toISOString().split("T")[0];
 
-      const [salesResult, castResult, customerResult, inventoryResult] =
-        await Promise.all([
-          getMonthlySalesReport({ year: currentYear, month: currentMonth }),
-          getCastPerformanceReport({
-            startDate: new Date(currentYear, currentMonth - 1, 1)
-              .toISOString()
-              .split("T")[0],
-            endDate: new Date(currentYear, currentMonth, 0)
-              .toISOString()
-              .split("T")[0],
-          }),
-          getCustomerReport({}),
-          getInventoryReport({}),
-        ]);
+      // Load all reports in parallel
+      const [
+        monthlyReportData,
+        salesTrendData,
+        castPerformanceData,
+        inventoryData,
+      ] = await Promise.all([
+        reportService.getMonthlyReportSummary(currentYear, currentMonth),
+        reportService.getMonthlySalesTrend(6),
+        reportService.getCastPerformanceReport(
+          new Date(currentYear, currentMonth - 1, 1)
+            .toISOString()
+            .split("T")[0],
+          new Date(currentYear, currentMonth, 0).toISOString().split("T")[0]
+        ),
+        reportService.getInventoryReport(today),
+      ]);
 
-      if (salesResult.success) {
-        setMonthlySales(salesResult.data);
-      }
-      if (castResult.success) {
-        setCastPerformance(castResult.data);
-      }
-      if (customerResult.success) {
-        setCustomerReport(customerResult.data);
-      }
-      if (inventoryResult.success) {
-        setInventoryReport(inventoryResult.data);
-      }
+      setMonthlyReport(monthlyReportData);
+      setSalesTrend(salesTrendData);
+      setCastPerformance(castPerformanceData);
+      setInventoryReport(inventoryData);
     } catch (error) {
       toast.error("レポートデータの取得に失敗しました");
       console.error(error);
@@ -96,19 +86,19 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-blue-600">
-              ¥{(monthlySales?.totalRevenue || 0).toLocaleString()}
+              ¥{(monthlyReport?.totalRevenue || 0).toLocaleString()}
             </div>
             <div className="text-sm text-gray-500">月次売上</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-green-600">
-              {customerReport?.totalCustomers || 0}
+              {monthlyReport?.totalCustomers || 0}
             </div>
             <div className="text-sm text-gray-500">総顧客数</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-purple-600">
-              {monthlySales?.totalVisits || 0}
+              {monthlyReport?.totalVisits || 0}
             </div>
             <div className="text-sm text-gray-500">月次来店数</div>
           </div>
@@ -116,7 +106,7 @@ export default function ReportsPage() {
             <div className="text-2xl font-bold text-orange-600">
               ¥
               {Math.round(
-                monthlySales?.averageRevenuePerVisit || 0
+                monthlyReport?.averageRevenuePerVisit || 0
               ).toLocaleString()}
             </div>
             <div className="text-sm text-gray-500">平均客単価</div>
@@ -127,46 +117,39 @@ export default function ReportsPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">月次売上推移</h2>
         <div className="space-y-4">
-          {[
-            { month: "1月", sales: 1200000 },
-            { month: "2月", sales: 1450000 },
-            { month: "3月", sales: 1680000 },
-            { month: "4月", sales: 1520000 },
-            { month: "5月", sales: 1890000 },
-            { month: "6月", sales: 2100000 },
-          ].map((data) => (
-            <div key={data.month} className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">
-                {data.month}
-              </span>
-              <div className="flex items-center gap-4">
-                <div className="w-48 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${(data.sales / 2500000) * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 w-20 text-right">
-                  ¥{(data.sales / 1000000).toFixed(1)}M
+          {salesTrend.map((data) => {
+            const maxSales = Math.max(...salesTrend.map((d) => d.sales), 1);
+            return (
+              <div
+                key={data.month}
+                className="flex items-center justify-between"
+              >
+                <span className="text-sm font-medium text-gray-600 w-24">
+                  {data.month}
                 </span>
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${(data.sales / maxSales) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900 w-24 text-right">
+                    ¥{(data.sales / 1000000).toFixed(1)}M
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">トップパフォーマー</h2>
         <div className="space-y-4">
-          {[
-            { name: "さくら", sales: 450000, reservations: 25 },
-            { name: "みゆき", sales: 380000, reservations: 22 },
-            { name: "あやか", sales: 320000, reservations: 18 },
-            { name: "りな", sales: 290000, reservations: 16 },
-            { name: "なな", sales: 260000, reservations: 14 },
-          ].map((performer, index) => (
+          {castPerformance?.topCasts?.slice(0, 5).map((performer, index) => (
             <div
-              key={performer.name}
+              key={performer.castId}
               className="flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
@@ -176,21 +159,70 @@ export default function ReportsPage() {
                   </span>
                 </div>
                 <span className="font-medium text-gray-900">
-                  {performer.name}
+                  {performer.castName}
                 </span>
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold text-gray-900">
-                  ¥{performer.sales.toLocaleString()}
+                  ¥{performer.totalAmount.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {performer.reservations}件の予約
+                  {performer.orderCount}件の注文
                 </div>
               </div>
             </div>
-          ))}
+          )) || (
+            <div className="text-center text-gray-500 py-4">
+              データがありません
+            </div>
+          )}
         </div>
       </div>
+
+      {inventoryReport && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">在庫状況</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 bg-gray-50 rounded">
+              <div className="text-2xl font-bold text-gray-900">
+                {inventoryReport.totalProducts}
+              </div>
+              <div className="text-sm text-gray-500">総商品数</div>
+            </div>
+            <div className="text-center p-4 bg-yellow-50 rounded">
+              <div className="text-2xl font-bold text-yellow-600">
+                {inventoryReport.lowStockCount}
+              </div>
+              <div className="text-sm text-gray-500">在庫不足商品</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded">
+              <div className="text-2xl font-bold text-blue-600">
+                {inventoryReport.totalMovements}
+              </div>
+              <div className="text-sm text-gray-500">本日の在庫移動</div>
+            </div>
+          </div>
+
+          {inventoryReport.lowStockItems.length > 0 && (
+            <div>
+              <h3 className="text-md font-medium mb-2">在庫不足商品</h3>
+              <div className="space-y-2">
+                {inventoryReport.lowStockItems.slice(0, 5).map((item) => (
+                  <div
+                    key={item.productId}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <span className="text-gray-700">{item.productName}</span>
+                    <span className="text-red-600 font-medium">
+                      残り{item.currentStock}個 (基準: {item.threshold}個)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
