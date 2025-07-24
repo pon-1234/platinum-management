@@ -73,6 +73,9 @@ export interface QRCodeStats {
   monthlyScans: number;
   uniqueUsers: number;
   totalStaff: number;
+  todayCheckIns?: number;
+  currentlyWorking?: number;
+  monthlyUsage?: number;
 }
 
 // 位置検証設定
@@ -141,11 +144,15 @@ export interface StaffQRInfo {
 
 // QRコード履歴
 export interface QRAttendanceHistory {
+  id: string;
   log: QRAttendanceLog;
   staff: Staff;
   success: boolean;
   errorMessage?: string;
   distanceFromStore?: number;
+  staffName?: string;
+  recordedAt?: string;
+  action?: QRAttendanceAction;
 }
 
 // QRコード検証結果
