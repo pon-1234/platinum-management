@@ -5,7 +5,6 @@ import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { castService } from "@/services/cast.service";
-import { getAvailableStaffForCast } from "@/app/actions/staff.actions";
 import { z } from "zod";
 import { usePermission } from "@/hooks/usePermission";
 
@@ -69,7 +68,13 @@ export function CastRegistrationModal({
   useEffect(() => {
     if (isOpen && canCreateCast) {
       setIsLoadingStaff(true);
-      getAvailableStaffForCast()
+      fetch("/api/cast/available-staff")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("スタッフ情報の取得に失敗しました");
+          }
+          return response.json();
+        })
         .then((staff) => {
           setAvailableStaff(staff);
         })
