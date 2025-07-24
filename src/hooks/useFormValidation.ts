@@ -1,9 +1,4 @@
-import {
-  useForm,
-  UseFormProps,
-  FieldValues,
-  SubmitHandler,
-} from "react-hook-form";
+import { useForm, UseFormProps, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { getErrorMessage } from "@/lib/utils/validation";
@@ -18,7 +13,7 @@ export function useFormValidation<T extends FieldValues>({
   ...formProps
 }: UseFormValidationProps<T>) {
   const form = useForm<T>({
-    // @ts-ignore - zodResolver has complex type issues with Zod schemas
+    // @ts-expect-error - zodResolver has complex type issues with Zod schemas
     resolver: zodResolver(schema),
     ...formProps,
   });
