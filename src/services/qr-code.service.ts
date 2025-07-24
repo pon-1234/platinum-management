@@ -508,9 +508,6 @@ export class QRCodeService extends BaseService {
     staffId: string,
     action: string
   ): Promise<{ isValid: boolean; errorMessage?: string }> {
-    // Track today's date for potential future use
-    const today = new Date().toISOString().split("T")[0];
-    console.log("Checking attendance for:", today);
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     const { data, error } = await this.supabase

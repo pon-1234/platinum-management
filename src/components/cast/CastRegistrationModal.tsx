@@ -95,13 +95,6 @@ export function CastRegistrationModal({
 
   const handleSubmit = async (data: CastRegistrationData) => {
     setIsSubmitting(true);
-    console.log("CastRegistrationModal: Submitting cast data:", data);
-    console.log(
-      "CastRegistrationModal: staffId type and value:",
-      typeof data.staffId,
-      data.staffId
-    );
-    console.log("CastRegistrationModal: staffId length:", data.staffId.length);
 
     const castData = {
       staffId: data.staffId,
@@ -111,8 +104,6 @@ export function CastRegistrationModal({
       selfIntroduction: data.memo || "",
       isActive: true,
     };
-
-    console.log("CastRegistrationModal: Final cast data:", castData);
 
     try {
       await castService.createCast(castData);

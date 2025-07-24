@@ -27,22 +27,12 @@ export class CastService extends BaseService {
 
   // Cast CRUD operations
   async createCast(data: CreateCastData): Promise<Cast> {
-    console.log("CastService: Creating cast with data:", data);
-
     try {
       // Validate input
-      const validatedData = createCastSchema.parse(data);
-      console.log(
-        "CastService: Validation passed, validated data:",
-        validatedData
-      );
+      createCastSchema.parse(data);
     } catch (validationError) {
-      console.error("CastService: Validation failed:", validationError);
       if (validationError instanceof Error && "issues" in validationError) {
-        console.error(
-          "CastService: Validation issues:",
-          (validationError as { issues: unknown[] }).issues
-        );
+        // Validation error with details
       }
       throw validationError;
     }
