@@ -15,6 +15,10 @@ import type {
   ExpiryManagement,
   BottleKeepInventory,
 } from "@/types/bottle-keep.types";
+import {
+  notificationService,
+  type AlertNotificationData,
+} from "./notification.service";
 
 export class BottleKeepService {
   private supabase: SupabaseClient<Database>;
@@ -552,15 +556,13 @@ export class BottleKeepService {
   async sendExpiryAlerts(): Promise<{
     success: boolean;
     sentCount: number;
-    alerts: Array<{
-      customerName: string;
-      customerEmail?: string;
-      customerPhone?: string;
-      customerLineId?: string;
-      productName: string;
-      alertType: string;
-      alertMessage: string;
-    }>;
+    alerts: AlertNotificationData[];
+    notificationResults?: {
+      totalAlerts: number;
+      successCount: number;
+      failedCount: number;
+      results: any[];
+    };
   }> {
     try {
       // RPC関数を使用してアラート処理
@@ -577,6 +579,9 @@ export class BottleKeepService {
           sentCount: 0,
           alerts: alerts.map((alert) => ({
             customerName: alert.customerName,
+            customerEmail: undefined,
+            customerPhone: undefined,
+            customerLineId: undefined,
             productName: alert.productName,
             alertType: alert.alertType,
             alertMessage: alert.message,
@@ -597,14 +602,9 @@ export class BottleKeepService {
         sent_count: number;
       };
 
-      // 実際の通知送信処理はここで実装
-      // 例: メール送信、LINE通知、SMS送信など
-      // 現在は送信対象のアラート情報を返すのみ
-
-      return {
-        success: true,
-        sentCount: result.sent_count,
-        alerts: result.alerts.map((alert) => ({
+      // 実際の通知送信処理
+      const alertsToSend: AlertNotificationData[] = result.alerts.map(
+        (alert) => ({
           customerName: alert.customer_name,
           customerEmail: alert.customer_email,
           customerPhone: alert.customer_phone,
@@ -612,7 +612,18 @@ export class BottleKeepService {
           productName: alert.product_name,
           alertType: alert.alert_type,
           alertMessage: alert.alert_message,
-        })),
+        })
+      );
+
+      // 通知サービスを使用してアラートを送信
+      const notificationResults =
+        await notificationService.sendBulkBottleKeepAlerts(alertsToSend);
+
+      return {
+        success: true,
+        sentCount: result.sent_count,
+        alerts: alertsToSend,
+        notificationResults,
       };
     } catch (error) {
       console.error("アラート送信エラー:", error);
