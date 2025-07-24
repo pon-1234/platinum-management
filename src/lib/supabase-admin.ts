@@ -25,28 +25,11 @@ export async function getUserRole(userId: string): Promise<string | null> {
     );
 
     if (roleError) {
-      console.error("Failed to get user role via function:", {
+      console.error("RPC failed, denying access for security:", {
         userId,
         roleError,
       });
-
-      // Fallback to direct query using service role (bypasses RLS)
-      const { data: staffData, error: staffError } = await supabaseAdmin
-        .from("staffs")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .single();
-
-      if (staffError || !staffData) {
-        console.error("Failed to get user role via fallback:", {
-          userId,
-          staffError,
-        });
-        return null;
-      }
-
-      return staffData.role;
+      return null;
     }
 
     return roleData;
