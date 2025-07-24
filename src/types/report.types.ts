@@ -75,18 +75,21 @@ export interface MonthlySalesReport extends MonthlyReportSummary {
 }
 
 export interface CastPerformanceReport {
-  castId: string;
-  castName: string;
-  period: string;
-  totalSales: number;
-  totalCustomers: number;
-  averagePerCustomer: number;
-  topProducts: Array<{
-    productId: string;
-    productName: string;
-    quantity: number;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  topCasts: Array<{
+    castId: string;
+    castName: string;
+    totalSales: number;
+    totalOrders: number;
+    orderCount: number; // alias for totalOrders for UI compatibility
+    totalAmount: number; // alias for totalSales for UI compatibility
+    averageOrderValue: number;
+    workingDays: number;
+    rating: number;
   }>;
-  ranking: number;
 }
 
 export interface CustomerReport {
