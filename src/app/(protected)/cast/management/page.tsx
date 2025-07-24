@@ -15,6 +15,7 @@ import { LoadingSpinner, EmptyState } from "@/components/common";
 import { CastRegistrationModal } from "@/components/cast/CastRegistrationModal";
 import { CastEditModal } from "@/components/cast/CastEditModal";
 import { CastDeleteModal } from "@/components/cast/CastDeleteModal";
+import { CastDetailModal } from "@/components/cast/CastDetailModal";
 import type { Cast } from "@/types/cast.types";
 
 export default function CastManagementPage() {
@@ -23,6 +24,7 @@ export default function CastManagementPage() {
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedCast, setSelectedCast] = useState<Cast | null>(null);
 
   useEffect(() => {
@@ -126,7 +128,7 @@ export default function CastManagementPage() {
                       <button
                         onClick={() => {
                           setSelectedCast(cast);
-                          // TODO: Add view details functionality
+                          setIsDetailModalOpen(true);
                         }}
                         className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
                         title="詳細を見る"
@@ -207,6 +209,18 @@ export default function CastManagementPage() {
               setIsDeleteModalOpen(false);
               setSelectedCast(null);
               fetchCasts({ isActive: true });
+            }}
+            cast={selectedCast}
+          />
+        )}
+
+        {/* Cast Detail Modal */}
+        {selectedCast && (
+          <CastDetailModal
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setSelectedCast(null);
             }}
             cast={selectedCast}
           />
