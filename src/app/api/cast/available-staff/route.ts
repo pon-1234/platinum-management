@@ -24,14 +24,13 @@ export async function GET() {
         `
         id,
         full_name,
-        full_name_kana,
         role,
-        status
+        is_active
       `
       )
       .neq("role", "admin")
-      .eq("status", "active")
-      .order("full_name_kana");
+      .eq("is_active", true)
+      .order("full_name");
 
     if (error) {
       console.error("Error fetching staffs:", error);
@@ -65,9 +64,8 @@ export async function GET() {
     const formattedStaff = availableStaff.map((staff) => ({
       id: staff.id,
       fullName: staff.full_name,
-      fullNameKana: staff.full_name_kana,
       role: staff.role,
-      status: staff.status,
+      isActive: staff.is_active,
     }));
 
     return NextResponse.json(formattedStaff);
