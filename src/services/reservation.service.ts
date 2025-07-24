@@ -232,7 +232,7 @@ export class ReservationService {
         ),
         table:tables(
           id,
-          table_number,
+          table_name,
           capacity,
           location
         ),
