@@ -95,13 +95,10 @@ export class ReservationService {
         *,
         customer:customers(id, name, phone_number),
         table:tables(*),
-        assigned_cast:casts_profile!assigned_cast_id(
+        assigned_cast:staffs!assigned_cast_id(
           id,
-          stage_name,
-          staff:staffs!staff_id(
-            id,
-            full_name
-          )
+          full_name,
+          casts_profile!casts_profile_staff_id_fkey(stage_name)
         )
       `
       )
@@ -240,13 +237,10 @@ export class ReservationService {
           capacity,
           location
         ),
-        assigned_cast:casts_profile!assigned_cast_id(
+        assigned_cast:staffs!assigned_cast_id(
           id,
-          stage_name,
-          staff:staffs!staff_id(
-            id,
-            full_name
-          )
+          full_name,
+          casts_profile!casts_profile_staff_id_fkey(stage_name)
         )
       `
       )
@@ -301,13 +295,10 @@ export class ReservationService {
         *,
         customer:customers(id, name, phone_number),
         table:tables(*),
-        assigned_cast:casts_profile!assigned_cast_id(
+        assigned_cast:staffs!assigned_cast_id(
           id,
-          stage_name,
-          staff:staffs!staff_id(
-            id,
-            full_name
-          )
+          full_name,
+          casts_profile!casts_profile_staff_id_fkey(stage_name)
         )
       `
       )
@@ -477,13 +468,10 @@ export class ReservationService {
         *,
         customer:customers(id, name, phone_number),
         table:tables(*),
-        assigned_cast:casts_profile!assigned_cast_id(
+        assigned_cast:staffs!assigned_cast_id(
           id,
-          stage_name,
-          staff:staffs!staff_id(
-            id,
-            full_name
-          )
+          full_name,
+          casts_profile!casts_profile_staff_id_fkey(stage_name)
         )
       `
       )
