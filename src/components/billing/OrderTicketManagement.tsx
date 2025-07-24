@@ -10,6 +10,7 @@ import type {
   OrderItem,
   CreateOrderItemData,
   CreateVisitData,
+  BillCalculation,
 } from "@/types/billing.types";
 import type { Customer } from "@/types/customer.types";
 import type { Table } from "@/types/database.types";
@@ -17,9 +18,11 @@ import {
   PlusIcon,
   TrashIcon,
   ReceiptPercentIcon,
+  ShoppingCartIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import { Modal } from "@/components/ui/Modal";
+import ProductSelectModal from "./ProductSelectModal";
 
 interface OrderTicketManagementProps {
   onVisitUpdate?: () => void;
@@ -36,6 +39,7 @@ export default function OrderTicketManagement({
   const [tables, setTables] = useState<Table[]>([]);
   const [showNewVisitModal, setShowNewVisitModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showProductSelectModal, setShowProductSelectModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // New visit form state
@@ -53,6 +57,8 @@ export default function OrderTicketManagement({
     cashReceived: 0,
     notes: "",
   });
+  const [billCalculation, setBillCalculation] =
+    useState<BillCalculation | null>(null);
 
   useEffect(() => {
     loadData();
@@ -109,14 +115,21 @@ export default function OrderTicketManagement({
     }
   };
 
+  const loadBillCalculation = async (visitId: string) => {
+    try {
+      const calculation = await billingService.calculateBill(visitId);
+      setBillCalculation(calculation);
+      setPaymentForm((prev) => ({ ...prev, amount: calculation.totalAmount }));
+    } catch (error) {
+      console.error("Failed to calculate bill:", error);
+      toast.error("料金計算に失敗しました");
+    }
+  };
+
   const handlePayment = async () => {
-    if (!selectedVisit) return;
+    if (!selectedVisit || !billCalculation) return;
 
     try {
-      const billCalculation = await billingService.calculateBill(
-        selectedVisit.id
-      );
-
       await billingService.processPayment(selectedVisit.id, {
         method: paymentForm.method,
         amount: billCalculation.totalAmount,
@@ -139,6 +152,27 @@ export default function OrderTicketManagement({
       console.error("Failed to process payment:", error);
       toast.error("お会計の処理に失敗しました");
     }
+  };
+
+  const handleDeleteOrderItem = async (orderItemId: number) => {
+    if (!selectedVisit || !confirm("この注文を削除してもよろしいですか？"))
+      return;
+
+    try {
+      await billingService.deleteOrderItem(orderItemId);
+      toast.success("注文を削除しました");
+      // Reload visit details
+      await handleSelectVisit(selectedVisit.id);
+    } catch (error) {
+      console.error("Failed to delete order item:", error);
+      toast.error("注文の削除に失敗しました");
+    }
+  };
+
+  const handleProductsAdded = async () => {
+    if (!selectedVisit) return;
+    // Reload visit details to show new items
+    await handleSelectVisit(selectedVisit.id);
   };
 
   const formatCurrency = (amount: number) => `¥${amount.toLocaleString()}`;
@@ -216,8 +250,9 @@ export default function OrderTicketManagement({
                       詳細
                     </button>
                     <button
-                      onClick={() => {
-                        handleSelectVisit(visit.id);
+                      onClick={async () => {
+                        await handleSelectVisit(visit.id);
+                        await loadBillCalculation(visit.id);
                         setShowPaymentModal(true);
                       }}
                       className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
@@ -266,25 +301,71 @@ export default function OrderTicketManagement({
               </div>
             </div>
 
-            {selectedVisit.orderItems &&
-              selectedVisit.orderItems.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">注文内容</h4>
-                  <ul className="space-y-2">
-                    {selectedVisit.orderItems.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex justify-between text-sm"
-                      >
-                        <span>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-medium text-gray-900">注文内容</h4>
+                <button
+                  onClick={() => setShowProductSelectModal(true)}
+                  className="inline-flex items-center px-3 py-1 text-sm border border-transparent rounded-md text-indigo-600 bg-indigo-100 hover:bg-indigo-200"
+                >
+                  <ShoppingCartIcon className="h-4 w-4 mr-1" />
+                  商品追加
+                </button>
+              </div>
+              {selectedVisit.orderItems &&
+              selectedVisit.orderItems.length > 0 ? (
+                <ul className="space-y-2">
+                  {selectedVisit.orderItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex justify-between items-center text-sm p-2 hover:bg-gray-50 rounded"
+                    >
+                      <div className="flex-1">
+                        <span className="font-medium">
                           {item.product?.name} × {item.quantity}
                         </span>
-                        <span>{formatCurrency(item.totalPrice)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                        {item.notes && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {item.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">
+                          {formatCurrency(item.totalPrice)}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteOrderItem(item.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  まだ注文がありません
+                </p>
               )}
+              {selectedVisit.orderItems &&
+                selectedVisit.orderItems.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>小計</span>
+                      <span>
+                        {formatCurrency(
+                          selectedVisit.orderItems.reduce(
+                            (sum, item) => sum + item.totalPrice,
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
+            </div>
           </div>
         </Modal>
       )}
@@ -392,19 +473,63 @@ export default function OrderTicketManagement({
       {/* Payment Modal */}
       <Modal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setBillCalculation(null);
+          setPaymentForm({
+            method: "cash",
+            amount: 0,
+            cashReceived: 0,
+            notes: "",
+          });
+        }}
         title="お会計処理"
       >
         {selectedVisit && (
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">
+              <h4 className="font-medium text-gray-900 mb-3">
                 テーブル {selectedVisit.tableId} - 請求内容
               </h4>
-              {/* Bill calculation would be shown here */}
-              <p className="text-sm text-gray-600">
-                請求金額の詳細がここに表示されます
-              </p>
+              {billCalculation ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">小計</span>
+                    <span className="font-medium">
+                      {formatCurrency(billCalculation.subtotal)}
+                    </span>
+                  </div>
+                  {billCalculation.serviceCharge > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">サービス料</span>
+                      <span className="font-medium">
+                        {formatCurrency(billCalculation.serviceCharge)}
+                      </span>
+                    </div>
+                  )}
+                  {billCalculation.taxAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">消費税</span>
+                      <span className="font-medium">
+                        {formatCurrency(billCalculation.taxAmount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-gray-300">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-900">合計</span>
+                      <span className="text-lg font-bold text-gray-900">
+                        {formatCurrency(billCalculation.totalAmount)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
+                  <p className="text-sm text-gray-500 mt-2">計算中...</p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -428,22 +553,40 @@ export default function OrderTicketManagement({
             </div>
 
             {paymentForm.method === "cash" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  お預かり金額
-                </label>
-                <input
-                  type="number"
-                  value={paymentForm.cashReceived}
-                  onChange={(e) =>
-                    setPaymentForm({
-                      ...paymentForm,
-                      cashReceived: Number(e.target.value),
-                    })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    お預かり金額
+                  </label>
+                  <input
+                    type="number"
+                    value={paymentForm.cashReceived}
+                    onChange={(e) =>
+                      setPaymentForm({
+                        ...paymentForm,
+                        cashReceived: Number(e.target.value),
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+                </div>
+                {paymentForm.cashReceived > 0 && billCalculation && (
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium text-blue-900">お釣り</span>
+                      <span className="font-bold text-blue-900">
+                        {formatCurrency(
+                          Math.max(
+                            0,
+                            paymentForm.cashReceived -
+                              billCalculation.totalAmount
+                          )
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <div>
@@ -477,6 +620,16 @@ export default function OrderTicketManagement({
           </div>
         )}
       </Modal>
+
+      {/* Product Select Modal */}
+      {selectedVisit && (
+        <ProductSelectModal
+          isOpen={showProductSelectModal}
+          onClose={() => setShowProductSelectModal(false)}
+          visitId={selectedVisit.id}
+          onItemsAdded={handleProductsAdded}
+        />
+      )}
     </div>
   );
 }
