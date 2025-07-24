@@ -24,6 +24,12 @@ cp .env.local.example .env.local
 - `NEXT_PUBLIC_SUPABASE_URL`: SupabaseプロジェクトのURL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabaseの匿名キー
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabaseのサービスロールキー（サーバーサイドのみ）
+- `QR_CODE_SECRET_KEY`: QRコード署名用の秘密鍵（以下のコマンドで生成）
+
+```bash
+# QRコード署名用の安全な秘密鍵を生成
+openssl rand -base64 32
+```
 
 ### 2. 依存関係のインストール
 

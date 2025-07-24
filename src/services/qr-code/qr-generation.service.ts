@@ -10,7 +10,13 @@ import type {
  * 責任: QRコードの生成、署名、検証
  */
 export class QRGenerationService extends BaseService {
-  private readonly secretKey = "PLATINUM_QR_SECRET_2024"; // 本番では環境変数から取得
+  private readonly secretKey =
+    process.env.QR_CODE_SECRET_KEY ||
+    (() => {
+      throw new Error(
+        "QR_CODE_SECRET_KEY environment variable is required for security"
+      );
+    })();
 
   constructor() {
     super();
