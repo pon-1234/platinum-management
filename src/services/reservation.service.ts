@@ -228,8 +228,7 @@ export class ReservationService {
         customer:customers(
           id,
           name,
-          phone_number,
-          email
+          phone_number
         ),
         table:tables(
           id,
