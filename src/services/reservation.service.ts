@@ -236,9 +236,12 @@ export class ReservationService {
           capacity,
           location
         ),
-        assigned_cast:casts_profile(
+        assigned_cast:staffs!assigned_cast_id(
           id,
-          stage_name
+          full_name,
+          casts_profile(
+            stage_name
+          )
         )
       `
       )
