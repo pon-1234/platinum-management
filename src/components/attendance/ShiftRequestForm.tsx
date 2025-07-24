@@ -31,6 +31,29 @@ export default function ShiftRequestForm({
       return;
     }
 
+    // Validate that end time is after start time
+    const startDateTime = new Date(
+      `${formData.requestedDate}T${formData.startTime}`
+    );
+    const endDateTime = new Date(
+      `${formData.requestedDate}T${formData.endTime}`
+    );
+
+    if (endDateTime <= startDateTime) {
+      toast.error("終了時刻は開始時刻より後に設定してください");
+      return;
+    }
+
+    // Validate that the requested date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const requestedDate = new Date(formData.requestedDate);
+
+    if (requestedDate < today) {
+      toast.error("過去の日付は選択できません");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 

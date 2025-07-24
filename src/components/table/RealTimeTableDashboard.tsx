@@ -29,40 +29,74 @@ export default function RealTimeTableDashboard({
   // Real-time subscription
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
+    let retryCount = 0;
+    let retryTimeout: NodeJS.Timeout | null = null;
+    const MAX_RETRY_COUNT = 5;
+    const BASE_RETRY_DELAY = 1000; // 1 second
 
-    const initializeRealTimeConnection = () => {
-      setConnectionStatus("connecting");
+    const initializeRealTimeConnection = async () => {
+      try {
+        setConnectionStatus("connecting");
 
-      unsubscribe = tableService.subscribeToAllTableUpdates((updatedTables) => {
-        setTables(updatedTables);
-        setLastUpdated(new Date());
-        setConnectionStatus("connected");
-        setIsLoading(false);
-      });
+        unsubscribe = tableService.subscribeToAllTableUpdates(
+          (updatedTables) => {
+            setTables(updatedTables);
+            setLastUpdated(new Date());
+            setConnectionStatus("connected");
+            setIsLoading(false);
+            // Reset retry count on successful connection
+            retryCount = 0;
+          }
+        );
+      } catch (error) {
+        console.error("Failed to initialize real-time connection:", error);
+        handleConnectionError();
+      }
     };
 
-    initializeRealTimeConnection();
-
-    // Handle connection errors
+    // Handle connection errors with exponential backoff
     const handleConnectionError = () => {
       setConnectionStatus("disconnected");
-      toast.error("リアルタイム接続が切断されました。再接続を試行します...");
 
-      // Retry connection after 3 seconds
-      setTimeout(() => {
+      if (retryCount >= MAX_RETRY_COUNT) {
+        toast.error(
+          "リアルタイム接続を確立できませんでした。ページを更新してください。"
+        );
+        return;
+      }
+
+      // Calculate delay with exponential backoff
+      const delay = Math.min(BASE_RETRY_DELAY * Math.pow(2, retryCount), 30000);
+      retryCount++;
+
+      toast.error(
+        `リアルタイム接続が切断されました。${delay / 1000}秒後に再接続を試行します... (${retryCount}/${MAX_RETRY_COUNT})`
+      );
+
+      retryTimeout = setTimeout(() => {
         initializeRealTimeConnection();
-      }, 3000);
+      }, delay);
     };
 
+    // Initial connection
+    initializeRealTimeConnection();
+
     // Add error handling
-    window.addEventListener("beforeunload", () => {
+    const handleBeforeUnload = () => {
       if (unsubscribe) unsubscribe();
-    });
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
 

@@ -75,7 +75,11 @@ export default function OrderTicketManagement({
 
       setActiveVisits(visitsData);
       setCustomers(customersData);
-      setTables(tablesData);
+      // Filter tables to only show available ones for new visits
+      const availableTables = tablesData.filter(
+        (table) => table.currentStatus === "available"
+      );
+      setTables(availableTables);
     } catch (error) {
       console.error("Failed to load data:", error);
       toast.error("データの読み込みに失敗しました");

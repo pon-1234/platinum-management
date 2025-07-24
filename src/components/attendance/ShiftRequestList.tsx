@@ -19,6 +19,7 @@ import type {
 import { SHIFT_REQUEST_STATUSES } from "@/types/attendance.types";
 import { toast } from "react-hot-toast";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal } from "@/components/ui/Modal";
 import ShiftRequestForm from "./ShiftRequestForm";
 
 interface ShiftRequestListProps {
@@ -56,6 +57,21 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
   }, [loadRequests]);
 
   const handleApproval = async (requestId: string, approved: boolean) => {
+    // Optimistic UI update
+    const originalRequests = [...requests];
+    setRequests((prevRequests) =>
+      prevRequests.map((req) =>
+        req.id === requestId
+          ? {
+              ...req,
+              status: approved
+                ? "approved"
+                : ("rejected" as ShiftRequestStatus),
+            }
+          : req
+      )
+    );
+
     try {
       await attendanceService.approveShiftRequest(requestId, {
         approved: approved,
@@ -64,13 +80,16 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
 
       setSelectedRequest(null);
       setRejectionReason("");
-      loadRequests();
       onRequestUpdate();
 
       toast.success(approved ? "申請を承認しました" : "申請を却下しました");
+      // Reload to get updated data from server
+      loadRequests();
     } catch (error) {
       console.error("承認処理に失敗しました:", error);
       toast.error("処理に失敗しました。もう一度お試しください。");
+      // Revert optimistic update on error
+      setRequests(originalRequests);
     }
   };
 
@@ -241,49 +260,52 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
       </div>
 
       {/* Rejection Modal */}
-      {selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-                申請を却下
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                却下する理由を入力してください（必須）
-              </p>
-              <textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
-                placeholder="却下理由を入力してください"
-              />
-              <div className="flex space-x-3 mt-4">
-                <button
-                  onClick={() => handleApproval(selectedRequest.id, false)}
-                  disabled={!rejectionReason.trim()}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-                    rejectionReason.trim()
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  却下する
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedRequest(null);
-                    setRejectionReason("");
-                  }}
-                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={!!selectedRequest}
+        onClose={() => {
+          setSelectedRequest(null);
+          setRejectionReason("");
+        }}
+        title="申請を却下"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            却下する理由を入力してください（必須）
+          </p>
+          <textarea
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+            placeholder="却下理由を入力してください"
+          />
+          <div className="flex space-x-3">
+            <button
+              onClick={() =>
+                selectedRequest && handleApproval(selectedRequest.id, false)
+              }
+              disabled={!rejectionReason.trim()}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
+                rejectionReason.trim()
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              却下する
+            </button>
+            <button
+              onClick={() => {
+                setSelectedRequest(null);
+                setRejectionReason("");
+              }}
+              className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              キャンセル
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
