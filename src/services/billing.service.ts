@@ -808,13 +808,24 @@ export class BillingService extends BaseService {
         closed_at: new Date().toISOString(),
       });
 
-      // If the table doesn't exist, ignore the error
-      if (error && !error.message.includes("relation")) {
-        console.error("Failed to create daily closing record:", error);
+      // If the table doesn't exist, log as warning
+      if (error) {
+        if (
+          error.message.includes("relation") ||
+          error.message.includes("does not exist")
+        ) {
+          console.warn(
+            "Daily closings table not available, skipping record creation:",
+            error.message
+          );
+        } else {
+          console.error("Failed to create daily closing record:", error);
+          // Don't throw here to avoid breaking the main closing process
+        }
       }
     } catch (error) {
-      // Silently fail if daily_closings table doesn't exist
-      console.warn("Daily closings table not available:", error);
+      // Log unexpected errors as warnings to avoid breaking the main process
+      console.warn("Unexpected error creating daily closing record:", error);
     }
   }
 

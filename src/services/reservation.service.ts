@@ -153,45 +153,31 @@ export class ReservationService {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: Record<string, unknown> = {
-      ...validatedData,
-      updated_by: staffId,
-    };
+    // Map camelCase to snake_case using Object.fromEntries for cleaner code
+    const fieldMappings = {
+      customerId: "customer_id",
+      tableId: "table_id",
+      reservationDate: "reservation_date",
+      reservationTime: "reservation_time",
+      numberOfGuests: "number_of_guests",
+      assignedCastId: "assigned_cast_id",
+      specialRequests: "special_requests",
+      checkedInAt: "checked_in_at",
+      cancelledAt: "cancelled_at",
+      cancelReason: "cancel_reason",
+    } as const;
 
-    // Map camelCase to snake_case
-    if (validatedData.customerId !== undefined)
-      updateData.customer_id = validatedData.customerId;
-    if (validatedData.tableId !== undefined)
-      updateData.table_id = validatedData.tableId;
-    if (validatedData.reservationDate !== undefined)
-      updateData.reservation_date = validatedData.reservationDate;
-    if (validatedData.reservationTime !== undefined)
-      updateData.reservation_time = validatedData.reservationTime;
-    if (validatedData.numberOfGuests !== undefined)
-      updateData.number_of_guests = validatedData.numberOfGuests;
-    if (validatedData.assignedCastId !== undefined)
-      updateData.assigned_cast_id = validatedData.assignedCastId;
-    if (validatedData.specialRequests !== undefined)
-      updateData.special_requests = validatedData.specialRequests;
-    if (validatedData.checkedInAt !== undefined)
-      updateData.checked_in_at = validatedData.checkedInAt;
-    if (validatedData.cancelledAt !== undefined)
-      updateData.cancelled_at = validatedData.cancelledAt;
-    if (validatedData.cancelReason !== undefined)
-      updateData.cancel_reason = validatedData.cancelReason;
+    const updateData = Object.fromEntries(
+      Object.entries(validatedData)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => {
+          const mappedKey =
+            fieldMappings[key as keyof typeof fieldMappings] || key;
+          return [mappedKey, value];
+        })
+    );
 
-    // Remove camelCase properties
-    delete updateData.customerId;
-    delete updateData.tableId;
-    delete updateData.reservationDate;
-    delete updateData.reservationTime;
-    delete updateData.numberOfGuests;
-    delete updateData.assignedCastId;
-    delete updateData.specialRequests;
-    delete updateData.checkedInAt;
-    delete updateData.cancelledAt;
-    delete updateData.cancelReason;
+    updateData.updated_by = staffId;
 
     const { data: reservation, error } = await this.supabase
       .from("reservations")
