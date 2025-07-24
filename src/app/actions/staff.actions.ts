@@ -34,7 +34,9 @@ export async function getAvailableStaffForCast() {
   }
 
   // Get all existing cast staff IDs
-  const { data: casts } = await supabase.from("casts").select("staff_id");
+  const { data: casts } = await supabase
+    .from("casts_profile")
+    .select("staff_id");
 
   const castStaffIds = new Set(casts?.map((c) => c.staff_id) || []);
 
