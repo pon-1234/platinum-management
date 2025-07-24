@@ -1,200 +1,183 @@
 import { BaseService } from "./base.service";
 import type {
+  Report,
+  CreateReportData,
+  UpdateReportData,
+  ReportSearchParams,
+  DailySalesReport,
+  MonthlyReportSummary,
   MonthlySalesReport,
   CastPerformanceReport,
   CustomerReport,
-  InventoryReport as ReportInventoryReport,
-  DailyRevenueReport,
+  InventoryReport,
 } from "@/types/report.types";
+import { billingService } from "./billing.service";
 
 export class ReportService extends BaseService {
   constructor() {
     super();
   }
 
-  // 月次売上レポート
-  async getMonthlySalesReport(
-    year: number,
-    month: number
-  ): Promise<MonthlySalesReport> {
-    try {
-      // RPC関数を呼び出し（存在しない場合は基本的な集計）
-      const { data, error } = await this.supabase.rpc("get_monthly_sales", {
-        report_year: year,
-        report_month: month,
-      });
+  async createReport(data: CreateReportData): Promise<Report> {
+    const staffId = await this.getCurrentStaffId();
 
-      if (error) {
-        // フォールバック: 基本的な集計
-        return this.generateBasicMonthlySalesReport(year, month);
+    const { data: report, error } = await this.supabase
+      .from("reports")
+      .insert({
+        type: data.type,
+        title: data.title,
+        description: data.description,
+        data: data.data,
+        created_by: staffId,
+        status: "draft",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      this.handleError(error, "レポートの作成に失敗しました");
+    }
+
+    return this.mapToReport(report);
+  }
+
+  async getReportById(id: string): Promise<Report | null> {
+    const { data, error } = await this.supabase
+      .from("reports")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null;
       }
+      this.handleError(error, "レポートの取得に失敗しました");
+    }
 
-      return data as MonthlySalesReport;
-    } catch (error) {
-      console.error("Monthly sales report error:", error);
-      return this.generateBasicMonthlySalesReport(year, month);
+    return this.mapToReport(data);
+  }
+
+  async searchReports(params: ReportSearchParams = {}): Promise<Report[]> {
+    let query = this.supabase
+      .from("reports")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (params.type) {
+      query = query.eq("type", params.type);
+    }
+
+    if (params.status) {
+      query = query.eq("status", params.status);
+    }
+
+    if (params.startDate) {
+      query = query.gte("created_at", params.startDate);
+    }
+
+    if (params.endDate) {
+      query = query.lte("created_at", params.endDate);
+    }
+
+    if (params.createdBy) {
+      query = query.eq("created_by", params.createdBy);
+    }
+
+    if (params.limit) {
+      query = query.limit(params.limit);
+    }
+
+    if (params.offset) {
+      query = query.range(
+        params.offset,
+        params.offset + (params.limit || 50) - 1
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      this.handleError(error, "レポートの検索に失敗しました");
+    }
+
+    return data.map(this.mapToReport);
+  }
+
+  async updateReport(id: string, data: UpdateReportData): Promise<Report> {
+    const updateData: Record<string, unknown> = {};
+
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined)
+      updateData.description = data.description;
+    if (data.data !== undefined) updateData.data = data.data;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const { data: report, error } = await this.supabase
+      .from("reports")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      this.handleError(error, "レポートの更新に失敗しました");
+    }
+
+    return this.mapToReport(report);
+  }
+
+  async deleteReport(id: string): Promise<void> {
+    const { error } = await this.supabase.from("reports").delete().eq("id", id);
+
+    if (error) {
+      this.handleError(error, "レポートの削除に失敗しました");
     }
   }
 
-  private async generateBasicMonthlySalesReport(
+  // Report generation methods
+  async generateDailySalesReport(date: string): Promise<DailySalesReport> {
+    return billingService.generateDailyReport(date);
+  }
+
+  async generateMonthlySalesReport(
     year: number,
     month: number
   ): Promise<MonthlySalesReport> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
-    // 基本的なデータを取得
-    const { data: visits } = await this.supabase
-      .from("visits")
-      .select("*")
-      .gte("check_in_at", startDate.toISOString())
-      .lt("check_in_at", endDate.toISOString())
-      .eq("status", "completed");
-
-    const totalRevenue = visits?.length ? visits.length * 5000 : 0; // 仮の計算
-    const totalVisits = visits?.length || 0;
-
-    return {
-      year,
-      month,
-      totalRevenue,
-      totalVisits,
-      averageRevenuePerVisit: totalVisits > 0 ? totalRevenue / totalVisits : 0,
-      dailyBreakdown: [],
-      topProducts: [],
-      paymentMethodBreakdown: {
-        cash: totalRevenue * 0.6,
-        card: totalRevenue * 0.4,
-        other: 0,
-      },
-    };
+    // Implementation would go here
+    throw new Error("Not implemented");
   }
 
-  // キャストパフォーマンスレポート
-  async getCastPerformanceReport(
+  async generateCastPerformanceReport(
+    castId: string,
     startDate: string,
     endDate: string
-  ): Promise<CastPerformanceReport[]> {
-    try {
-      const { data, error } = await this.supabase.rpc("get_cast_performance", {
-        start_date: startDate,
-        end_date: endDate,
-      });
-
-      if (error) {
-        // フォールバック: 基本的なキャスト情報
-        return this.generateBasicCastPerformance();
-      }
-
-      return data as CastPerformanceReport[];
-    } catch (error) {
-      console.error("Cast performance report error:", error);
-      return this.generateBasicCastPerformance();
-    }
+  ): Promise<CastPerformanceReport> {
+    // Implementation would go here
+    throw new Error("Not implemented");
   }
 
-  private async generateBasicCastPerformance(): Promise<
-    CastPerformanceReport[]
-  > {
-    const { data: casts } = await this.supabase
-      .from("staffs")
-      .select("id, full_name")
-      .eq("role", "cast")
-      .eq("is_active", true);
-
-    return (casts || []).map((cast) => ({
-      castId: cast.id,
-      castName: cast.full_name,
-      totalSales: Math.floor(Math.random() * 100000), // 仮のデータ
-      totalOrders: Math.floor(Math.random() * 50),
-      averageOrderValue: 2000,
-      workingDays: 20,
-      rating: 4.5,
-    }));
+  async generateCustomerReport(customerId: string): Promise<CustomerReport> {
+    // Implementation would go here
+    throw new Error("Not implemented");
   }
 
-  // 顧客レポート
-  async getCustomerReport(): Promise<CustomerReport> {
-    const { data: customers } = await this.supabase
-      .from("customers")
-      .select("*")
-      .eq("is_active", true);
+  async generateInventoryReport(date: string): Promise<InventoryReport> {
+    // Implementation would go here
+    throw new Error("Not implemented");
+  }
 
-    const totalCustomers = customers?.length || 0;
-    const newCustomersThisMonth = Math.floor(totalCustomers * 0.1); // 仮の計算
-
+  private mapToReport(data: any): Report {
     return {
-      totalCustomers,
-      newCustomersThisMonth,
-      returningCustomers: totalCustomers - newCustomersThisMonth,
-      averageVisitsPerCustomer: 2.5,
-      customerRetentionRate: 0.75,
-      topCustomers: [],
+      id: data.id,
+      type: data.type,
+      title: data.title,
+      description: data.description,
+      data: data.data,
+      createdAt: data.created_at,
+      createdBy: data.created_by,
+      status: data.status,
     };
-  }
-
-  // 在庫レポート（簡易版）
-  async getInventoryReport(): Promise<ReportInventoryReport> {
-    const { data: products } = await this.supabase
-      .from("products")
-      .select("*")
-      .eq("is_active", true);
-
-    const totalProducts = products?.length || 0;
-    const lowStockProducts =
-      products?.filter((p) => p.stock_quantity <= p.low_stock_threshold)
-        .length || 0;
-
-    return {
-      totalProducts,
-      lowStockProducts,
-      outOfStockProducts:
-        products?.filter((p) => p.stock_quantity === 0).length || 0,
-      totalInventoryValue:
-        products?.reduce((sum, p) => sum + p.stock_quantity * p.cost, 0) || 0,
-    };
-  }
-
-  // 日次売上レポート
-  async getDailyRevenueReport(date: string): Promise<DailyRevenueReport> {
-    try {
-      const { data, error } = await this.supabase.rpc("get_daily_revenue", {
-        report_date: date,
-      });
-
-      if (error) {
-        console.error("Daily revenue report error:", error);
-        // フォールバック: 基本的なデータを返す
-        return {
-          date,
-          totalRevenue: 0,
-          totalVisits: 0,
-          averageRevenuePerVisit: 0,
-          hourlyBreakdown: [],
-          paymentMethods: {
-            cash: 0,
-            card: 0,
-            other: 0,
-          },
-        };
-      }
-
-      return data as DailyRevenueReport;
-    } catch (error) {
-      console.error("Daily revenue report error:", error);
-      return {
-        date,
-        totalRevenue: 0,
-        totalVisits: 0,
-        averageRevenuePerVisit: 0,
-        hourlyBreakdown: [],
-        paymentMethods: {
-          cash: 0,
-          card: 0,
-          other: 0,
-        },
-      };
-    }
   }
 }
 
