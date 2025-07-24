@@ -10,6 +10,8 @@ import {
 import { format, addWeeks, subWeeks, startOfWeek } from "date-fns";
 import { ja } from "date-fns/locale";
 import { attendanceService } from "@/services/attendance.service";
+import { ShiftDetailModal } from "./ShiftDetailModal";
+import { AddShiftModal } from "./AddShiftModal";
 import type {
   WeeklySchedule as WeeklyScheduleType,
   CalendarShift,
@@ -30,6 +32,14 @@ export function WeeklySchedule({
     const start = startOfWeek(new Date(selectedDate), { weekStartsOn: 0 });
     return format(start, "yyyy-MM-dd");
   });
+
+  // Modal states
+  const [isShiftDetailModalOpen, setIsShiftDetailModalOpen] = useState(false);
+  const [isAddShiftModalOpen, setIsAddShiftModalOpen] = useState(false);
+  const [selectedShift, setSelectedShift] = useState<CalendarShift | null>(
+    null
+  );
+  const [selectedDateForAdd, setSelectedDateForAdd] = useState<string>("");
 
   const loadWeeklySchedule = useCallback(async (weekStart: string) => {
     try {
@@ -68,6 +78,21 @@ export function WeeklySchedule({
     );
     setCurrentWeekStart(weekStart);
     onDateChange(format(today, "yyyy-MM-dd"));
+  };
+
+  const handleShiftClick = (shift: CalendarShift) => {
+    setSelectedShift(shift);
+    setIsShiftDetailModalOpen(true);
+  };
+
+  const handleAddShiftClick = (date: string) => {
+    setSelectedDateForAdd(date);
+    setIsAddShiftModalOpen(true);
+  };
+
+  const handleShiftModalSuccess = () => {
+    // データを再読み込み
+    loadWeeklySchedule(currentWeekStart);
   };
 
   const getShiftTypeColor = (shiftType: string) => {
@@ -194,10 +219,7 @@ export function WeeklySchedule({
                   <div
                     key={shift.id}
                     className={`p-2 rounded-md text-xs cursor-pointer hover:shadow-sm transition-shadow ${getShiftTypeColor(shift.shiftType)}`}
-                    onClick={() => {
-                      // TODO: Open shift detail modal
-                      console.log("Shift clicked:", shift);
-                    }}
+                    onClick={() => handleShiftClick(shift)}
                   >
                     <div className="font-medium truncate">
                       {shift.staffName}
@@ -216,10 +238,7 @@ export function WeeklySchedule({
 
                 {/* Add Shift Button */}
                 <button
-                  onClick={() => {
-                    // TODO: Open add shift modal for this date
-                    console.log("Add shift for date:", day.date);
-                  }}
+                  onClick={() => handleAddShiftClick(day.date)}
                   className="w-full p-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md text-gray-400 dark:text-gray-500 hover:border-indigo-300 hover:text-indigo-500 dark:hover:border-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
                   <PlusIcon className="w-4 h-4 mx-auto" />
@@ -271,6 +290,37 @@ export function WeeklySchedule({
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {selectedShift && (
+        <ShiftDetailModal
+          isOpen={isShiftDetailModalOpen}
+          onClose={() => {
+            setIsShiftDetailModalOpen(false);
+            setSelectedShift(null);
+          }}
+          shift={selectedShift}
+          onEdit={(shift) => {
+            console.log("Edit shift:", shift);
+            // TODO: シフト編集モーダルを開く
+          }}
+          onDelete={async (shift) => {
+            console.log("Delete shift:", shift);
+            // TODO: シフト削除機能を実装
+            handleShiftModalSuccess();
+          }}
+        />
+      )}
+
+      <AddShiftModal
+        isOpen={isAddShiftModalOpen}
+        onClose={() => {
+          setIsAddShiftModalOpen(false);
+          setSelectedDateForAdd("");
+        }}
+        selectedDate={selectedDateForAdd}
+        onSuccess={handleShiftModalSuccess}
+      />
     </div>
   );
 }
