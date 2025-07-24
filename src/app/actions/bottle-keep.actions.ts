@@ -168,6 +168,24 @@ export const getStorageLocations = authenticatedAction(
   }
 );
 
+// ========== Alert Actions ==========
+
+export const sendExpiryAlerts = authenticatedAction(z.object({}), async () => {
+  const result = await bottleKeepService.sendExpiryAlerts();
+  return {
+    success: result.success,
+    data: {
+      sentCount: result.sentCount,
+      alerts: result.alerts,
+    },
+  };
+});
+
+export const getUnsentAlerts = authenticatedAction(z.object({}), async () => {
+  const alerts = await bottleKeepService.getUnsentAlerts();
+  return { success: true, data: alerts };
+});
+
 // ========== Types for client-side use ==========
 
 export type GetBottleKeepsInput = z.infer<typeof getBottleKeepsSchema>;

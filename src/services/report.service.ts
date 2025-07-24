@@ -157,19 +157,44 @@ export class ReportService extends BaseService {
 
   // 日次売上レポート
   async getDailyRevenueReport(date: string): Promise<DailyRevenueReport> {
-    // billingServiceのgenerateDailyReportを再利用する形で実装可能
-    return {
-      date,
-      totalRevenue: 50000, // 仮のデータ
-      totalVisits: 25,
-      averageRevenuePerVisit: 2000,
-      hourlyBreakdown: [],
-      paymentMethods: {
-        cash: 30000,
-        card: 20000,
-        other: 0,
-      },
-    };
+    try {
+      const { data, error } = await this.supabase.rpc("get_daily_revenue", {
+        report_date: date,
+      });
+
+      if (error) {
+        console.error("Daily revenue report error:", error);
+        // フォールバック: 基本的なデータを返す
+        return {
+          date,
+          totalRevenue: 0,
+          totalVisits: 0,
+          averageRevenuePerVisit: 0,
+          hourlyBreakdown: [],
+          paymentMethods: {
+            cash: 0,
+            card: 0,
+            other: 0,
+          },
+        };
+      }
+
+      return data as DailyRevenueReport;
+    } catch (error) {
+      console.error("Daily revenue report error:", error);
+      return {
+        date,
+        totalRevenue: 0,
+        totalVisits: 0,
+        averageRevenuePerVisit: 0,
+        hourlyBreakdown: [],
+        paymentMethods: {
+          cash: 0,
+          card: 0,
+          other: 0,
+        },
+      };
+    }
   }
 }
 

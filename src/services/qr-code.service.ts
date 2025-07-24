@@ -17,10 +17,21 @@ import type {
 } from "@/types/qr-code.types";
 
 export class QRCodeService extends BaseService {
-  private readonly secretKey = "PLATINUM_QR_SECRET_2024"; // 本番では環境変数から取得
+  private readonly secretKey: string;
 
   constructor() {
     super();
+
+    // 環境変数からシークレットキーを取得
+    const secretKey = process.env.QR_CODE_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error(
+        "QR_CODE_SECRET_KEY is not set in environment variables. " +
+          "Please set it in your .env.local file. " +
+          "You can generate a secure key using: openssl rand -base64 32"
+      );
+    }
+    this.secretKey = secretKey;
   }
 
   // QRコード生成
