@@ -666,7 +666,9 @@ export class QRCodeService extends BaseService {
       .order("qr_attendance_logs.created_at", { ascending: false });
 
     if (error) {
-      console.error("アクティブスタッフ取得エラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("アクティブスタッフ取得エラー:", error);
+      }
       return [];
     }
 

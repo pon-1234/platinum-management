@@ -17,7 +17,7 @@ const generateQRCodeSchema = z.object({
 
 export const generateQRCode = authenticatedAction(
   generateQRCodeSchema,
-  async (data) => {
+  async (data: z.infer<typeof generateQRCodeSchema>) => {
     const qrCode = await qrCodeService.generateQRCode(data);
     return { success: true, data: qrCode };
   }
@@ -31,7 +31,7 @@ const validateQRCodeSchema = z.object({
 
 export const validateQRCode = authenticatedAction(
   validateQRCodeSchema,
-  async (data) => {
+  async (data: z.infer<typeof validateQRCodeSchema>) => {
     const result = await qrCodeService.validateQRCode(
       data.qrData,
       data.signature,
@@ -58,7 +58,7 @@ const recordAttendanceSchema = z.object({
 
 export const recordAttendance = authenticatedAction(
   recordAttendanceSchema,
-  async (data) => {
+  async (data: z.infer<typeof recordAttendanceSchema>) => {
     const response = await qrCodeService.recordAttendance(data);
     return { success: true, data: response };
   }
@@ -73,7 +73,7 @@ const getAttendanceHistorySchema = z.object({
 
 export const getAttendanceHistory = authenticatedAction(
   getAttendanceHistorySchema,
-  async (filter) => {
+  async (filter: z.infer<typeof getAttendanceHistorySchema>) => {
     const history = await qrCodeService.getAttendanceHistory(filter);
     return { success: true, data: history };
   }
@@ -152,7 +152,7 @@ const updateLocationSettingsSchema = z.object({
 
 export const updateLocationSettings = authenticatedAction(
   updateLocationSettingsSchema,
-  async (data) => {
+  async (data: z.infer<typeof updateLocationSettingsSchema>) => {
     const settings = await qrCodeService.updateLocationSettings(data);
     return { success: true, data: settings };
   }

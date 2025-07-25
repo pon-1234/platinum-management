@@ -78,7 +78,9 @@ export function IdVerificationList({ customerId }: IdVerificationListProps) {
 
       setVerifications(data);
     } catch (error) {
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
       alert("データの取得に失敗しました");
     } finally {
       setLoading(false);

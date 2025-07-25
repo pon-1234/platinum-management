@@ -66,7 +66,9 @@ export default function InventoryPage() {
       }
     } catch (error) {
       toast.error("在庫データの取得に失敗しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     } finally {
       setIsLoading(false);
     }

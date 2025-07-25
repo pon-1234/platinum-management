@@ -33,7 +33,9 @@ export default function AttendancePage() {
       const data = await attendanceService.getAttendanceDashboard();
       setDashboardData(data);
     } catch (error) {
-      console.error("ダッシュボードデータの読み込みに失敗しました:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("ダッシュボードデータの読み込みに失敗しました:", error);
+      }
     } finally {
       setIsLoading(false);
     }

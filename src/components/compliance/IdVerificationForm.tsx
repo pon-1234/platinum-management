@@ -85,7 +85,9 @@ export function IdVerificationForm({
 
     if (error) {
       toast.error("画像のアップロードに失敗しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
       return;
     }
 
@@ -115,7 +117,9 @@ export function IdVerificationForm({
       toast.success("身分証確認情報を登録しました");
       onSuccess?.();
     } catch (error) {
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
       toast.error("登録に失敗しました");
     } finally {
       setIsSubmitting(false);

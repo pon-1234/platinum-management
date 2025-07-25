@@ -29,64 +29,78 @@ export class ReservationService {
 
   // Reservation CRUD operations
   async createReservation(data: CreateReservationData): Promise<Reservation> {
-    // Validate input
-    const validatedData = createReservationSchema.parse(data);
+    try {
+      // Validate input
+      const validatedData = createReservationSchema.parse(data);
 
-    // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+      // Get current user's staff ID
+      const staffId = await this.getCurrentStaffId();
 
-    // Check table availability if table is specified
-    if (validatedData.tableId) {
-      const isAvailable = await this.checkTableAvailability(
-        validatedData.tableId,
-        validatedData.reservationDate,
-        validatedData.reservationTime
-      );
+      // Check table availability if table is specified
+      if (validatedData.tableId) {
+        const isAvailable = await this.checkTableAvailability(
+          validatedData.tableId,
+          validatedData.reservationDate,
+          validatedData.reservationTime
+        );
 
-      if (!isAvailable) {
-        throw new Error("指定されたテーブルは予約できません");
+        if (!isAvailable) {
+          throw new Error("指定されたテーブルは予約できません");
+        }
       }
+
+      const { data: reservation, error } = await this.supabase
+        .from("reservations")
+        .insert({
+          customer_id: validatedData.customerId,
+          table_id: validatedData.tableId || null,
+          reservation_date: validatedData.reservationDate,
+          reservation_time: validatedData.reservationTime,
+          number_of_guests: validatedData.numberOfGuests,
+          assigned_cast_id: validatedData.assignedCastId || null,
+          special_requests: validatedData.specialRequests || null,
+          status: validatedData.status || "pending",
+          created_by: staffId,
+          updated_by: staffId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`予約の作成に失敗しました: ${error.message}`);
+      }
+
+      return this.mapToReservation(reservation);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("createReservation failed:", error);
+      }
+      throw error;
     }
-
-    const { data: reservation, error } = await this.supabase
-      .from("reservations")
-      .insert({
-        customer_id: validatedData.customerId,
-        table_id: validatedData.tableId || null,
-        reservation_date: validatedData.reservationDate,
-        reservation_time: validatedData.reservationTime,
-        number_of_guests: validatedData.numberOfGuests,
-        assigned_cast_id: validatedData.assignedCastId || null,
-        special_requests: validatedData.specialRequests || null,
-        status: validatedData.status || "pending",
-        created_by: staffId,
-        updated_by: staffId,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`予約の作成に失敗しました: ${error.message}`);
-    }
-
-    return this.mapToReservation(reservation);
   }
 
   async getReservationById(id: string): Promise<Reservation | null> {
-    const { data, error } = await this.supabase
-      .from("reservations")
-      .select("*")
-      .eq("id", id)
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from("reservations")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return null;
+      if (error) {
+        if (error.code === "PGRST116") {
+          return null;
+        }
+        throw new Error(`予約情報の取得に失敗しました: ${error.message}`);
       }
-      throw new Error(`予約情報の取得に失敗しました: ${error.message}`);
-    }
 
-    return this.mapToReservation(data);
+      return this.mapToReservation(data);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getReservationById failed:", error);
+      }
+      throw error;
+    }
   }
 
   async getReservationWithDetails(
@@ -448,30 +462,37 @@ export class ReservationService {
   }
 
   async getTodaysReservations(): Promise<ReservationWithDetails[]> {
-    const today = new Date().toISOString().split("T")[0];
+    try {
+      const today = new Date().toISOString().split("T")[0];
 
-    const { data, error } = await this.supabase
-      .from("reservations")
-      .select(
+      const { data, error } = await this.supabase
+        .from("reservations")
+        .select(
+          `
+          *,
+          customer:customers(id, name, phone_number),
+          table:tables(*),
+          assigned_cast:staffs!assigned_cast_id(
+            id,
+            full_name,
+            casts_profile!casts_profile_staff_id_fkey(stage_name)
+          )
         `
-        *,
-        customer:customers(id, name, phone_number),
-        table:tables(*),
-        assigned_cast:staffs!assigned_cast_id(
-          id,
-          full_name,
-          casts_profile!casts_profile_staff_id_fkey(stage_name)
         )
-      `
-      )
-      .eq("reservation_date", today)
-      .order("reservation_time", { ascending: true });
+        .eq("reservation_date", today)
+        .order("reservation_time", { ascending: true });
 
-    if (error) {
-      throw new Error(`本日の予約取得に失敗しました: ${error.message}`);
+      if (error) {
+        throw new Error(`本日の予約取得に失敗しました: ${error.message}`);
+      }
+
+      return data.map((item) => this.mapToReservationWithDetails(item));
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getTodaysReservations failed:", error);
+      }
+      throw error;
     }
-
-    return data.map((item) => this.mapToReservationWithDetails(item));
   }
 
   // Helper methods
@@ -480,19 +501,39 @@ export class ReservationService {
   }
 
   private async getCurrentStaffId(): Promise<string | null> {
-    const {
-      data: { user },
-    } = await this.supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await this.supabase.auth.getUser();
 
-    if (!user) return null;
+      if (authError || !user) {
+        if (authError && process.env.NODE_ENV === "development") {
+          console.error("Failed to get authenticated user:", authError);
+        }
+        return null;
+      }
 
-    const { data: staff } = await this.supabase
-      .from("staffs")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
+      const { data: staff, error } = await this.supabase
+        .from("staffs")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
-    return staff?.id || null;
+      if (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to get staff id:", error);
+        }
+        return null;
+      }
+
+      return staff?.id || null;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getCurrentStaffId failed:", error);
+      }
+      return null;
+    }
   }
 
   private mapToReservation(

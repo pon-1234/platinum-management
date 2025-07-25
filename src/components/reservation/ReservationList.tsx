@@ -42,7 +42,9 @@ export function ReservationList({
 
       setReservations(data);
     } catch (error) {
-      console.error("Failed to load reservations:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load reservations:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +57,9 @@ export function ReservationList({
       await reservationService.checkInReservation(reservation.id, tableId);
       await loadReservations();
     } catch (error) {
-      console.error("Failed to check in reservation:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to check in reservation:", error);
+      }
       toast.error("チェックインに失敗しました");
     }
   };
@@ -68,7 +72,9 @@ export function ReservationList({
       await reservationService.cancelReservation(reservation.id, reason);
       await loadReservations();
     } catch (error) {
-      console.error("Failed to cancel reservation:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to cancel reservation:", error);
+      }
       toast.error("キャンセルに失敗しました");
     }
   };

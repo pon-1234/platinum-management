@@ -68,7 +68,9 @@ export async function getUnregisteredStaff(
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error("Authentication error:", authError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Authentication error:", authError);
+      }
       throw new Error("認証が必要です");
     }
 
@@ -80,7 +82,9 @@ export async function getUnregisteredStaff(
     });
 
     if (error) {
-      console.error("Server-side error:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Server-side error:", error);
+      }
       throw new Error(`未登録スタッフの取得に失敗しました: ${error.message}`);
     }
 
@@ -106,7 +110,9 @@ export async function getUnregisteredStaff(
 
     return { data: staffList, totalCount, hasMore };
   } catch (error) {
-    console.error("Failed to get unregistered staff:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Failed to get unregistered staff:", error);
+    }
     throw error instanceof Error
       ? error
       : new Error("未登録スタッフの取得に失敗しました");

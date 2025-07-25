@@ -223,7 +223,9 @@ export class ShiftTemplateService extends AttendanceBaseService {
     const { data, error } = await query;
 
     if (error) {
-      console.error("テンプレート名重複チェックエラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("テンプレート名重複チェックエラー:", error);
+      }
       return false;
     }
 

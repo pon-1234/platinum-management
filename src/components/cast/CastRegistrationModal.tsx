@@ -79,7 +79,9 @@ export function CastRegistrationModal({
           setAvailableStaff(staff);
         })
         .catch((error) => {
-          console.error("Failed to load available staff:", error);
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to load available staff:", error);
+          }
           form.setError("root", {
             message: "スタッフ情報の読み込みに失敗しました",
           });
@@ -110,7 +112,9 @@ export function CastRegistrationModal({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Failed to register cast:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to register cast:", error);
+      }
       form.setError("root", {
         message: "キャストの登録に失敗しました",
       });

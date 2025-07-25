@@ -10,8 +10,28 @@ export abstract class BaseService {
   private _cacheExpiry: number = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分間キャッシュ
 
+  // Permission caching
+  private _permissionCache = new Map<
+    string,
+    { result: boolean; expiry: number }
+  >();
+  private readonly PERMISSION_CACHE_DURATION = 2 * 60 * 1000; // 2分間キャッシュ
+
+  // Track all instances for global cache clearing
+  private static instances: BaseService[] = [];
+
+  /**
+   * Clear caches across all service instances (for sign out)
+   */
+  static clearAllInstanceCaches(): void {
+    BaseService.instances.forEach((instance) => {
+      instance.clearAllCaches();
+    });
+  }
+
   constructor() {
     this.supabase = createClient();
+    BaseService.instances.push(this);
   }
 
   /**
@@ -50,7 +70,10 @@ export abstract class BaseService {
       .single();
 
     if (error) {
-      console.error("Failed to fetch staff ID from database:", error);
+      // Log error to monitoring service in production
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to fetch staff ID from database:", error);
+      }
       return null;
     }
 
@@ -72,6 +95,21 @@ export abstract class BaseService {
   }
 
   /**
+   * パーミッションキャッシュをクリアする（サインアウト時や権限変更時に使用）
+   */
+  protected clearPermissionCache(): void {
+    this._permissionCache.clear();
+  }
+
+  /**
+   * 全てのキャッシュをクリアする
+   */
+  protected clearAllCaches(): void {
+    this.clearStaffIdCache();
+    this.clearPermissionCache();
+  }
+
+  /**
    * Check if the current user has permission for a resource and action
    * Note: This is a client-side check. Real permission enforcement happens via RLS on the server
    * @param resource The resource to check permission for
@@ -83,15 +121,42 @@ export abstract class BaseService {
     action: string
   ): Promise<boolean> {
     try {
+      const user = (await this.supabase.auth.getUser()).data.user;
+      if (!user) {
+        return false;
+      }
+
+      // Create cache key
+      const cacheKey = `${user.id}:${resource}:${action}`;
+      const now = Date.now();
+
+      // Check cache first
+      const cached = this._permissionCache.get(cacheKey);
+      if (cached && cached.expiry > now) {
+        return cached.result;
+      }
+
+      // Fetch from database
       const { data } = await this.supabase.rpc("has_permission", {
-        user_id: (await this.supabase.auth.getUser()).data.user?.id,
+        user_id: user.id,
         resource,
         action,
       });
 
-      return data || false;
+      const result = data || false;
+
+      // Cache the result
+      this._permissionCache.set(cacheKey, {
+        result,
+        expiry: now + this.PERMISSION_CACHE_DURATION,
+      });
+
+      return result;
     } catch (error) {
-      console.error("Permission check failed:", error);
+      // Log error to monitoring service in production
+      if (process.env.NODE_ENV === "development") {
+        console.error("Permission check failed:", error);
+      }
       return false;
     }
   }
@@ -150,7 +215,10 @@ export abstract class BaseService {
     error: unknown,
     defaultMessage = "操作に失敗しました"
   ): never {
-    console.error("Database error details:", error);
+    // Log error to monitoring service in production
+    if (process.env.NODE_ENV === "development") {
+      console.error("Database error details:", error);
+    }
     const message = this.handleDatabaseError(error, defaultMessage);
 
     // より詳細なエラー情報を含む

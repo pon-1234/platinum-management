@@ -33,14 +33,7 @@ export async function middleware(request: NextRequest) {
   // Try to get user session
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser();
-
-  console.log(`Middleware: User check for ${request.nextUrl.pathname}:`, {
-    userId: user?.id,
-    email: user?.email,
-    error: userError?.message,
-  });
 
   // Public routes that don't require authentication
   const publicRoutes = ["/", "/auth/login", "/auth/signup"];
@@ -48,7 +41,6 @@ export async function middleware(request: NextRequest) {
 
   // If user is not authenticated and trying to access protected route
   if (!user && !isPublicRoute) {
-    console.log(`Middleware: No user found, redirecting to login`);
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
@@ -64,24 +56,12 @@ export async function middleware(request: NextRequest) {
 
   // For authenticated users, we need to check permissions
   if (user && !isPublicRoute) {
-    console.log(
-      `Middleware: Checking permissions for user ${user.id} on ${request.nextUrl.pathname}`
-    );
-
-    console.log("Middleware: Using security definer function for role check");
-
     // Get user's role using the security definer function to avoid RLS recursion
     const { data: roleData, error: roleError } = await supabase.rpc(
       "get_current_user_staff_role"
     );
 
-    console.log(`Middleware: Role data for user ${user.id}:`, {
-      roleData,
-      roleError,
-    });
-
     if (roleError || !roleData) {
-      console.log(`Middleware: No role found for user ${user.id}, signing out`);
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }

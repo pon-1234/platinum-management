@@ -32,7 +32,9 @@ export default function CustomersPage() {
       setCustomers(data);
     } catch (err) {
       setError("顧客データの取得に失敗しました");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +78,9 @@ export default function CustomersPage() {
       setEditingCustomer(null);
     } catch (err) {
       setError("保存に失敗しました");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error(err);
+      }
     } finally {
       setIsSubmitting(false);
     }

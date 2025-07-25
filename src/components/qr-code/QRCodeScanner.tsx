@@ -122,7 +122,9 @@ export function QRCodeScanner({
         }
       }
     } catch (err) {
-      console.error("QRコードスキャンエラー:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("QRコードスキャンエラー:", err);
+      }
     }
 
     // 継続的にスキャン

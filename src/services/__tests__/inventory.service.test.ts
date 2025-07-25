@@ -18,12 +18,12 @@ vi.mock("@/lib/supabase/client", () => ({
 
 describe("InventoryService", () => {
   let service: InventoryService;
-  let mockSupabase: any;
+  let mockSupabase: unknown;
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = new InventoryService();
-    mockSupabase = (service as any).supabase;
+    mockSupabase = (service as { supabase: unknown }).supabase;
   });
 
   describe("Product Management", () => {
@@ -170,9 +170,9 @@ describe("InventoryService", () => {
           insert: vi.fn().mockReturnValue(mockQuery),
         });
 
-        await expect(service.createProduct({} as any)).rejects.toThrow(
-          "商品作成エラー: Database error"
-        );
+        await expect(
+          service.createProduct({} as CreateProductData)
+        ).rejects.toThrow("商品作成エラー: Database error");
       });
     });
 
@@ -431,7 +431,7 @@ describe("InventoryService", () => {
           { stock_quantity: 50, cost: 300 },
         ];
 
-        mockSupabase.from = vi.fn().mockImplementation((table) => ({
+        mockSupabase.from = vi.fn().mockImplementation(() => ({
           select: vi.fn().mockImplementation((fields, options) => {
             if (options?.count === "exact" && options?.head === true) {
               return countQuery;

@@ -31,7 +31,9 @@ export function CastDeleteModal({
       await castService.deleteCast(cast.id);
       onSuccess();
     } catch (error) {
-      console.error("Failed to delete cast:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to delete cast:", error);
+      }
       setError(
         "キャストの削除に失敗しました。関連するデータがある場合は削除できません。"
       );

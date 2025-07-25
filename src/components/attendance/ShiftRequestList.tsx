@@ -46,7 +46,9 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
       });
       setRequests(data);
     } catch (error) {
-      console.error("シフト申請の読み込みに失敗しました:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("シフト申請の読み込みに失敗しました:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +88,9 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
       // Reload to get updated data from server
       loadRequests();
     } catch (error) {
-      console.error("承認処理に失敗しました:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("承認処理に失敗しました:", error);
+      }
       toast.error("処理に失敗しました。もう一度お試しください。");
       // Revert optimistic update on error
       setRequests(originalRequests);

@@ -12,10 +12,7 @@ import { CreateReservationModal } from "@/components/reservation/CreateReservati
 import { ReservationDetailModal } from "@/components/reservation/ReservationDetailModal";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { format } from "date-fns";
-import type {
-  Reservation,
-  ReservationWithDetails,
-} from "@/types/reservation.types";
+import type { ReservationWithDetails } from "@/types/reservation.types";
 
 type ViewMode = "list" | "calendar";
 

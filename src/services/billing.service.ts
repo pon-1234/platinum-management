@@ -611,7 +611,9 @@ export class BillingService extends BaseService {
       .lte("visit.check_in_at", endDate);
 
     if (error) {
-      console.error("Failed to fetch order items with details:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to fetch order items with details:", error);
+      }
       return [];
     }
 
@@ -765,7 +767,9 @@ export class BillingService extends BaseService {
 
       return dailyReport;
     } catch (error) {
-      console.error("Failed to perform daily closing:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to perform daily closing:", error);
+      }
       throw new Error("レジ締め処理に失敗しました");
     }
   }
@@ -784,7 +788,9 @@ export class BillingService extends BaseService {
       .eq("status", "active"); // Only update if still active
 
     if (error) {
-      console.error(`Failed to finalize visit ${visitId}:`, error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(`Failed to finalize visit ${visitId}:`, error);
+      }
       throw new Error(`来店記録 ${visitId} の確定に失敗しました`);
     }
   }
@@ -814,18 +820,24 @@ export class BillingService extends BaseService {
           error.message.includes("relation") ||
           error.message.includes("does not exist")
         ) {
-          console.warn(
-            "Daily closings table not available, skipping record creation:",
-            error.message
-          );
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "Daily closings table not available, skipping record creation:",
+              error.message
+            );
+          }
         } else {
-          console.error("Failed to create daily closing record:", error);
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to create daily closing record:", error);
+          }
           // Don't throw here to avoid breaking the main closing process
         }
       }
     } catch (error) {
       // Log unexpected errors as warnings to avoid breaking the main process
-      console.warn("Unexpected error creating daily closing record:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Unexpected error creating daily closing record:", error);
+      }
     }
   }
 
@@ -843,7 +855,7 @@ export class BillingService extends BaseService {
       }
 
       return !!data;
-    } catch (error) {
+    } catch {
       // If table doesn't exist, consider as not closed
       return false;
     }
@@ -858,7 +870,9 @@ export class BillingService extends BaseService {
       .lt("check_in_at", `${date}T23:59:59.999Z`);
 
     if (error) {
-      console.error("Failed to check open visits:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to check open visits:", error);
+      }
       return 0;
     }
 

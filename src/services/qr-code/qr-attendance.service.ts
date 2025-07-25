@@ -116,7 +116,9 @@ export class QRAttendanceService extends BaseService {
         staffName: staffId, // スタッフ名の代わりにIDを使用
       };
     } catch (error) {
-      console.error("出勤記録エラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("出勤記録エラー:", error);
+      }
 
       // エラーログ記録
       if (request.qrData) {
@@ -136,7 +138,9 @@ export class QRAttendanceService extends BaseService {
             });
           }
         } catch (logError) {
-          console.error("エラーログ記録失敗:", logError);
+          if (process.env.NODE_ENV === "development") {
+            console.error("エラーログ記録失敗:", logError);
+          }
         }
       }
 
@@ -279,7 +283,9 @@ export class QRAttendanceService extends BaseService {
       .limit(1);
 
     if (error) {
-      console.error("重複チェックエラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("重複チェックエラー:", error);
+      }
       return false;
     }
 

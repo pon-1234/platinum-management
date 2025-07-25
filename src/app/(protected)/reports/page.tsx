@@ -58,7 +58,9 @@ export default function ReportsPage() {
       setInventoryReport(inventoryData);
     } catch (error) {
       toast.error("レポートデータの取得に失敗しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     } finally {
       setIsLoading(false);
     }

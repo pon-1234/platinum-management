@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { useCastPerformance } from "@/hooks/useCastPerformance";

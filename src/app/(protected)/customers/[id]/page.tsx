@@ -65,7 +65,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setVisits(visitsData);
     } catch (err) {
       setError("データの取得に失敗しました");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +92,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setIsEditing(false);
     } catch (err) {
       setError("保存に失敗しました");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error(err);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -25,16 +25,20 @@ export async function getUserRole(userId: string): Promise<string | null> {
     );
 
     if (roleError) {
-      console.error("RPC failed, denying access for security:", {
-        userId,
-        roleError,
-      });
+      if (process.env.NODE_ENV === "development") {
+        console.error("RPC failed, denying access for security:", {
+          userId,
+          roleError,
+        });
+      }
       return null;
     }
 
     return roleData;
   } catch (error) {
-    console.error("Unexpected error getting user role:", { userId, error });
+    if (process.env.NODE_ENV === "development") {
+      console.error("Unexpected error getting user role:", { userId, error });
+    }
     return null;
   }
 }

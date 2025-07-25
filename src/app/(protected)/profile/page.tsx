@@ -80,7 +80,9 @@ export default function ProfilePage() {
           });
         }
       } catch (error) {
-        console.error("Failed to load profile:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to load profile:", error);
+        }
         toast.error("プロフィールの読み込みに失敗しました");
       } finally {
         setIsLoadingProfile(false);
@@ -112,7 +114,9 @@ export default function ProfilePage() {
         toast.error(result.error || "プロフィールの更新に失敗しました");
       }
     } catch (error) {
-      console.error("Profile update failed:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Profile update failed:", error);
+      }
       toast.error("プロフィールの更新に失敗しました");
     } finally {
       setIsLoading(false);
@@ -130,7 +134,9 @@ export default function ProfilePage() {
         toast.error(result.error || "パスワードの変更に失敗しました");
       }
     } catch (error) {
-      console.error("Password update failed:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Password update failed:", error);
+      }
       toast.error("パスワードの変更に失敗しました");
     } finally {
       setIsLoading(false);

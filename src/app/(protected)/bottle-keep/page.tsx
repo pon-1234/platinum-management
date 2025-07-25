@@ -52,7 +52,7 @@ export default function BottleKeepPage() {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, []); // loadInitialData doesn't depend on any external variables
 
   const loadInitialData = async () => {
     try {
@@ -74,7 +74,9 @@ export default function BottleKeepPage() {
       }
     } catch (error) {
       toast.error("初期データの読み込みに失敗しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     }
   };
 
@@ -90,7 +92,9 @@ export default function BottleKeepPage() {
       }
     } catch (error) {
       toast.error("データの取得中にエラーが発生しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -114,12 +118,15 @@ export default function BottleKeepPage() {
       }
     } catch (error) {
       toast.error("エラーが発生しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     }
   };
 
   const handleUseBottleKeep = async (data: UseBottleKeepRequest) => {
     try {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const result = await useBottleKeep(data);
       if (result.success) {
         toast.success("ボトルキープの使用を記録しました");
@@ -131,7 +138,9 @@ export default function BottleKeepPage() {
       }
     } catch (error) {
       toast.error("エラーが発生しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     }
   };
 

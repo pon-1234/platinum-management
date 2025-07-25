@@ -85,7 +85,7 @@ export function BottleKeepDashboard({
       } else {
         toast.error(result.error || "アラート送信に失敗しました");
       }
-    } catch (error) {
+    } catch {
       toast.error("アラート送信中にエラーが発生しました");
     } finally {
       setSendingAlerts(false);
@@ -106,7 +106,7 @@ export function BottleKeepDashboard({
       } else {
         toast.error(result.error || "ステータス更新に失敗しました");
       }
-    } catch (error) {
+    } catch {
       toast.error("ステータス更新中にエラーが発生しました");
     } finally {
       setUpdatingExpired(false);

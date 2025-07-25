@@ -50,11 +50,11 @@ export default function ProductSelectModal({
     if (isOpen) {
       loadProducts();
     }
-  }, [isOpen]);
+  }, [isOpen]); // loadProducts doesn't depend on any external variables
 
   useEffect(() => {
     filterProducts();
-  }, [searchQuery, selectedCategory, products]);
+  }, [searchQuery, selectedCategory, products]); // filterProducts depends on these state variables
 
   const loadProducts = async () => {
     try {

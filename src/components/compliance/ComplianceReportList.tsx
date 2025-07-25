@@ -44,7 +44,9 @@ export function ComplianceReportList() {
       });
       setReports(data as unknown as ComplianceReportData[]);
     } catch (error) {
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
       alert("データの取得に失敗しました");
     } finally {
       setLoading(false);
@@ -113,7 +115,9 @@ export function ComplianceReportList() {
       alert("レポートを生成しました");
       loadReports();
     } catch (error) {
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
       alert("レポートの生成に失敗しました");
     }
   };

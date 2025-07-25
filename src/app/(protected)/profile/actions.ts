@@ -65,14 +65,18 @@ export async function updateProfile(data: ProfileUpdateData) {
       .eq("user_id", user.id);
 
     if (staffError) {
-      console.error("Failed to update staff profile:", staffError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to update staff profile:", staffError);
+      }
       // Continue even if staff update fails
     }
 
     revalidatePath("/profile");
     return { success: true };
   } catch (error) {
-    console.error("Profile update error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Profile update error:", error);
+    }
     return { success: false, error: "プロフィールの更新に失敗しました" };
   }
 }
@@ -102,7 +106,9 @@ export async function updatePassword(data: PasswordUpdateData) {
 
     return { success: true };
   } catch (error) {
-    console.error("Password update error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Password update error:", error);
+    }
     return { success: false, error: "パスワードの更新に失敗しました" };
   }
 }
@@ -129,7 +135,9 @@ export async function getUserProfile() {
 
     if (staffError && staffError.code !== "PGRST116") {
       // PGRST116 = no rows returned
-      console.error("Failed to get staff profile:", staffError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to get staff profile:", staffError);
+      }
     }
 
     // Merge auth metadata and staff data
@@ -146,7 +154,9 @@ export async function getUserProfile() {
 
     return { success: true, data: profile };
   } catch (error) {
-    console.error("Get profile error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Get profile error:", error);
+    }
     return { success: false, error: "プロフィールの取得に失敗しました" };
   }
 }

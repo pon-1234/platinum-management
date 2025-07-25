@@ -12,7 +12,7 @@ const searchCustomersSchema = z.object({
 
 export const searchCustomers = authenticatedAction(
   searchCustomersSchema,
-  async (params) => {
+  async (params: z.infer<typeof searchCustomersSchema>) => {
     const customers = await customerService.searchCustomers(params);
     return { success: true, data: customers };
   }

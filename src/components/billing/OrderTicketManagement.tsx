@@ -7,8 +7,6 @@ import { tableService } from "@/services/table.service";
 import type {
   Visit,
   VisitWithDetails,
-  OrderItem,
-  CreateOrderItemData,
   CreateVisitData,
   BillCalculation,
 } from "@/types/billing.types";

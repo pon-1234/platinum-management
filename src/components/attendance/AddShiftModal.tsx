@@ -85,7 +85,9 @@ export function AddShiftModal({
 
       setStaffOptions(staffList);
     } catch (error) {
-      console.error("スタッフ一覧の取得に失敗しました:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("スタッフ一覧の取得に失敗しました:", error);
+      }
       setErrors({
         submit:
           error instanceof Error
@@ -156,7 +158,9 @@ export function AddShiftModal({
       });
       setErrors({});
     } catch (error) {
-      console.error("シフト追加エラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("シフト追加エラー:", error);
+      }
       setErrors({
         submit:
           error instanceof Error ? error.message : "シフトの追加に失敗しました",

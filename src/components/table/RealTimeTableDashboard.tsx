@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { tableService } from "@/services/table.service";
 import type { Table, TableStatus } from "@/types/reservation.types";
 import {
@@ -98,7 +98,7 @@ export default function RealTimeTableDashboard({
       }
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, []);
+  }, []); // Effect only runs once on mount - state setters are stable, no dependencies needed
 
   const handleStatusChange = async (
     tableId: string,

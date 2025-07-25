@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type { User, UserRole, AuthResult } from "@/types/auth.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { CacheUtils } from "@/lib/cache-utils";
 
 type PermissionMatrix = {
   [role in UserRole]: {
@@ -75,58 +76,84 @@ export class AuthService {
   }
 
   async signOut(): Promise<void> {
-    const { error } = await this.supabase.auth.signOut();
-    if (error) {
-      throw new Error(error.message);
+    try {
+      const { error } = await this.supabase.auth.signOut();
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Clear all service caches after successful sign out
+      CacheUtils.clearAllCaches();
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("signOut failed:", error);
+      }
+      throw error;
     }
   }
 
   async getCurrentUser(): Promise<User | null> {
-    const {
-      data: { user },
-      error,
-    } = await this.supabase.auth.getUser();
-
-    if (error || !user) {
-      return null;
-    }
-
-    // Get role using the RPC function to align with middleware
     try {
-      const { data: roleData, error: roleError } = await this.supabase.rpc(
-        "get_current_user_staff_role"
-      );
+      const {
+        data: { user },
+        error,
+      } = await this.supabase.auth.getUser();
 
-      if (roleError || !roleData) {
-        console.error("Failed to get user role, signing out:", roleError);
-        await this.signOut();
+      if (error || !user) {
+        if (error && process.env.NODE_ENV === "development") {
+          console.error("Failed to get user:", error);
+        }
         return null;
       }
 
-      const role = roleData as UserRole;
+      // Get role using the RPC function to align with middleware
+      try {
+        const { data: roleData, error: roleError } = await this.supabase.rpc(
+          "get_current_user_staff_role"
+        );
 
-      // We need staffId for some operations, let's get it from the staffs table
-      // This assumes the RLS for staffs table allows the user to read their own record.
-      const { data: staff, error: staffError } = await this.supabase
-        .from("staffs")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
+        if (roleError || !roleData) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to get user role, signing out:", roleError);
+          }
+          await this.signOut();
+          return null;
+        }
 
-      if (staffError) {
-        console.error("Failed to get staff id:", staffError);
-        // Decide if you want to sign out here as well, or proceed without staffId
+        const role = roleData as UserRole;
+
+        // We need staffId for some operations, let's get it from the staffs table
+        // This assumes the RLS for staffs table allows the user to read their own record.
+        const { data: staff, error: staffError } = await this.supabase
+          .from("staffs")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (staffError) {
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to get staff id:", staffError);
+          }
+          // Decide if you want to sign out here as well, or proceed without staffId
+        }
+
+        return {
+          id: user.id,
+          email: user.email!,
+          role,
+          staffId: staff?.id,
+        };
+      } catch (e) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Exception when getting user role:", e);
+        }
+        await this.signOut();
+        return null;
       }
-
-      return {
-        id: user.id,
-        email: user.email!,
-        role,
-        staffId: staff?.id,
-      };
-    } catch (e) {
-      console.error("Exception when getting user role:", e);
-      await this.signOut();
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getCurrentUser failed:", error);
+      }
       return null;
     }
   }

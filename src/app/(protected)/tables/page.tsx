@@ -40,7 +40,9 @@ export default function TablesPage() {
       const allTables = await tableService.searchTables(searchParams);
       setTables(allTables);
     } catch (error) {
-      console.error("Failed to load tables:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load tables:", error);
+      }
     } finally {
       setIsLoading(false);
     }

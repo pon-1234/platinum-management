@@ -50,7 +50,9 @@ export default function BillingPage() {
       }
     } catch (err) {
       setError("請求データの取得に失敗しました");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +96,9 @@ export default function BillingPage() {
         err instanceof Error ? err.message : "レジ締め処理に失敗しました";
       setError(errorMessage);
       toast.error(errorMessage);
-      console.error(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }

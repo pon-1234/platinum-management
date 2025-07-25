@@ -78,7 +78,9 @@ export default function ShiftRequestForm({
       onRequestCreated?.();
       toast.success("シフト申請を提出しました");
     } catch (error) {
-      console.error("Failed to create shift request:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to create shift request:", error);
+      }
       toast.error("シフト申請の提出に失敗しました");
     } finally {
       setIsSubmitting(false);

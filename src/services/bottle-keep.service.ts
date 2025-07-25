@@ -1,6 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database.types";
+import { BaseService } from "./base.service";
 import type {
   BottleKeep,
   BottleKeepDetail,
@@ -20,175 +18,203 @@ import {
   type AlertNotificationData,
 } from "./notification.service";
 
-export class BottleKeepService {
-  private supabase: SupabaseClient<Database>;
-
+export class BottleKeepService extends BaseService {
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   // ボトルキープ一覧取得
   async getBottleKeeps(
     filter?: BottleKeepSearchFilter
   ): Promise<BottleKeepDetail[]> {
-    let query = this.supabase.from("bottle_keeps").select(`
-        *,
-        customer:customers(id, name, phone_number),
-        product:products(id, name, category, price),
-        usage_history:bottle_keep_usage(
-          id,
-          amount_used,
-          notes,
-          created_at,
-          visit:visits(id, check_in_at)
-        )
-      `);
+    try {
+      let query = this.supabase.from("bottle_keeps").select(`
+          *,
+          customer:customers(id, name, phone_number),
+          product:products(id, name, category, price),
+          usage_history:bottle_keep_usage(
+            id,
+            amount_used,
+            notes,
+            created_at,
+            visit:visits(id, check_in_at)
+          )
+        `);
 
-    if (filter?.customerId) {
-      query = query.eq("customer_id", filter.customerId);
-    }
-
-    if (filter?.productId) {
-      query = query.eq("product_id", filter.productId);
-    }
-
-    if (filter?.status) {
-      query = query.eq("status", filter.status);
-    }
-
-    if (filter?.storageLocation) {
-      query = query.eq("storage_location", filter.storageLocation);
-    }
-
-    if (filter?.expiringWithin) {
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + filter.expiringWithin);
-      query = query.lte("expiry_date", targetDate.toISOString().split("T")[0]);
-    }
-
-    if (filter?.lowAmount) {
-      query = query.lt("remaining_amount", 0.25); // 25%以下
-    }
-
-    if (filter?.searchTerm) {
-      // 顧客名または商品名で検索をデータベース側で実行
-      const searchPattern = `%${filter.searchTerm}%`;
-      query = query.or(
-        `customer.name.ilike.${searchPattern},product.name.ilike.${searchPattern}`
-      );
-    }
-
-    if (filter?.sortBy) {
-      const order = filter.sortOrder || "asc";
-      switch (filter.sortBy) {
-        case "expiryDate":
-          query = query.order("expiry_date", { ascending: order === "asc" });
-          break;
-        case "openedDate":
-          query = query.order("opened_date", { ascending: order === "asc" });
-          break;
-        default:
-          query = query.order("created_at", { ascending: false });
+      if (filter?.customerId) {
+        query = query.eq("customer_id", filter.customerId);
       }
-    } else {
-      query = query.order("created_at", { ascending: false });
+
+      if (filter?.productId) {
+        query = query.eq("product_id", filter.productId);
+      }
+
+      if (filter?.status) {
+        query = query.eq("status", filter.status);
+      }
+
+      if (filter?.storageLocation) {
+        query = query.eq("storage_location", filter.storageLocation);
+      }
+
+      if (filter?.expiringWithin) {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + filter.expiringWithin);
+        query = query.lte(
+          "expiry_date",
+          targetDate.toISOString().split("T")[0]
+        );
+      }
+
+      if (filter?.lowAmount) {
+        query = query.lt("remaining_amount", 0.25); // 25%以下
+      }
+
+      if (filter?.searchTerm) {
+        // 顧客名または商品名で検索をデータベース側で実行
+        const searchPattern = `%${filter.searchTerm}%`;
+        query = query.or(
+          `customer.name.ilike.${searchPattern},product.name.ilike.${searchPattern}`
+        );
+      }
+
+      if (filter?.sortBy) {
+        const order = filter.sortOrder || "asc";
+        switch (filter.sortBy) {
+          case "expiryDate":
+            query = query.order("expiry_date", { ascending: order === "asc" });
+            break;
+          case "openedDate":
+            query = query.order("opened_date", { ascending: order === "asc" });
+            break;
+          default:
+            query = query.order("created_at", { ascending: false });
+        }
+      } else {
+        query = query.order("created_at", { ascending: false });
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "ボトルキープ取得に失敗しました")
+        );
+      }
+
+      let results = (data || []) as BottleKeepDetail[];
+
+      // 使用合計量を計算
+      results = results.map((bottle) => ({
+        ...bottle,
+        total_used:
+          bottle.usage_history?.reduce(
+            (sum, usage) => sum + usage.amount_used,
+            0
+          ) || 0,
+      }));
+
+      return results;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getBottleKeeps failed:", error);
+      }
+      throw error;
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`ボトルキープ取得エラー: ${error.message}`);
-    }
-
-    let results = (data || []) as BottleKeepDetail[];
-
-    // 使用合計量を計算
-    results = results.map((bottle) => ({
-      ...bottle,
-      total_used:
-        bottle.usage_history?.reduce(
-          (sum, usage) => sum + usage.amount_used,
-          0
-        ) || 0,
-    }));
-
-    return results;
   }
 
   // ボトルキープ詳細取得
   async getBottleKeepById(id: string): Promise<BottleKeepDetail | null> {
-    const { data, error } = await this.supabase
-      .from("bottle_keeps")
-      .select(
+    try {
+      const { data, error } = await this.supabase
+        .from("bottle_keeps")
+        .select(
+          `
+          *,
+          customer:customers(id, name, phone_number, line_id),
+          product:products(id, name, category, price),
+          usage_history:bottle_keep_usage(
+            id,
+            amount_used,
+            notes,
+            created_at,
+            created_by,
+            visit:visits(id, check_in_at, check_out_at),
+            staff:staffs(full_name)
+          )
         `
-        *,
-        customer:customers(id, name, phone_number, line_id),
-        product:products(id, name, category, price),
-        usage_history:bottle_keep_usage(
-          id,
-          amount_used,
-          notes,
-          created_at,
-          created_by,
-          visit:visits(id, check_in_at, check_out_at),
-          staff:staffs(full_name)
         )
-      `
-      )
-      .eq("id", id)
-      .single();
+        .eq("id", id)
+        .single();
 
-    if (error) {
-      if (error.code === "PGRST116") return null;
-      throw new Error(`ボトルキープ取得エラー: ${error.message}`);
+      if (error) {
+        if (error.code === "PGRST116") return null;
+        throw new Error(
+          this.handleDatabaseError(error, "ボトルキープ取得に失敗しました")
+        );
+      }
+
+      const bottle = data as BottleKeepDetail;
+      bottle.total_used =
+        bottle.usage_history?.reduce(
+          (sum, usage) => sum + usage.amount_used,
+          0
+        ) || 0;
+
+      return bottle;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getBottleKeepById failed:", error);
+      }
+      throw error;
     }
-
-    const bottle = data as BottleKeepDetail;
-    bottle.total_used =
-      bottle.usage_history?.reduce(
-        (sum, usage) => sum + usage.amount_used,
-        0
-      ) || 0;
-
-    return bottle;
   }
 
   // ボトルキープ作成
   async createBottleKeep(data: CreateBottleKeepRequest): Promise<BottleKeep> {
-    // ボトル番号の自動生成（指定されていない場合）
-    let bottleNumber = data.bottleNumber;
-    if (!bottleNumber) {
-      const count = await this.getBottleKeepCount();
-      bottleNumber = `BK${String(count + 1).padStart(6, "0")}`;
+    try {
+      // ボトル番号の自動生成（指定されていない場合）
+      let bottleNumber = data.bottleNumber;
+      if (!bottleNumber) {
+        const count = await this.getBottleKeepCount();
+        bottleNumber = `BK${String(count + 1).padStart(6, "0")}`;
+      }
+
+      // 期限日の自動設定（指定されていない場合、開封から6ヶ月後）
+      let expiryDate = data.expiryDate;
+      if (!expiryDate) {
+        const expiry = new Date(data.openedDate);
+        expiry.setMonth(expiry.getMonth() + 6);
+        expiryDate = expiry.toISOString().split("T")[0];
+      }
+
+      const { data: bottle, error } = await this.supabase
+        .from("bottle_keeps")
+        .insert({
+          customer_id: data.customerId,
+          product_id: data.productId,
+          opened_date: data.openedDate,
+          expiry_date: expiryDate,
+          bottle_number: bottleNumber,
+          storage_location: data.storageLocation,
+          notes: data.notes,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "ボトルキープ作成に失敗しました")
+        );
+      }
+
+      return bottle;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("createBottleKeep failed:", error);
+      }
+      throw error;
     }
-
-    // 期限日の自動設定（指定されていない場合、開封から6ヶ月後）
-    let expiryDate = data.expiryDate;
-    if (!expiryDate) {
-      const expiry = new Date(data.openedDate);
-      expiry.setMonth(expiry.getMonth() + 6);
-      expiryDate = expiry.toISOString().split("T")[0];
-    }
-
-    const { data: bottle, error } = await this.supabase
-      .from("bottle_keeps")
-      .insert({
-        customer_id: data.customerId,
-        product_id: data.productId,
-        opened_date: data.openedDate,
-        expiry_date: expiryDate,
-        bottle_number: bottleNumber,
-        storage_location: data.storageLocation,
-        notes: data.notes,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`ボトルキープ作成エラー: ${error.message}`);
-    }
-
-    return bottle;
   }
 
   // ボトルキープ更新
@@ -196,61 +222,79 @@ export class BottleKeepService {
     id: string,
     data: UpdateBottleKeepData
   ): Promise<BottleKeep> {
-    const { data: bottle, error } = await this.supabase
-      .from("bottle_keeps")
-      .update({ ...data })
-      .eq("id", id)
-      .select()
-      .single();
+    try {
+      const { data: bottle, error } = await this.supabase
+        .from("bottle_keeps")
+        .update({ ...data })
+        .eq("id", id)
+        .select()
+        .single();
 
-    if (error) {
-      throw new Error(`ボトルキープ更新エラー: ${error.message}`);
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "ボトルキープ更新に失敗しました")
+        );
+      }
+
+      return bottle;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("updateBottleKeep failed:", error);
+      }
+      throw error;
     }
-
-    return bottle;
   }
 
   // ボトルキープ使用記録
   async useBottleKeep(data: UseBottleKeepRequest): Promise<void> {
-    const bottle = await this.getBottleKeepById(data.bottleKeepId);
-    if (!bottle) {
-      throw new Error("ボトルキープが見つかりません");
+    try {
+      const bottle = await this.getBottleKeepById(data.bottleKeepId);
+      if (!bottle) {
+        throw new Error("ボトルキープが見つかりません");
+      }
+
+      if (bottle.status !== "active") {
+        throw new Error("このボトルキープは使用できません");
+      }
+
+      const newRemainingAmount = bottle.remaining_amount - data.amountUsed;
+      if (newRemainingAmount < 0) {
+        throw new Error("残量が不足しています");
+      }
+
+      // 使用履歴を記録
+      const { error: usageError } = await this.supabase
+        .from("bottle_keep_usage")
+        .insert({
+          bottle_keep_id: data.bottleKeepId,
+          visit_id: data.visitId,
+          amount_used: data.amountUsed,
+          notes: data.notes,
+        });
+
+      if (usageError) {
+        throw new Error(
+          this.handleDatabaseError(usageError, "使用履歴記録に失敗しました")
+        );
+      }
+
+      // 残量を更新
+      const updateData: UpdateBottleKeepData = {
+        remaining_amount: newRemainingAmount,
+      };
+
+      // 完全に消費された場合はステータスを変更
+      if (newRemainingAmount === 0) {
+        updateData.status = "consumed";
+      }
+
+      await this.updateBottleKeep(data.bottleKeepId, updateData);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("useBottleKeep failed:", error);
+      }
+      throw error;
     }
-
-    if (bottle.status !== "active") {
-      throw new Error("このボトルキープは使用できません");
-    }
-
-    const newRemainingAmount = bottle.remaining_amount - data.amountUsed;
-    if (newRemainingAmount < 0) {
-      throw new Error("残量が不足しています");
-    }
-
-    // 使用履歴を記録
-    const { error: usageError } = await this.supabase
-      .from("bottle_keep_usage")
-      .insert({
-        bottle_keep_id: data.bottleKeepId,
-        visit_id: data.visitId,
-        amount_used: data.amountUsed,
-        notes: data.notes,
-      });
-
-    if (usageError) {
-      throw new Error(`使用履歴記録エラー: ${usageError.message}`);
-    }
-
-    // 残量を更新
-    const updateData: UpdateBottleKeepData = {
-      remaining_amount: newRemainingAmount,
-    };
-
-    // 完全に消費された場合はステータスを変更
-    if (newRemainingAmount === 0) {
-      updateData.status = "consumed";
-    }
-
-    await this.updateBottleKeep(data.bottleKeepId, updateData);
   }
 
   // ボトルキープ統計
@@ -506,50 +550,77 @@ export class BottleKeepService {
 
   // 期限切れボトルの自動更新
   async updateExpiredBottles(): Promise<number> {
-    const today = new Date().toISOString().split("T")[0];
+    try {
+      const today = new Date().toISOString().split("T")[0];
 
-    const { data, error } = await this.supabase
-      .from("bottle_keeps")
-      .update({ status: "expired" })
-      .eq("status", "active")
-      .lt("expiry_date", today)
-      .select("id");
+      const { data, error } = await this.supabase
+        .from("bottle_keeps")
+        .update({ status: "expired" })
+        .eq("status", "active")
+        .lt("expiry_date", today)
+        .select("id");
 
-    if (error) {
-      throw new Error(`期限切れボトル更新エラー: ${error.message}`);
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "期限切れボトル更新に失敗しました")
+        );
+      }
+
+      return data?.length || 0;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("updateExpiredBottles failed:", error);
+      }
+      throw error;
     }
-
-    return data?.length || 0;
   }
 
   // ボトルキープ総数取得（ボトル番号生成用）
   private async getBottleKeepCount(): Promise<number> {
-    const { count, error } = await this.supabase
-      .from("bottle_keeps")
-      .select("*", { count: "exact", head: true });
+    try {
+      const { count, error } = await this.supabase
+        .from("bottle_keeps")
+        .select("*", { count: "exact", head: true });
 
-    if (error) {
-      throw new Error(`ボトルキープ数取得エラー: ${error.message}`);
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "ボトルキープ数取得に失敗しました")
+        );
+      }
+
+      return count || 0;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getBottleKeepCount failed:", error);
+      }
+      throw error;
     }
-
-    return count || 0;
   }
 
   // 保管場所一覧取得
   async getStorageLocations(): Promise<string[]> {
-    const { data, error } = await this.supabase
-      .from("bottle_keeps")
-      .select("storage_location")
-      .not("storage_location", "is", null);
+    try {
+      const { data, error } = await this.supabase
+        .from("bottle_keeps")
+        .select("storage_location")
+        .not("storage_location", "is", null);
 
-    if (error) {
-      throw new Error(`保管場所取得エラー: ${error.message}`);
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "保管場所取得に失敗しました")
+        );
+      }
+
+      const locations = [
+        ...new Set(data?.map((d) => d.storage_location).filter(Boolean) || []),
+      ];
+      return locations.sort();
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getStorageLocations failed:", error);
+      }
+      throw error;
     }
-
-    const locations = [
-      ...new Set(data?.map((d) => d.storage_location).filter(Boolean) || []),
-    ];
-    return locations.sort();
   }
 
   // 期限アラート送信機能
@@ -561,7 +632,7 @@ export class BottleKeepService {
       totalAlerts: number;
       successCount: number;
       failedCount: number;
-      results: any[];
+      results: unknown[];
     };
   }> {
     try {
@@ -571,7 +642,9 @@ export class BottleKeepService {
       );
 
       if (error) {
-        console.error("アラート処理エラー:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("アラート処理エラー:", error);
+        }
         // フォールバック: 基本的なアラート取得のみ
         const alerts = await this.getBottleKeepAlerts();
         return {
@@ -626,7 +699,9 @@ export class BottleKeepService {
         notificationResults,
       };
     } catch (error) {
-      console.error("アラート送信エラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("アラート送信エラー:", error);
+      }
       return {
         success: false,
         sentCount: 0,
@@ -641,27 +716,42 @@ export class BottleKeepService {
       const { data, error } = await this.supabase.rpc("get_unsent_alerts");
 
       if (error) {
-        console.error("未送信アラート取得エラー:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("未送信アラート取得エラー:", error);
+        }
         return [];
       }
 
-      return (data || []).map((alert: any) => ({
-        id: `${alert.alert_type}-${alert.bottle_keep_id}`,
-        bottleKeepId: alert.bottle_keep_id,
-        customerName: alert.customer_name,
-        productName: alert.product_name,
-        alertType: alert.alert_type as "expired" | "expiring" | "low_amount",
-        severity:
-          alert.alert_type === "expired" || alert.days_until_expiry <= 3
-            ? "critical"
-            : "warning",
-        message: alert.alert_message,
-        expiryDate: alert.expiry_date,
-        daysUntilExpiry: alert.days_until_expiry,
-        remainingAmount: alert.remaining_amount,
-      }));
+      return (data || []).map(
+        (alert: {
+          alert_type: string;
+          bottle_keep_id: string;
+          customer_name: string;
+          product_name: string;
+          alert_message: string;
+          expiry_date?: string;
+          days_until_expiry?: number;
+          remaining_amount?: number;
+        }) => ({
+          id: `${alert.alert_type}-${alert.bottle_keep_id}`,
+          bottleKeepId: alert.bottle_keep_id,
+          customerName: alert.customer_name,
+          productName: alert.product_name,
+          alertType: alert.alert_type as "expired" | "expiring" | "low_amount",
+          severity:
+            alert.alert_type === "expired" || alert.days_until_expiry <= 3
+              ? "critical"
+              : "warning",
+          message: alert.alert_message,
+          expiryDate: alert.expiry_date,
+          daysUntilExpiry: alert.days_until_expiry,
+          remainingAmount: alert.remaining_amount,
+        })
+      );
     } catch (error) {
-      console.error("未送信アラート取得エラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("未送信アラート取得エラー:", error);
+      }
       return [];
     }
   }

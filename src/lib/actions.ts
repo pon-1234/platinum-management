@@ -13,7 +13,9 @@ export async function createAction<T, R>(
     const result = await fn(data);
     return { success: true, data: result };
   } catch (error) {
-    console.error("Action error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Action error:", error);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : "An error occurred",
@@ -39,7 +41,9 @@ export async function authenticatedAction<T, R>(
       const result = await fn(data, user.id);
       return { success: true, data: result };
     } catch (error) {
-      console.error("Authenticated action error:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Authenticated action error:", error);
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : "An error occurred",

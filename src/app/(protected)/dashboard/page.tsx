@@ -49,7 +49,9 @@ export default function DashboardPage() {
         });
       } catch (err) {
         setError("ダッシュボードデータの取得に失敗しました");
-        console.error(err);
+        if (process.env.NODE_ENV === "development") {
+          console.error(err);
+        }
       } finally {
         setIsLoading(false);
       }

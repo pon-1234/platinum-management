@@ -66,7 +66,9 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
           }
         }
       } catch (error) {
-        console.error("スタッフデータの読み込みに失敗しました:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("スタッフデータの読み込みに失敗しました:", error);
+        }
       }
     };
 
@@ -106,7 +108,9 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
         };
         toast.success(`${actionLabels[actionType]}を記録しました`);
       } catch (error) {
-        console.error("打刻処理に失敗しました:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("打刻処理に失敗しました:", error);
+        }
         toast.error("打刻処理に失敗しました。もう一度お試しください。");
       } finally {
         setIsLoading(false);

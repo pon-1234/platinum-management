@@ -20,7 +20,7 @@ const getBottleKeepsSchema = z.object({
 
 export const getBottleKeeps = authenticatedAction(
   getBottleKeepsSchema,
-  async (filter) => {
+  async (filter: z.infer<typeof getBottleKeepsSchema>) => {
     const bottleKeeps = await bottleKeepService.getBottleKeeps(filter);
     return { success: true, data: bottleKeeps };
   }
@@ -53,7 +53,7 @@ const createBottleKeepSchema = z.object({
 
 export const createBottleKeep = authenticatedAction(
   createBottleKeepSchema,
-  async (data) => {
+  async (data: z.infer<typeof createBottleKeepSchema>) => {
     const bottleKeep = await bottleKeepService.createBottleKeep(data);
     return { success: true, data: bottleKeep };
   }
@@ -91,7 +91,7 @@ const useBottleKeepSchema = z.object({
 
 export const useBottleKeep = authenticatedAction(
   useBottleKeepSchema,
-  async (data) => {
+  async (data: z.infer<typeof useBottleKeepSchema>) => {
     await bottleKeepService.useBottleKeep(data);
     return { success: true };
   }

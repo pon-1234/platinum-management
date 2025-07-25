@@ -108,7 +108,9 @@ export function CastEditModal({
 
       onSuccess();
     } catch (error) {
-      console.error("Failed to update cast:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to update cast:", error);
+      }
       form.setError("root", {
         message: "キャスト情報の更新に失敗しました",
       });

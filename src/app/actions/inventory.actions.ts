@@ -17,7 +17,7 @@ const getProductsSchema = z.object({
 
 export const getProducts = authenticatedAction(
   getProductsSchema,
-  async (data) => {
+  async (data: z.infer<typeof getProductsSchema>) => {
     const products = await inventoryService.getProducts(data);
     return { success: true, data: products };
   }
@@ -51,7 +51,7 @@ const createProductSchema = z.object({
 
 export const createProduct = authenticatedAction(
   createProductSchema,
-  async (data) => {
+  async (data: z.infer<typeof createProductSchema>) => {
     const product = await inventoryService.createProduct(data);
     return { success: true, data: product };
   }
@@ -103,7 +103,7 @@ const createInventoryMovementSchema = z.object({
 
 export const createInventoryMovement = authenticatedAction(
   createInventoryMovementSchema,
-  async (data) => {
+  async (data: z.infer<typeof createInventoryMovementSchema>) => {
     const movement = await inventoryService.createInventoryMovement(data);
     return { success: true, data: movement };
   }
@@ -136,7 +136,7 @@ const adjustInventorySchema = z.object({
 
 export const adjustInventory = authenticatedAction(
   adjustInventorySchema,
-  async (data) => {
+  async (data: z.infer<typeof adjustInventorySchema>) => {
     const movement = await inventoryService.adjustInventory(data);
     return { success: true, data: movement };
   }

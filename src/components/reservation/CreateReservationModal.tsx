@@ -77,7 +77,9 @@ export function CreateReservationModal({
       setCustomers(customersData);
       setCasts(castsData);
     } catch (error) {
-      console.error("Failed to load initial data:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load initial data:", error);
+      }
       toast.error("データの読み込みに失敗しました");
     } finally {
       setIsLoadingData(false);
@@ -94,11 +96,13 @@ export function CreateReservationModal({
       );
       setAvailableTables(tables);
     } catch (error) {
-      console.error("Failed to load available tables:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load available tables:", error);
+      }
     }
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: CreateReservationInput) => {
     setIsLoading(true);
     try {
       await reservationService.createReservation(data);
@@ -107,7 +111,9 @@ export function CreateReservationModal({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Failed to create reservation:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to create reservation:", error);
+      }
       toast.error("予約の作成に失敗しました");
     } finally {
       setIsLoading(false);

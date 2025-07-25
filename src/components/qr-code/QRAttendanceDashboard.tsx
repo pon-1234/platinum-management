@@ -32,7 +32,9 @@ export function QRAttendanceDashboard() {
       setManagementData(mgmtData);
       setScanHistory(history);
     } catch (error) {
-      console.error("データ読み込みエラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("データ読み込みエラー:", error);
+      }
     } finally {
       setLoading(false);
     }

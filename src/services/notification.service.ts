@@ -258,10 +258,14 @@ export class NotificationService extends BaseService {
       });
 
       if (error) {
-        console.error("Notification log error:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Notification log error:", error);
+        }
       }
     } catch (error) {
-      console.error("Failed to log notification:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to log notification:", error);
+      }
     }
   }
 

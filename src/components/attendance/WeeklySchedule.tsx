@@ -15,6 +15,7 @@ import { AddShiftModal } from "./AddShiftModal";
 import type {
   WeeklySchedule as WeeklyScheduleType,
   CalendarShift,
+  ShiftType,
 } from "@/types/attendance.types";
 
 interface WeeklyScheduleProps {
@@ -36,6 +37,7 @@ export function WeeklySchedule({
   // Modal states
   const [isShiftDetailModalOpen, setIsShiftDetailModalOpen] = useState(false);
   const [isAddShiftModalOpen, setIsAddShiftModalOpen] = useState(false);
+  const [isEditShiftModalOpen, setIsEditShiftModalOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<CalendarShift | null>(
     null
   );
@@ -47,7 +49,9 @@ export function WeeklySchedule({
       const data = await attendanceService.getWeeklySchedule(weekStart);
       setWeeklyData(data);
     } catch (error) {
-      console.error("週間スケジュールの読み込みに失敗しました:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("週間スケジュールの読み込みに失敗しました:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +97,37 @@ export function WeeklySchedule({
   const handleShiftModalSuccess = () => {
     // データを再読み込み
     loadWeeklySchedule(currentWeekStart);
+  };
+
+  const handleEditShift = (shift: CalendarShift) => {
+    setSelectedShift(shift);
+    setIsShiftDetailModalOpen(false);
+    setIsEditShiftModalOpen(true);
+  };
+
+  const handleDeleteShift = async (shift: CalendarShift) => {
+    if (!confirm("このシフトを削除してもよろしいですか？")) {
+      return;
+    }
+
+    try {
+      // シフトが確定済みの場合は確定シフトを削除
+      if (shift.type === "confirmed") {
+        await attendanceService.deleteConfirmedShift(shift.id);
+      } else if (shift.type === "request") {
+        // リクエストの場合はリクエストを削除
+        await attendanceService.deleteShiftRequest(shift.id);
+      }
+
+      setIsShiftDetailModalOpen(false);
+      setSelectedShift(null);
+      handleShiftModalSuccess();
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to delete shift:", error);
+      }
+      alert("シフトの削除に失敗しました");
+    }
   };
 
   const getShiftTypeColor = (shiftType: string) => {
@@ -300,15 +335,8 @@ export function WeeklySchedule({
             setSelectedShift(null);
           }}
           shift={selectedShift}
-          onEdit={(shift) => {
-            console.log("Edit shift:", shift);
-            // TODO: シフト編集モーダルを開く
-          }}
-          onDelete={async (shift) => {
-            console.log("Delete shift:", shift);
-            // TODO: シフト削除機能を実装
-            handleShiftModalSuccess();
-          }}
+          onEdit={handleEditShift}
+          onDelete={handleDeleteShift}
         />
       )}
 
@@ -321,6 +349,31 @@ export function WeeklySchedule({
         selectedDate={selectedDateForAdd}
         onSuccess={handleShiftModalSuccess}
       />
+
+      {/* Edit Modal - using AddShiftModal with shift data for editing */}
+      {selectedShift && (
+        <AddShiftModal
+          isOpen={isEditShiftModalOpen}
+          onClose={() => {
+            setIsEditShiftModalOpen(false);
+            setSelectedShift(null);
+          }}
+          selectedDate={selectedShift.date}
+          onSuccess={() => {
+            setIsEditShiftModalOpen(false);
+            setSelectedShift(null);
+            handleShiftModalSuccess();
+          }}
+          // Pass existing shift data for editing
+          initialData={{
+            staffId: selectedShift.staffId,
+            startTime: selectedShift.startTime,
+            endTime: selectedShift.endTime,
+            shiftType: selectedShift.shiftType as ShiftType,
+            notes: selectedShift.notes || "",
+          }}
+        />
+      )}
     </div>
   );
 }

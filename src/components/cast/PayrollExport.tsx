@@ -59,7 +59,9 @@ export function PayrollExport({ casts }: PayrollExportProps) {
         `給与データ_${dateRange.startDate}_${dateRange.endDate}.csv`
       );
     } catch (error) {
-      console.error("Export failed:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Export failed:", error);
+      }
       toast.error("エクスポートに失敗しました");
     } finally {
       setIsExporting(false);

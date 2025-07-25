@@ -5,14 +5,9 @@ import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/common";
 import {
   generateQRCode,
-  validateQRCode,
-  recordAttendance,
   getAttendanceHistory,
-  getCurrentAttendanceStatus,
   getQRCodeStats,
   type GenerateQRCodeInput,
-  type RecordAttendanceInput,
-  type GetAttendanceHistoryInput,
 } from "@/app/actions/qr-code.actions";
 import type {
   QRCode,
@@ -30,6 +25,7 @@ import { toast } from "react-hot-toast";
 type ViewMode = "dashboard" | "generate" | "scan" | "history";
 
 export default function QRAttendancePage() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [viewMode, setViewMode] = useState<ViewMode>("dashboard");
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<QRCodeStats | null>(null);
@@ -37,11 +33,10 @@ export default function QRAttendancePage() {
     QRAttendanceHistory[]
   >([]);
   const [currentQRCode, setCurrentQRCode] = useState<QRCode | null>(null);
-  const [qrCodeDataURL, setQrCodeDataURL] = useState<string>("");
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, []); // loadDashboardData doesn't depend on any external variables
 
   const loadDashboardData = async () => {
     try {
@@ -59,7 +54,9 @@ export default function QRAttendancePage() {
       }
     } catch (error) {
       toast.error("データの取得に失敗しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +75,9 @@ export default function QRAttendancePage() {
       }
     } catch (error) {
       toast.error("エラーが発生しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     } finally {
       setIsLoading(false);
     }

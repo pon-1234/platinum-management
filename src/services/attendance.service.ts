@@ -33,94 +33,154 @@ export class AttendanceService extends BaseService {
   async createShiftTemplate(
     data: CreateShiftTemplateData
   ): Promise<ShiftTemplate> {
-    const staffId = await this.getCurrentStaffId();
+    try {
+      const staffId = await this.getCurrentStaffId();
 
-    const { data: template, error } = await this.supabase
-      .from("shift_templates")
-      .insert(
-        this.toSnakeCase({
-          name: data.name,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          daysOfWeek: data.daysOfWeek,
-          isActive: data.isActive ?? true,
-          createdBy: staffId,
-          updatedBy: staffId,
-        })
-      )
-      .select()
-      .single();
+      const { data: template, error } = await this.supabase
+        .from("shift_templates")
+        .insert(
+          this.toSnakeCase({
+            name: data.name,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            daysOfWeek: data.daysOfWeek,
+            isActive: data.isActive ?? true,
+            createdBy: staffId,
+            updatedBy: staffId,
+          })
+        )
+        .select()
+        .single();
 
-    if (error) {
-      this.handleError(error, "シフトテンプレートの作成に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(
+            error,
+            "シフトテンプレートの作成に失敗しました"
+          )
+        );
+      }
+
+      return this.mapToShiftTemplate(template);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("createShiftTemplate failed:", error);
+      }
+      throw error;
     }
-
-    return this.mapToShiftTemplate(template);
   }
 
   async getShiftTemplateById(id: string): Promise<ShiftTemplate | null> {
-    const { data, error } = await this.supabase
-      .from("shift_templates")
-      .select("*")
-      .eq("id", id)
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from("shift_templates")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return null;
+      if (error) {
+        if (error.code === "PGRST116") {
+          return null;
+        }
+        throw new Error(
+          this.handleDatabaseError(
+            error,
+            "シフトテンプレートの取得に失敗しました"
+          )
+        );
       }
-      this.handleError(error, "シフトテンプレートの取得に失敗しました");
-    }
 
-    return this.mapToShiftTemplate(data);
+      return this.mapToShiftTemplate(data);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getShiftTemplateById failed:", error);
+      }
+      throw error;
+    }
   }
 
   async getAllShiftTemplates(): Promise<ShiftTemplate[]> {
-    const { data, error } = await this.supabase
-      .from("shift_templates")
-      .select("*")
-      .order("name");
+    try {
+      const { data, error } = await this.supabase
+        .from("shift_templates")
+        .select("*")
+        .order("name");
 
-    if (error) {
-      this.handleError(error, "シフトテンプレートの取得に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(
+            error,
+            "シフトテンプレートの取得に失敗しました"
+          )
+        );
+      }
+
+      return data.map(this.mapToShiftTemplate);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getAllShiftTemplates failed:", error);
+      }
+      throw error;
     }
-
-    return data.map(this.mapToShiftTemplate);
   }
 
   async updateShiftTemplate(
     id: string,
     data: UpdateShiftTemplateData
   ): Promise<ShiftTemplate> {
-    const staffId = await this.getCurrentStaffId();
+    try {
+      const staffId = await this.getCurrentStaffId();
 
-    const updateData = this.toSnakeCase({
-      updatedBy: staffId,
-      ...data,
-    });
+      const updateData = this.toSnakeCase({
+        updatedBy: staffId,
+        ...data,
+      });
 
-    const { data: template, error } = await this.supabase
-      .from("shift_templates")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
+      const { data: template, error } = await this.supabase
+        .from("shift_templates")
+        .update(updateData)
+        .eq("id", id)
+        .select()
+        .single();
 
-    if (error) {
-      this.handleError(error, "シフトテンプレートの更新に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(
+            error,
+            "シフトテンプレートの更新に失敗しました"
+          )
+        );
+      }
+
+      return this.mapToShiftTemplate(template);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("updateShiftTemplate failed:", error);
+      }
+      throw error;
     }
-
-    return this.mapToShiftTemplate(template);
   }
 
   async deleteShiftTemplate(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .from("shift_templates")
-      .delete()
-      .eq("id", id);
+    try {
+      const { error } = await this.supabase
+        .from("shift_templates")
+        .delete()
+        .eq("id", id);
 
-    if (error) {
-      this.handleError(error, "シフトテンプレートの削除に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(
+            error,
+            "シフトテンプレートの削除に失敗しました"
+          )
+        );
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("deleteShiftTemplate failed:", error);
+      }
+      throw error;
     }
   }
 
@@ -129,99 +189,126 @@ export class AttendanceService extends BaseService {
   async createShiftRequest(
     data: CreateShiftRequestData
   ): Promise<ShiftRequest> {
-    const { data: request, error } = await this.supabase
-      .from("shift_requests")
-      .insert(
-        this.toSnakeCase({
-          staffId: await this.getCurrentStaffId(), // Get current staff ID
-          requestedDate: data.requestedDate,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          notes: data.notes || null,
-        })
-      )
-      .select()
-      .single();
+    try {
+      const { data: request, error } = await this.supabase
+        .from("shift_requests")
+        .insert(
+          this.toSnakeCase({
+            staffId: await this.getCurrentStaffId(), // Get current staff ID
+            requestedDate: data.requestedDate,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            notes: data.notes || null,
+          })
+        )
+        .select()
+        .single();
 
-    if (error) {
-      this.handleError(error, "シフト申請の作成に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "シフト申請の作成に失敗しました")
+        );
+      }
+
+      return this.mapToShiftRequest(request);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("createShiftRequest failed:", error);
+      }
+      throw error;
     }
-
-    return this.mapToShiftRequest(request);
   }
 
   async searchShiftRequests(
     params: ShiftRequestSearchParams = {}
   ): Promise<ShiftRequest[]> {
-    let query = this.supabase
-      .from("shift_requests")
-      .select("*")
-      .order("request_date", { ascending: false });
+    try {
+      let query = this.supabase
+        .from("shift_requests")
+        .select("*")
+        .order("request_date", { ascending: false });
 
-    if (params.staffId) {
-      query = query.eq("staff_id", params.staffId);
+      if (params.staffId) {
+        query = query.eq("staff_id", params.staffId);
+      }
+
+      if (params.status) {
+        query = query.eq("status", params.status);
+      }
+
+      if (params.startDate) {
+        query = query.gte("request_date", params.startDate);
+      }
+
+      if (params.endDate) {
+        query = query.lte("request_date", params.endDate);
+      }
+
+      if (params.limit) {
+        query = query.limit(params.limit);
+      }
+
+      if (params.offset) {
+        query = query.range(
+          params.offset,
+          params.offset + (params.limit || 50) - 1
+        );
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "シフト申請の検索に失敗しました")
+        );
+      }
+
+      return data.map(this.mapToShiftRequest);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("searchShiftRequests failed:", error);
+      }
+      throw error;
     }
-
-    if (params.status) {
-      query = query.eq("status", params.status);
-    }
-
-    if (params.startDate) {
-      query = query.gte("request_date", params.startDate);
-    }
-
-    if (params.endDate) {
-      query = query.lte("request_date", params.endDate);
-    }
-
-    if (params.limit) {
-      query = query.limit(params.limit);
-    }
-
-    if (params.offset) {
-      query = query.range(
-        params.offset,
-        params.offset + (params.limit || 50) - 1
-      );
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      this.handleError(error, "シフト申請の検索に失敗しました");
-    }
-
-    return data.map(this.mapToShiftRequest);
   }
 
   async approveShiftRequest(
     id: string,
     data: ApproveShiftRequestData
   ): Promise<ShiftRequest> {
-    const staffId = await this.getCurrentStaffId();
+    try {
+      const staffId = await this.getCurrentStaffId();
 
-    const updateData: Record<string, unknown> = {
-      status: data.approved ? "approved" : "rejected",
-      approved_by: staffId,
-      approved_at: new Date().toISOString(),
-    };
+      const updateData: Record<string, unknown> = {
+        status: data.approved ? "approved" : "rejected",
+        approved_by: staffId,
+        approved_at: new Date().toISOString(),
+      };
 
-    if (data.rejectionReason) {
-      updateData.rejection_reason = data.rejectionReason;
+      if (data.rejectionReason) {
+        updateData.rejection_reason = data.rejectionReason;
+      }
+
+      const { data: request, error } = await this.supabase
+        .from("shift_requests")
+        .update(updateData)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "シフト申請の承認処理に失敗しました")
+        );
+      }
+
+      return this.mapToShiftRequest(request);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("approveShiftRequest failed:", error);
+      }
+      throw error;
     }
-
-    const { data: request, error } = await this.supabase
-      .from("shift_requests")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      this.handleError(error, "シフト申請の承認処理に失敗しました");
-    }
-
-    return this.mapToShiftRequest(request);
   }
 
   // ============= CONFIRMED SHIFT MANAGEMENT =============
@@ -229,72 +316,90 @@ export class AttendanceService extends BaseService {
   async createConfirmedShift(
     data: CreateConfirmedShiftData
   ): Promise<ConfirmedShift> {
-    const staffId = await this.getCurrentStaffId();
+    try {
+      const staffId = await this.getCurrentStaffId();
 
-    const { data: shift, error } = await this.supabase
-      .from("confirmed_shifts")
-      .insert({
-        staff_id: data.staffId,
-        date: data.date,
-        start_time: data.startTime,
-        end_time: data.endTime,
-        status: data.status || "scheduled",
-        notes: data.notes || null,
-        created_by: staffId,
-        updated_by: staffId,
-      })
-      .select()
-      .single();
+      const { data: shift, error } = await this.supabase
+        .from("confirmed_shifts")
+        .insert({
+          staff_id: data.staffId,
+          date: data.date,
+          start_time: data.startTime,
+          end_time: data.endTime,
+          status: data.status || "scheduled",
+          notes: data.notes || null,
+          created_by: staffId,
+          updated_by: staffId,
+        })
+        .select()
+        .single();
 
-    if (error) {
-      this.handleError(error, "確定シフトの作成に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "確定シフトの作成に失敗しました")
+        );
+      }
+
+      return this.mapToConfirmedShift(shift);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("createConfirmedShift failed:", error);
+      }
+      throw error;
     }
-
-    return this.mapToConfirmedShift(shift);
   }
 
   async searchConfirmedShifts(
     params: ConfirmedShiftSearchParams = {}
   ): Promise<ConfirmedShift[]> {
-    let query = this.supabase
-      .from("confirmed_shifts")
-      .select("*")
-      .order("date", { ascending: true });
+    try {
+      let query = this.supabase
+        .from("confirmed_shifts")
+        .select("*")
+        .order("date", { ascending: true });
 
-    if (params.staffId) {
-      query = query.eq("staff_id", params.staffId);
+      if (params.staffId) {
+        query = query.eq("staff_id", params.staffId);
+      }
+
+      if (params.startDate) {
+        query = query.gte("date", params.startDate);
+      }
+
+      if (params.endDate) {
+        query = query.lte("date", params.endDate);
+      }
+
+      if (params.status) {
+        query = query.eq("status", params.status);
+      }
+
+      if (params.limit) {
+        query = query.limit(params.limit);
+      }
+
+      if (params.offset) {
+        query = query.range(
+          params.offset,
+          params.offset + (params.limit || 50) - 1
+        );
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "確定シフトの検索に失敗しました")
+        );
+      }
+
+      return data.map(this.mapToConfirmedShift);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("searchConfirmedShifts failed:", error);
+      }
+      throw error;
     }
-
-    if (params.startDate) {
-      query = query.gte("date", params.startDate);
-    }
-
-    if (params.endDate) {
-      query = query.lte("date", params.endDate);
-    }
-
-    if (params.status) {
-      query = query.eq("status", params.status);
-    }
-
-    if (params.limit) {
-      query = query.limit(params.limit);
-    }
-
-    if (params.offset) {
-      query = query.range(
-        params.offset,
-        params.offset + (params.limit || 50) - 1
-      );
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      this.handleError(error, "確定シフトの検索に失敗しました");
-    }
-
-    return data.map(this.mapToConfirmedShift);
   }
 
   /**
@@ -342,52 +447,59 @@ export class AttendanceService extends BaseService {
   }
 
   async getWeeklySchedule(weekStart: string): Promise<WeeklySchedule> {
-    const weekStartDate = new Date(weekStart);
-    const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    try {
+      const weekStartDate = new Date(weekStart);
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekEndDate.getDate() + 6);
 
-    const weekEnd = weekEndDate.toISOString().split("T")[0];
+      const weekEnd = weekEndDate.toISOString().split("T")[0];
 
-    const shifts = await this.searchConfirmedShifts({
-      startDate: weekStart,
-      endDate: weekEnd,
-    });
+      const shifts = await this.searchConfirmedShifts({
+        startDate: weekStart,
+        endDate: weekEnd,
+      });
 
-    // Group shifts by date
-    const shiftsByDate: Record<string, CalendarShift[]> = {};
+      // Group shifts by date
+      const shiftsByDate: Record<string, CalendarShift[]> = {};
 
-    shifts.forEach((shift) => {
-      if (!shiftsByDate[shift.date]) {
-        shiftsByDate[shift.date] = [];
+      shifts.forEach((shift) => {
+        if (!shiftsByDate[shift.date]) {
+          shiftsByDate[shift.date] = [];
+        }
+
+        shiftsByDate[shift.date].push(
+          this.mapConfirmedShiftToCalendarShift(shift)
+        );
+      });
+
+      // Create daily schedules for all 7 days
+      const days: DailySchedule[] = [];
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(weekStartDate);
+        currentDate.setDate(currentDate.getDate() + i);
+        const dateStr = currentDate.toISOString().split("T")[0];
+
+        const dayShifts = shiftsByDate[dateStr] || [];
+
+        days.push({
+          date: dateStr,
+          shifts: dayShifts,
+          totalStaff: dayShifts.length,
+          confirmedStaff: dayShifts.length,
+        });
       }
 
-      shiftsByDate[shift.date].push(
-        this.mapConfirmedShiftToCalendarShift(shift)
-      );
-    });
-
-    // Create daily schedules for all 7 days
-    const days: DailySchedule[] = [];
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(weekStartDate);
-      currentDate.setDate(currentDate.getDate() + i);
-      const dateStr = currentDate.toISOString().split("T")[0];
-
-      const dayShifts = shiftsByDate[dateStr] || [];
-
-      days.push({
-        date: dateStr,
-        shifts: dayShifts,
-        totalStaff: dayShifts.length,
-        confirmedStaff: dayShifts.length,
-      });
+      return {
+        weekStart,
+        weekEnd,
+        days,
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getWeeklySchedule failed:", error);
+      }
+      throw error;
     }
-
-    return {
-      weekStart,
-      weekEnd,
-      days,
-    };
   }
 
   // ============= ATTENDANCE RECORD MANAGEMENT =============
@@ -395,23 +507,32 @@ export class AttendanceService extends BaseService {
   async createAttendanceRecord(
     data: CreateAttendanceRecordData
   ): Promise<AttendanceRecord> {
-    const { data: record, error } = await this.supabase
-      .from("attendance_records")
-      .insert({
-        staff_id: data.staffId,
-        attendance_date: data.attendanceDate,
-        scheduled_start_time: data.scheduledStartTime || null,
-        scheduled_end_time: data.scheduledEndTime || null,
-        notes: data.notes || null,
-      })
-      .select()
-      .single();
+    try {
+      const { data: record, error } = await this.supabase
+        .from("attendance_records")
+        .insert({
+          staff_id: data.staffId,
+          attendance_date: data.attendanceDate,
+          scheduled_start_time: data.scheduledStartTime || null,
+          scheduled_end_time: data.scheduledEndTime || null,
+          notes: data.notes || null,
+        })
+        .select()
+        .single();
 
-    if (error) {
-      this.handleError(error, "出勤記録の作成に失敗しました");
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "出勤記録の作成に失敗しました")
+        );
+      }
+
+      return this.mapToAttendanceRecord(record);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("createAttendanceRecord failed:", error);
+      }
+      throw error;
     }
-
-    return this.mapToAttendanceRecord(record);
   }
 
   async searchAttendanceRecords(
@@ -820,14 +941,67 @@ export class AttendanceService extends BaseService {
         ); // 過去1週間
 
       if (error) {
-        console.error("Error fetching correction requests:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error fetching correction requests:", error);
+        }
         return 0;
       }
 
       return data?.length || 0;
     } catch (error) {
-      console.error("Error in getCorrectionRequestsCount:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error in getCorrectionRequestsCount:", error);
+      }
       return 0;
+    }
+  }
+
+  /**
+   * Delete a confirmed shift
+   */
+  async deleteConfirmedShift(shiftId: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from("confirmed_shifts")
+        .delete()
+        .eq("id", shiftId);
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(error, "シフトの削除に失敗しました")
+        );
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to delete confirmed shift:", error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a shift request
+   */
+  async deleteShiftRequest(requestId: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from("shift_requests")
+        .delete()
+        .eq("id", requestId);
+
+      if (error) {
+        throw new Error(
+          this.handleDatabaseError(
+            error,
+            "シフトリクエストの削除に失敗しました"
+          )
+        );
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to delete shift request:", error);
+      }
+      throw error;
     }
   }
 }

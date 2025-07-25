@@ -55,6 +55,7 @@ export function ReservationDetailModal({
     formState: { errors },
     reset,
     watch,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     setValue,
   } = useForm({
     resolver: zodResolver(updateReservationSchema),
@@ -121,7 +122,9 @@ export function ReservationDetailModal({
         setAvailableTables(tables);
       }
     } catch (error) {
-      console.error("Failed to load editing data:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load editing data:", error);
+      }
       toast.error("データの読み込みに失敗しました");
     } finally {
       setIsLoadingData(false);
@@ -145,11 +148,13 @@ export function ReservationDetailModal({
       }
       setAvailableTables(tables);
     } catch (error) {
-      console.error("Failed to load available tables:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load available tables:", error);
+      }
     }
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: UpdateReservationInput) => {
     if (!reservation) return;
 
     setIsLoading(true);
@@ -159,7 +164,9 @@ export function ReservationDetailModal({
       setIsEditing(false);
       onSuccess();
     } catch (error) {
-      console.error("Failed to update reservation:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to update reservation:", error);
+      }
       toast.error("予約の更新に失敗しました");
     } finally {
       setIsLoading(false);
@@ -181,7 +188,9 @@ export function ReservationDetailModal({
       toast.success("チェックインしました");
       onSuccess();
     } catch (error) {
-      console.error("Failed to check in reservation:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to check in reservation:", error);
+      }
       toast.error("チェックインに失敗しました");
     }
   };
@@ -197,7 +206,9 @@ export function ReservationDetailModal({
       toast.success("予約をキャンセルしました");
       onSuccess();
     } catch (error) {
-      console.error("Failed to cancel reservation:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to cancel reservation:", error);
+      }
       toast.error("キャンセルに失敗しました");
     }
   };

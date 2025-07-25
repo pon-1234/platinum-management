@@ -323,7 +323,9 @@ export class ShiftRequestService extends AttendanceBaseService {
       .limit(1);
 
     if (error) {
-      console.error("重複申請チェックエラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("重複申請チェックエラー:", error);
+      }
       return false;
     }
 
@@ -347,7 +349,9 @@ export class ShiftRequestService extends AttendanceBaseService {
       .eq("status", "scheduled");
 
     if (error) {
-      console.error("スケジュール重複チェックエラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("スケジュール重複チェックエラー:", error);
+      }
       return false;
     }
 

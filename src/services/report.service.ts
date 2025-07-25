@@ -174,15 +174,22 @@ export class ReportService extends BaseService {
     const casts = data || [];
 
     // Add UI-compatible aliases
-    const topCasts = casts.map((cast: any) => ({
-      ...cast,
-      orderCount: cast.totalOrders, // alias for UI
-      totalAmount: cast.totalSales, // alias for UI
-    }));
+    const topCasts = casts.map(
+      (cast: {
+        castId: string;
+        castName: string;
+        totalOrders: number;
+        totalSales: number;
+      }) => ({
+        ...cast,
+        orderCount: cast.totalOrders, // alias for UI
+        totalAmount: cast.totalSales, // alias for UI
+      })
+    );
 
     // Filter for specific cast if castId is provided
     const filteredCasts = castId
-      ? topCasts.filter((cast: any) => cast.castId === castId)
+      ? topCasts.filter((cast) => cast.castId === castId)
       : topCasts;
 
     return {
@@ -235,7 +242,8 @@ export class ReportService extends BaseService {
       visits?.reduce((sum, visit) => {
         const visitTotal =
           visit.billing_items?.reduce(
-            (itemSum: number, item: any) => itemSum + item.amount,
+            (itemSum: number, item: { amount: number }) =>
+              itemSum + item.amount,
             0
           ) || 0;
         return sum + visitTotal;
@@ -255,7 +263,7 @@ export class ReportService extends BaseService {
           date: visit.check_in_at,
           amount:
             visit.billing_items?.reduce(
-              (sum: number, item: any) => sum + item.amount,
+              (sum: number, item: { amount: number }) => sum + item.amount,
               0
             ) || 0,
         })) || [],
@@ -304,7 +312,9 @@ export class ReportService extends BaseService {
       .not("customer_id", "is", null);
 
     if (customerError) {
-      console.error("Failed to get customer count:", customerError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to get customer count:", customerError);
+      }
     }
 
     // Get visit count for the month
@@ -316,7 +326,9 @@ export class ReportService extends BaseService {
       .eq("status", "completed");
 
     if (visitError) {
-      console.error("Failed to get visit count:", visitError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to get visit count:", visitError);
+      }
     }
 
     const totalRevenue = salesReport.totalRevenue || 0;
@@ -436,7 +448,9 @@ export class ReportService extends BaseService {
           sales: report.totalRevenue || 0,
         });
       } catch (error) {
-        console.error(`Failed to get sales for ${year}-${month}:`, error);
+        if (process.env.NODE_ENV === "development") {
+          console.error(`Failed to get sales for ${year}-${month}:`, error);
+        }
         trends.push({
           month: targetDate.toLocaleDateString("ja-JP", {
             year: "numeric",
@@ -450,7 +464,16 @@ export class ReportService extends BaseService {
     return trends;
   }
 
-  private mapToReport(data: any): Report {
+  private mapToReport(data: {
+    id: string;
+    type: string;
+    title: string;
+    description: string;
+    data: unknown;
+    created_at: string;
+    created_by: string;
+    status: string;
+  }): Report {
     return {
       id: data.id,
       type: data.type,

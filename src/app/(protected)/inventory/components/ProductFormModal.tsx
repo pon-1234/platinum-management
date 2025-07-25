@@ -74,7 +74,9 @@ export function ProductFormModal({
       }
     } catch (error) {
       toast.error("エラーが発生しました");
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -131,7 +131,9 @@ export function QRCodeGenerator({
 
       setQrDataUrl(canvas.toDataURL());
     } catch (err) {
-      console.error("QRコード画像生成エラー:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("QRコード画像生成エラー:", err);
+      }
     }
   };
 
@@ -256,7 +258,9 @@ export function QRCodeGenerator({
         link.click();
       }
     } catch (err) {
-      console.error("共有エラー:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("共有エラー:", err);
+      }
     }
   };
 

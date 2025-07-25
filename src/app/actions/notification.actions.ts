@@ -19,7 +19,9 @@ export async function sendBottleKeepExpiryAlerts() {
       data: result,
     };
   } catch (error) {
-    console.error("Alert sending action error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Alert sending action error:", error);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -39,7 +41,9 @@ export async function getUnsentAlerts() {
       data: alerts,
     };
   } catch (error) {
-    console.error("Get unsent alerts action error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Get unsent alerts action error:", error);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -63,7 +67,9 @@ export async function updateExpiredBottles() {
       data: { updatedCount },
     };
   } catch (error) {
-    console.error("Update expired bottles action error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Update expired bottles action error:", error);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

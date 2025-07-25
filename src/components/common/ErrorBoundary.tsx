@@ -33,7 +33,9 @@ export class ErrorBoundary extends Component<Props, State> {
       return;
     }
 
-    console.error("Uncaught error:", error, errorInfo);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Uncaught error:", error, errorInfo);
+    }
   }
 
   public render() {

@@ -75,7 +75,9 @@ export function ShiftDetailModal({
       await onDelete(shift);
       onClose();
     } catch (error) {
-      console.error("シフト削除エラー:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("シフト削除エラー:", error);
+      }
     } finally {
       setIsDeleting(false);
     }
