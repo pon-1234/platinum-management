@@ -42,9 +42,10 @@ export function BottleKeepUsageForm({
       newErrors.amountUsed = "使用量は100%以下で入力してください";
     }
 
-    if (!visitId) {
-      newErrors.visitId = "来店記録が必要です";
-    }
+    // visitIdは現在オプショナル
+    // if (!visitId) {
+    //   newErrors.visitId = "来店記録が必要です";
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -60,7 +61,7 @@ export function BottleKeepUsageForm({
     try {
       const submitData: UseBottleKeepRequest = {
         bottleKeepId: bottleKeep.id,
-        visitId: visitId!,
+        visitId: visitId || "temp-visit", // 一時的な対応
         amountUsed: formData.amountUsed,
         notes: formData.notes || undefined,
       };
