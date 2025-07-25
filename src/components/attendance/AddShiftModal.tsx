@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { attendanceService } from "@/services/attendance.service";
+import { createClient } from "@/lib/supabase/client";
 import type {
   CreateConfirmedShiftData,
   ShiftType,
@@ -67,7 +68,8 @@ export function AddShiftModal({
       setIsLoading(true);
 
       // 実際のスタッフサービスを使用してスタッフ一覧を取得
-      const { data, error } = await attendanceService.supabase
+      const supabase = createClient();
+      const { data, error } = await supabase
         .from("staffs")
         .select("id, full_name, role")
         .eq("is_active", true)
@@ -138,7 +140,6 @@ export function AddShiftModal({
         date: selectedDate,
         startTime: formData.startTime,
         endTime: formData.endTime,
-        shiftType: formData.shiftType,
         notes: formData.notes.trim() || undefined,
       };
 
@@ -185,19 +186,12 @@ export function AddShiftModal({
         return "残業";
       case "holiday":
         return "休日出勤";
-      case "part_time":
-        return "パートタイム";
       default:
         return shiftType;
     }
   };
 
-  const shiftTypes: ShiftType[] = [
-    "regular",
-    "overtime",
-    "holiday",
-    "part_time",
-  ];
+  const shiftTypes: ShiftType[] = ["regular", "overtime", "holiday"];
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="シフト追加" size="lg">

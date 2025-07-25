@@ -167,18 +167,26 @@ export default function QRAttendancePage() {
                       {record.staffName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {new Date(record.recordedAt).toLocaleString("ja-JP")}
+                      {record.recordedAt
+                        ? new Date(record.recordedAt).toLocaleString("ja-JP")
+                        : "-"}
                     </p>
                   </div>
                   <div className="text-right">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        record.action === "check_in"
+                        record.action === "clock_in"
                           ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          : record.action === "clock_out"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {record.action === "check_in" ? "出勤" : "退勤"}
+                      {record.action === "clock_in"
+                        ? "出勤"
+                        : record.action === "clock_out"
+                          ? "退勤"
+                          : "-"}
                     </span>
                   </div>
                 </div>

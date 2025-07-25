@@ -32,11 +32,7 @@ const validateQRCodeSchema = z.object({
 export const validateQRCode = createSafeAction(
   validateQRCodeSchema,
   async (data) => {
-    const result = await qrCodeService.validateQRCode(
-      data.qrData,
-      data.signature,
-      data.location
-    );
+    const result = await qrCodeService.validateQRCode(data.qrData);
     return result;
   }
 );
@@ -46,7 +42,7 @@ export const validateQRCode = createSafeAction(
 const recordAttendanceSchema = z.object({
   qrData: z.string(),
   signature: z.string(),
-  action: z.enum(["check_in", "check_out"]),
+  action: z.enum(["clock_in", "clock_out", "break_start", "break_end"]),
   location: z.string().optional(),
   deviceInfo: z
     .object({
@@ -73,23 +69,29 @@ const getAttendanceHistorySchema = z.object({
 
 export const getAttendanceHistory = createSafeAction(
   getAttendanceHistorySchema,
-  async (filter) => {
-    const history = await qrCodeService.getAttendanceHistory(filter);
+  async ({ staffId, startDate, endDate, limit }) => {
+    const history = await qrCodeService.getQRAttendanceHistory(
+      staffId,
+      startDate,
+      endDate,
+      limit
+    );
     return history;
   }
 );
 
-const getCurrentAttendanceStatusSchema = z.object({
-  staffId: z.string(),
-});
+// getCurrentAttendanceStatus is not implemented in QRCodeService
+// const getCurrentAttendanceStatusSchema = z.object({
+//   staffId: z.string(),
+// });
 
-export const getCurrentAttendanceStatus = createSafeAction(
-  getCurrentAttendanceStatusSchema,
-  async ({ staffId }) => {
-    const status = await qrCodeService.getCurrentAttendanceStatus(staffId);
-    return status;
-  }
-);
+// export const getCurrentAttendanceStatus = createSafeAction(
+//   getCurrentAttendanceStatusSchema,
+//   async ({ staffId }) => {
+//     const status = await qrCodeService.getCurrentAttendanceStatus(staffId);
+//     return status;
+//   }
+// );
 
 // ========== Statistics and Management Actions ==========
 
@@ -110,60 +112,65 @@ export const getStaffQRInfo = createSafeAction(
   }
 );
 
-const deactivateQRCodeSchema = z.object({
-  qrCodeId: z.string(),
-});
+// const deactivateQRCodeSchema = z.object({
+//   qrCodeId: z.string(),
+// });
 
-export const deactivateQRCode = createSafeAction(
-  deactivateQRCodeSchema,
-  async ({ qrCodeId }) => {
-    await qrCodeService.deactivateQRCode(qrCodeId);
-    return null;
-  }
-);
+// deactivateQRCode is not implemented in QRCodeService
+// export const deactivateQRCode = createSafeAction(
+//   deactivateQRCodeSchema,
+//   async ({ qrCodeId }) => {
+//     await qrCodeService.deactivateQRCode(qrCodeId);
+//     return null;
+//   }
+// );
 
-const deactivateStaffQRCodesSchema = z.object({
-  staffId: z.string(),
-});
+// const deactivateStaffQRCodesSchema = z.object({
+//   staffId: z.string(),
+// });
 
-export const deactivateStaffQRCodes = createSafeAction(
-  deactivateStaffQRCodesSchema,
-  async ({ staffId }) => {
-    await qrCodeService.deactivateStaffQRCodes(staffId);
-    return null;
-  }
-);
+// deactivateStaffQRCodes is a private method in QRCodeService
+// export const deactivateStaffQRCodes = createSafeAction(
+//   deactivateStaffQRCodesSchema,
+//   async ({ staffId }) => {
+//     await qrCodeService.deactivateStaffQRCodes(staffId);
+//     return null;
+//   }
+// );
 
 // ========== Location and Settings Actions ==========
 
-export const getLocationSettings = createSafeAction(z.object({}), async () => {
-  const settings = await qrCodeService.getLocationSettings();
-  return settings;
-});
+// getLocationSettings is not implemented in QRCodeService
+// export const getLocationSettings = createSafeAction(z.object({}), async () => {
+//   const settings = await qrCodeService.getLocationSettings();
+//   return settings;
+// });
 
-const updateLocationSettingsSchema = z.object({
-  allowedLocations: z.array(z.string()),
-  enableLocationVerification: z.boolean(),
-  maxDistanceMeters: z.number().min(1).optional(),
-});
+// const updateLocationSettingsSchema = z.object({
+//   allowedLocations: z.array(z.string()),
+//   enableLocationVerification: z.boolean(),
+//   maxDistanceMeters: z.number().min(1).optional(),
+// });
 
-export const updateLocationSettings = createSafeAction(
-  updateLocationSettingsSchema,
-  async (data) => {
-    const settings = await qrCodeService.updateLocationSettings(data);
-    return settings;
-  }
-);
+// updateLocationSettings is not implemented in QRCodeService
+// export const updateLocationSettings = createSafeAction(
+//   updateLocationSettingsSchema,
+//   async (data) => {
+//     const settings = await qrCodeService.updateLocationSettings(data);
+//     return settings;
+//   }
+// );
 
 // ========== Cleanup Actions ==========
 
-export const cleanupExpiredQRCodes = createSafeAction(
-  z.object({}),
-  async () => {
-    const count = await qrCodeService.cleanupExpiredQRCodes();
-    return { cleanedCount: count };
-  }
-);
+// cleanupExpiredQRCodes is not implemented in QRCodeService
+// export const cleanupExpiredQRCodes = createSafeAction(
+//   z.object({}),
+//   async () => {
+//     const count = await qrCodeService.cleanupExpiredQRCodes();
+//     return { cleanedCount: count };
+//   }
+// );
 
 // ========== Types for client-side use ==========
 
@@ -173,6 +180,6 @@ export type RecordAttendanceInput = z.infer<typeof recordAttendanceSchema>;
 export type GetAttendanceHistoryInput = z.infer<
   typeof getAttendanceHistorySchema
 >;
-export type UpdateLocationSettingsInput = z.infer<
-  typeof updateLocationSettingsSchema
->;
+// export type UpdateLocationSettingsInput = z.infer<
+//   typeof updateLocationSettingsSchema
+// >;

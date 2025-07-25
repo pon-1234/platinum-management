@@ -11,7 +11,7 @@ import type {
   BillCalculation,
 } from "@/types/billing.types";
 import type { Customer } from "@/types/customer.types";
-import type { Table } from "@/types/database.types";
+import type { Table } from "@/types/reservation.types";
 import {
   PlusIcon,
   TrashIcon,
@@ -68,7 +68,7 @@ export default function OrderTicketManagement({
       const [visitsData, customersData, tablesData] = await Promise.all([
         billingService.searchVisits({ status: "active" }),
         customerService.searchCustomers({}),
-        tableService.getAllTables(),
+        tableService.searchTables(),
       ]);
 
       setActiveVisits(visitsData);
@@ -428,7 +428,7 @@ export default function OrderTicketManagement({
               <option value={0}>テーブルを選択</option>
               {tables.map((table) => (
                 <option key={table.id} value={table.id}>
-                  テーブル {table.id} ({table.seats}席)
+                  テーブル {table.tableName} ({table.capacity}席)
                 </option>
               ))}
             </select>

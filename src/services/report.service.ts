@@ -1,6 +1,8 @@
 import { BaseService } from "./base.service";
 import type {
   Report,
+  ReportType,
+  ReportStatus,
   CreateReportData,
   UpdateReportData,
   ReportSearchParams,
@@ -137,7 +139,33 @@ export class ReportService extends BaseService {
 
   // Report generation methods
   async generateDailySalesReport(date: string): Promise<DailySalesReport> {
-    return billingService.generateDailyReport(date);
+    const dailyReport = await billingService.generateDailyReport(date);
+
+    // Transform DailyReport to DailySalesReport
+    return {
+      date: dailyReport.date,
+      totalSales: dailyReport.totalSales,
+      totalTransactions: dailyReport.totalVisits,
+      averageTransactionValue:
+        dailyReport.totalVisits > 0
+          ? dailyReport.totalSales / dailyReport.totalVisits
+          : 0,
+      paymentBreakdown: {
+        cash: dailyReport.totalCash,
+        card: dailyReport.totalCard,
+        mixed:
+          dailyReport.totalSales -
+          dailyReport.totalCash -
+          dailyReport.totalCard,
+      },
+      topProducts: dailyReport.topProducts.map((product) => ({
+        productId: product.productId.toString(),
+        productName: product.productName,
+        quantity: product.quantity,
+        revenue: product.totalAmount,
+      })),
+      hourlyBreakdown: [], // Not available in DailyReport
+    };
   }
 
   async generateMonthlySalesReport(
@@ -189,7 +217,7 @@ export class ReportService extends BaseService {
 
     // Filter for specific cast if castId is provided
     const filteredCasts = castId
-      ? topCasts.filter((cast) => cast.castId === castId)
+      ? topCasts.filter((cast: (typeof topCasts)[0]) => cast.castId === castId)
       : topCasts;
 
     return {
@@ -224,8 +252,14 @@ export class ReportService extends BaseService {
         table_id,
         num_guests,
         status,
-        billing_items (
-          amount
+        order_items (
+          product_id,
+          quantity,
+          total_price,
+          product:products (
+            id,
+            name
+          )
         )
       `
       )
@@ -238,37 +272,69 @@ export class ReportService extends BaseService {
 
     // Calculate statistics
     const totalVisits = visits?.length || 0;
+
+    // Calculate total spent from order items
     const totalSpent =
-      visits?.reduce((sum, visit) => {
-        interface BillingItem {
-          amount: number;
-        }
+      visits?.reduce((sum, visit: Record<string, unknown>) => {
+        const orderItems = visit.order_items as
+          | Array<{
+              total_price?: number;
+            }>
+          | undefined;
         const visitTotal =
-          visit.billing_items?.reduce(
-            (itemSum: number, item: BillingItem) => itemSum + item.amount,
+          orderItems?.reduce(
+            (itemSum: number, item) => itemSum + (item.total_price || 0),
             0
           ) || 0;
         return sum + visitTotal;
       }, 0) || 0;
+
     const averageSpending = totalVisits > 0 ? totalSpent / totalVisits : 0;
+
+    // Calculate favorite products
+    const productCounts = new Map<string, { name: string; count: number }>();
+    visits?.forEach((visit: Record<string, unknown>) => {
+      const orderItems = visit.order_items as
+        | Array<{
+            product_id?: number;
+            quantity?: number;
+            product?: { name?: string };
+          }>
+        | undefined;
+
+      orderItems?.forEach((item) => {
+        if (item.product_id && item.product?.name) {
+          const existing = productCounts.get(item.product_id.toString());
+          if (existing) {
+            existing.count += item.quantity || 1;
+          } else {
+            productCounts.set(item.product_id.toString(), {
+              name: item.product.name,
+              count: item.quantity || 1,
+            });
+          }
+        }
+      });
+    });
+
+    const favoriteProducts = Array.from(productCounts.entries())
+      .map(([productId, data]) => ({
+        productId,
+        productName: data.name,
+        orderCount: data.count,
+      }))
+      .sort((a, b) => b.orderCount - a.orderCount)
+      .slice(0, 5); // Top 5 products
 
     return {
       customerId,
       customerName: customer.name,
       totalVisits,
       totalSpent,
-      averageSpending,
-      lastVisitDate: visits?.[0]?.check_in_at || null,
-      visitHistory:
-        visits?.map((visit) => ({
-          visitId: visit.id,
-          date: visit.check_in_at,
-          amount:
-            visit.billing_items?.reduce(
-              (sum: number, item: BillingItem) => sum + item.amount,
-              0
-            ) || 0,
-        })) || [],
+      averageSpent: averageSpending,
+      lastVisit:
+        ((visits?.[0] as Record<string, unknown>)?.check_in_at as string) || "",
+      favoriteProducts,
     };
   }
 
@@ -302,51 +368,15 @@ export class ReportService extends BaseService {
     // Get monthly sales data
     const salesReport = await this.generateMonthlySalesReport(year, month);
 
-    // Get customer count for the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
-    const { data: customerCount, error: customerError } = await this.supabase
-      .from("visits")
-      .select("customer_id", { count: "exact", head: true })
-      .gte("check_in_at", startDate.toISOString())
-      .lte("check_in_at", endDate.toISOString())
-      .not("customer_id", "is", null);
-
-    if (customerError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to get customer count:", customerError);
-      }
-    }
-
-    // Get visit count for the month
-    const { count: visitCount, error: visitError } = await this.supabase
-      .from("visits")
-      .select("*", { count: "exact", head: true })
-      .gte("check_in_at", startDate.toISOString())
-      .lte("check_in_at", endDate.toISOString())
-      .eq("status", "completed");
-
-    if (visitError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to get visit count:", visitError);
-      }
-    }
-
-    const totalRevenue = salesReport.totalRevenue || 0;
-    const totalVisits = visitCount || 0;
-    const averageRevenuePerVisit =
-      totalVisits > 0 ? totalRevenue / totalVisits : 0;
-
+    // Extract the MonthlyReportSummary fields from the salesReport
     return {
-      year,
-      month,
-      totalRevenue,
-      totalCustomers: customerCount || 0,
-      totalVisits,
-      averageRevenuePerVisit,
-      topProducts: salesReport.topProducts || [],
-      topCasts: salesReport.topCasts || [],
+      month: salesReport.month,
+      year: salesReport.year,
+      totalSales: salesReport.totalSales,
+      totalDays: salesReport.totalDays,
+      averageDailySales: salesReport.averageDailySales,
+      bestDay: salesReport.bestDay,
+      worstDay: salesReport.worstDay,
     };
   }
 
@@ -387,41 +417,35 @@ export class ReportService extends BaseService {
         (product) => product.stock_quantity <= product.low_stock_threshold
       ) || [];
 
-    // Group movements by type
-    const movementsSummary =
-      movements?.reduce(
-        (acc, movement) => {
-          const type = movement.movement_type;
-          if (!acc[type]) {
-            acc[type] = { count: 0, totalQuantity: 0 };
-          }
-          acc[type].count++;
-          acc[type].totalQuantity += Math.abs(movement.quantity);
-          return acc;
-        },
-        {} as Record<string, { count: number; totalQuantity: number }>
-      ) || {};
+    // Calculate total inventory value
+    const totalValue =
+      products?.reduce(
+        (sum, product) =>
+          sum + (product.stock_quantity || 0) * (product.price || 0),
+        0
+      ) || 0;
 
     return {
       date,
-      totalProducts: products?.length || 0,
-      lowStockCount: lowStockItems.length,
-      totalMovements: movements?.length || 0,
-      movementsSummary,
       lowStockItems: lowStockItems.map((item) => ({
-        productId: item.id,
+        productId: item.id.toString(),
         productName: item.name,
         currentStock: item.stock_quantity,
         threshold: item.low_stock_threshold,
       })),
-      recentMovements:
-        movements?.slice(0, 10).map((movement) => ({
-          movementId: movement.id,
+      movements:
+        movements?.map((movement) => ({
+          productId: movement.product_id.toString(),
           productName: movement.product?.name || "Unknown",
-          type: movement.movement_type,
-          quantity: movement.quantity,
-          timestamp: movement.created_at,
+          type:
+            movement.movement_type === "adjustment_in" ||
+            movement.movement_type === "purchase"
+              ? ("in" as const)
+              : ("out" as const),
+          quantity: Math.abs(movement.quantity),
+          reason: movement.reason || movement.movement_type,
         })) || [],
+      totalValue,
     };
   }
 
@@ -447,7 +471,7 @@ export class ReportService extends BaseService {
             year: "numeric",
             month: "short",
           }),
-          sales: report.totalRevenue || 0,
+          sales: report.totalSales || 0,
         });
       } catch (error) {
         if (process.env.NODE_ENV === "development") {
@@ -478,13 +502,13 @@ export class ReportService extends BaseService {
   }): Report {
     return {
       id: data.id,
-      type: data.type,
+      type: data.type as ReportType,
       title: data.title,
       description: data.description,
-      data: data.data,
+      data: data.data as Record<string, unknown>,
       createdAt: data.created_at,
       createdBy: data.created_by,
-      status: data.status,
+      status: data.status as ReportStatus,
     };
   }
 }

@@ -70,7 +70,7 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       setIsLoadingProfile(true);
       try {
-        const result = await getUserProfile();
+        const result = await getUserProfile({});
         if (result.success && result.data) {
           profileForm.reset({
             name: result.data.name,
@@ -108,7 +108,7 @@ export default function ProfilePage() {
         setIsEditing(false);
         // Update auth store if email changed
         if (data.email !== user?.email) {
-          await useAuthStore.getState().checkAuth();
+          await useAuthStore.getState().fetchUser();
         }
       } else {
         toast.error(result.error || "プロフィールの更新に失敗しました");

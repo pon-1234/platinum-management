@@ -76,7 +76,7 @@ export function BottleKeepDashboard({
   const handleSendAlerts = async () => {
     try {
       setSendingAlerts(true);
-      const result = await sendBottleKeepExpiryAlerts();
+      const result = await sendBottleKeepExpiryAlerts({});
 
       if (result.success) {
         toast.success(`アラートを送信しました（${result.data.sentCount}件）`);
@@ -95,7 +95,7 @@ export function BottleKeepDashboard({
   const handleUpdateExpired = async () => {
     try {
       setUpdatingExpired(true);
-      const result = await updateExpiredBottles();
+      const result = await updateExpiredBottles({});
 
       if (result.success) {
         toast.success(

@@ -155,7 +155,7 @@ export default function ProductSelectModal({
       }));
 
       await Promise.all(
-        orderItems.map((item) => billingService.createOrderItem(item))
+        orderItems.map((item) => billingService.addOrderItem(item))
       );
 
       toast.success(`${cart.length}点の商品を追加しました`);
@@ -180,12 +180,7 @@ export default function ProductSelectModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="商品選択"
-      maxWidth="max-w-4xl"
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} title="商品選択" size="xl">
       <div className="flex h-[600px]">
         {/* Product List */}
         <div className="flex-1 pr-4 border-r">

@@ -147,13 +147,6 @@ export default function RealTimeTableDashboard({
           icon: RefreshIcon,
           iconColor: "text-blue-500",
         };
-      case "maintenance":
-        return {
-          label: "メンテナンス",
-          color: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: ExclamationCircleIcon,
-          iconColor: "text-gray-500",
-        };
       default:
         return {
           label: "不明",
@@ -224,7 +217,6 @@ export default function RealTimeTableDashboard({
           occupied: "利用中",
           reserved: "予約済み",
           cleaning: "清掃中",
-          maintenance: "メンテナンス",
         }).map(([status, label]) => {
           const count = statusCounts[status as TableStatus] || 0;
           const config = getStatusConfig(status as TableStatus);
@@ -313,7 +305,6 @@ export default function RealTimeTableDashboard({
             occupied: "利用中 - お客様が利用中です",
             reserved: "予約済み - 予約が入っています",
             cleaning: "清掃中 - テーブルを清掃中です",
-            maintenance: "メンテナンス - 修理・点検中です",
           }).map(([status, description]) => {
             const config = getStatusConfig(status as TableStatus);
             return (

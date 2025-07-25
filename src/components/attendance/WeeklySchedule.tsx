@@ -15,7 +15,6 @@ import { AddShiftModal } from "./AddShiftModal";
 import type {
   WeeklySchedule as WeeklyScheduleType,
   CalendarShift,
-  ShiftType,
 } from "@/types/attendance.types";
 
 interface WeeklyScheduleProps {
@@ -112,9 +111,9 @@ export function WeeklySchedule({
 
     try {
       // シフトが確定済みの場合は確定シフトを削除
-      if (shift.type === "confirmed") {
+      if (shift.isConfirmed) {
         await attendanceService.deleteConfirmedShift(shift.id);
-      } else if (shift.type === "request") {
+      } else {
         // リクエストの場合はリクエストを削除
         await attendanceService.deleteShiftRequest(shift.id);
       }
@@ -363,14 +362,6 @@ export function WeeklySchedule({
             setIsEditShiftModalOpen(false);
             setSelectedShift(null);
             handleShiftModalSuccess();
-          }}
-          // Pass existing shift data for editing
-          initialData={{
-            staffId: selectedShift.staffId,
-            startTime: selectedShift.startTime,
-            endTime: selectedShift.endTime,
-            shiftType: selectedShift.shiftType as ShiftType,
-            notes: selectedShift.notes || "",
           }}
         />
       )}

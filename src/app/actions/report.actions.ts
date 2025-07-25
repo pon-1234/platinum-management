@@ -36,16 +36,30 @@ export const getCastPerformanceReport = createSafeAction(
 );
 
 // 顧客レポート取得
-export const getCustomerReport = createSafeAction(z.object({}), async () => {
-  const report = await reportService.getCustomerReport();
-  return report;
+const getCustomerReportSchema = z.object({
+  customerId: z.string(),
 });
 
+export const getCustomerReport = createSafeAction(
+  getCustomerReportSchema,
+  async ({ customerId }) => {
+    const report = await reportService.getCustomerReport(customerId);
+    return report;
+  }
+);
+
 // 在庫レポート取得
-export const getInventoryReport = createSafeAction(z.object({}), async () => {
-  const report = await reportService.getInventoryReport();
-  return report;
+const getInventoryReportSchema = z.object({
+  date: z.string(),
 });
+
+export const getInventoryReport = createSafeAction(
+  getInventoryReportSchema,
+  async ({ date }) => {
+    const report = await reportService.getInventoryReport(date);
+    return report;
+  }
+);
 
 // 日次売上レポート取得
 const getDailyRevenueReportSchema = z.object({
@@ -55,7 +69,7 @@ const getDailyRevenueReportSchema = z.object({
 export const getDailyRevenueReport = createSafeAction(
   getDailyRevenueReportSchema,
   async ({ date }) => {
-    const report = await reportService.getDailyRevenueReport(date);
+    const report = await reportService.generateDailySalesReport(date);
     return report;
   }
 );
@@ -67,6 +81,8 @@ export type GetMonthlySalesReportInput = z.infer<
 export type GetCastPerformanceReportInput = z.infer<
   typeof getCastPerformanceReportSchema
 >;
+export type GetCustomerReportInput = z.infer<typeof getCustomerReportSchema>;
+export type GetInventoryReportInput = z.infer<typeof getInventoryReportSchema>;
 export type GetDailyRevenueReportInput = z.infer<
   typeof getDailyRevenueReportSchema
 >;

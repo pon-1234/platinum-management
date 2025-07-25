@@ -27,9 +27,8 @@ export function CastDetailModal({
   onClose,
   cast,
 }: CastDetailModalProps) {
-  const { performance, isLoading: performanceLoading } = useCastPerformance(
-    cast.staffId
-  );
+  const { performanceTotals, isLoading: performanceLoading } =
+    useCastPerformance(cast.staffId);
   const [activeTab, setActiveTab] = useState<
     "basic" | "performance" | "history"
   >("basic");
@@ -175,23 +174,13 @@ export function CastDetailModal({
                       </span>
                     </dd>
                   </div>
-                  {cast.birthDate && (
+                  {cast.birthday && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         生年月日
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {formatDate(cast.birthDate)}
-                      </dd>
-                    </div>
-                  )}
-                  {cast.hireDate && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        入店日
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {formatDate(cast.hireDate)}
+                        {formatDate(cast.birthday)}
                       </dd>
                     </div>
                   )}
@@ -221,16 +210,6 @@ export function CastDetailModal({
                       {cast.backPercentage}%
                     </dd>
                   </div>
-                  {cast.specialAllowance && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        特別手当
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {formatCurrency(cast.specialAllowance)}
-                      </dd>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -242,7 +221,7 @@ export function CastDetailModal({
                 <div className="flex justify-center py-8">
                   <LoadingSpinner size="lg" />
                 </div>
-              ) : performance ? (
+              ) : performanceTotals ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Performance Metrics */}
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg">
@@ -255,7 +234,7 @@ export function CastDetailModal({
                           今月の売上
                         </p>
                         <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {formatCurrency(performance.monthlyRevenue)}
+                          {formatCurrency(performanceTotals?.salesAmount || 0)}
                         </p>
                       </div>
                     </div>
@@ -271,7 +250,7 @@ export function CastDetailModal({
                           今月の勤務時間
                         </p>
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {performance.monthlyWorkHours}h
+                          -
                         </p>
                       </div>
                     </div>
@@ -287,7 +266,7 @@ export function CastDetailModal({
                           平均売上/時間
                         </p>
                         <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                          {formatCurrency(performance.averageRevenuePerHour)}
+                          -
                         </p>
                       </div>
                     </div>
@@ -323,19 +302,6 @@ export function CastDetailModal({
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div className="p-6">
                   <div className="space-y-4">
-                    {cast.hireDate && (
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            入店
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {formatDate(cast.hireDate)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                       <div>

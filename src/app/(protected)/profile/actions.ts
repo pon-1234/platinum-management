@@ -29,7 +29,7 @@ export type PasswordUpdateData = z.infer<typeof passwordUpdateSchema>;
 export const updateProfile = createSafeAction(
   profileUpdateSchema,
   async (data, { userId }) => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Update auth metadata
     const { error: authError } = await supabase.auth.updateUser({
@@ -71,7 +71,7 @@ export const updateProfile = createSafeAction(
 export const updatePassword = createSafeAction(
   passwordUpdateSchema,
   async (data) => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Update password
     const { error: passwordError } = await supabase.auth.updateUser({
@@ -89,7 +89,7 @@ export const updatePassword = createSafeAction(
 export const getUserProfile = createSafeAction(
   z.object({}),
   async (_, { userId }) => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const {
       data: { user },

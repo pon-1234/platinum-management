@@ -750,7 +750,9 @@ export class BottleKeepService extends BaseService {
           productName: alert.product_name,
           alertType: alert.alert_type as "expired" | "expiring" | "low_amount",
           severity:
-            alert.alert_type === "expired" || alert.days_until_expiry <= 3
+            alert.alert_type === "expired" ||
+            (alert.days_until_expiry !== undefined &&
+              alert.days_until_expiry <= 3)
               ? "critical"
               : "warning",
           message: alert.alert_message,

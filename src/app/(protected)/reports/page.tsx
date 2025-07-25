@@ -85,30 +85,27 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-blue-600">
-              ¥{(monthlyReport?.totalRevenue || 0).toLocaleString()}
+              ¥{(monthlyReport?.totalSales || 0).toLocaleString()}
             </div>
             <div className="text-sm text-gray-500">月次売上</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-green-600">
-              {monthlyReport?.totalCustomers || 0}
+              {monthlyReport?.totalDays || 0}
             </div>
-            <div className="text-sm text-gray-500">総顧客数</div>
+            <div className="text-sm text-gray-500">営業日数</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-purple-600">
-              {monthlyReport?.totalVisits || 0}
+              ¥{(monthlyReport?.bestDay?.sales || 0).toLocaleString()}
             </div>
-            <div className="text-sm text-gray-500">月次来店数</div>
+            <div className="text-sm text-gray-500">最高売上日</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded">
             <div className="text-2xl font-bold text-orange-600">
-              ¥
-              {Math.round(
-                monthlyReport?.averageRevenuePerVisit || 0
-              ).toLocaleString()}
+              ¥{(monthlyReport?.averageDailySales || 0).toLocaleString()}
             </div>
-            <div className="text-sm text-gray-500">平均客単価</div>
+            <div className="text-sm text-gray-500">日平均売上</div>
           </div>
         </div>
       </div>
@@ -184,21 +181,21 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-gray-50 rounded">
               <div className="text-2xl font-bold text-gray-900">
-                {inventoryReport.totalProducts}
+                {inventoryReport.lowStockItems.length}
               </div>
-              <div className="text-sm text-gray-500">総商品数</div>
+              <div className="text-sm text-gray-500">低在庫商品数</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded">
               <div className="text-2xl font-bold text-yellow-600">
-                {inventoryReport.lowStockCount}
+                {inventoryReport.movements.length}
               </div>
-              <div className="text-sm text-gray-500">在庫不足商品</div>
+              <div className="text-sm text-gray-500">在庫移動数</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded">
               <div className="text-2xl font-bold text-blue-600">
-                {inventoryReport.totalMovements}
+                ¥{inventoryReport.totalValue.toLocaleString()}
               </div>
-              <div className="text-sm text-gray-500">本日の在庫移動</div>
+              <div className="text-sm text-gray-500">在庫総額</div>
             </div>
           </div>
 

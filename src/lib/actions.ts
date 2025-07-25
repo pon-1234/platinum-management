@@ -7,7 +7,8 @@ export type ActionResult<T> =
   | { success: false; error: string };
 
 export async function createAction<T, R>(
-  fn: (data: T) => Promise<R>
+  fn: (data: T) => Promise<R>,
+  data: T
 ): Promise<ActionResult<R>> {
   try {
     const result = await fn(data);
@@ -29,7 +30,7 @@ export function authenticatedAction<TInput, TOutput>(
 ) {
   return async (data: TInput): Promise<ActionResult<TOutput>> => {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const {
         data: { user },
         error: authError,

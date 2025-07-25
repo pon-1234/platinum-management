@@ -10,7 +10,6 @@ import {
   UserIcon,
   CalendarIcon,
   TagIcon,
-  DocumentTextIcon,
   PencilIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
@@ -193,18 +192,18 @@ export function ShiftDetailModal({
                 <dd className="mt-1">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      shift.status === "confirmed"
+                      shift.isConfirmed
                         ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                        : shift.status === "requested"
+                        : shift.shiftStatus === "scheduled"
                           ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
                     }`}
                   >
-                    {shift.status === "confirmed"
+                    {shift.isConfirmed
                       ? "確定"
-                      : shift.status === "requested"
-                        ? "申請中"
-                        : "下書き"}
+                      : shift.shiftStatus === "scheduled"
+                        ? "予定"
+                        : "未定"}
                   </span>
                 </dd>
               </div>
@@ -212,20 +211,7 @@ export function ShiftDetailModal({
           </div>
         </div>
 
-        {/* Notes */}
-        {shift.notes && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <DocumentTextIcon className="h-5 w-5" />
-              備考
-            </h3>
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                {shift.notes}
-              </p>
-            </div>
-          </div>
-        )}
+        {/* Notes - CalendarShift doesn't have notes property */}
 
         {/* Actions */}
         <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">

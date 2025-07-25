@@ -14,7 +14,7 @@ export function createSafeAction<TInput extends z.ZodTypeAny, TOutput>(
 ) {
   return async (input: z.infer<TInput>): Promise<ActionResult<TOutput>> => {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const {
         data: { user },
         error: authError,

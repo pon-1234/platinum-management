@@ -271,7 +271,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
           setRejectionReason("");
         }}
         title="申請を却下"
-        maxWidth="max-w-md"
+        size="sm"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">

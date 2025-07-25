@@ -14,7 +14,9 @@ const getBottleKeepsSchema = z.object({
   expiringWithin: z.number().optional(),
   lowAmount: z.boolean().optional(),
   searchTerm: z.string().optional(),
-  sortBy: z.enum(["expiryDate", "openedDate"]).optional(),
+  sortBy: z
+    .enum(["expiryDate", "openedDate", "customerName", "productName"])
+    .optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 

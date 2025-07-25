@@ -7,7 +7,7 @@ import { z } from "zod";
 export const getAvailableStaffForCast = createSafeAction(
   z.object({}),
   async () => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Get all staff that are not already casts and not admin
     const { data: staffs, error } = await supabase
@@ -59,7 +59,7 @@ const getUnregisteredStaffSchema = z.object({
 export const getUnregisteredStaff = createSafeAction(
   getUnregisteredStaffSchema,
   async ({ page, limit, searchQuery }) => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Server-side call with proper authentication context
     const { data, error } = await supabase.rpc("get_unregistered_staff", {
