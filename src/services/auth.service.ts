@@ -147,6 +147,66 @@ export class AuthService {
 
     return resourcePermissions.includes(action);
   }
+
+  async updateProfile(data: {
+    email?: string;
+    name?: string;
+    phone?: string;
+    bio?: string;
+  }): Promise<AuthResult> {
+    try {
+      const { data: authData, error } = await this.supabase.auth.updateUser({
+        email: data.email,
+        data: {
+          name: data.name,
+          phone: data.phone,
+          bio: data.bio,
+        },
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return {
+        success: true,
+        user: authData.user,
+      };
+    } catch {
+      return {
+        success: false,
+        error: "An unexpected error occurred",
+      };
+    }
+  }
+
+  async updatePassword(newPassword: string): Promise<AuthResult> {
+    try {
+      const { data, error } = await this.supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return {
+        success: true,
+        user: data.user,
+      };
+    } catch {
+      return {
+        success: false,
+        error: "An unexpected error occurred",
+      };
+    }
+  }
 }
 
 // Export singleton instance

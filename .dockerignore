@@ -1,0 +1,5 @@
+# キャッシュや重い物はイメージに入れない
+node_modules
+.git
+dist
+*.log
