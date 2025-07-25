@@ -3,14 +3,6 @@
 import { QRCodeService } from "@/services/qr-code.service";
 import { authenticatedAction } from "@/lib/actions";
 import { z } from "zod";
-import type {
-  QRCode,
-  QRAttendanceResponse,
-  QRCodeStats,
-  QRAttendanceHistory,
-  QRValidationResult,
-  StaffQRInfo,
-} from "@/types/qr-code.types";
 
 // Create singleton instance
 const qrCodeService = new QRCodeService();

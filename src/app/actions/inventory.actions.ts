@@ -3,15 +3,6 @@
 import { inventoryService } from "@/services/inventory.service";
 import { authenticatedAction } from "@/lib/actions";
 import { z } from "zod";
-import type {
-  Product,
-  InventoryMovement,
-  InventoryStats,
-  InventoryAlert,
-  InventoryReport,
-  PeriodInventoryReport,
-  ReorderSuggestion,
-} from "@/types/inventory.types";
 
 // ========== Product Actions ==========
 

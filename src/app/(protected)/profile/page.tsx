@@ -90,7 +90,7 @@ export default function ProfilePage() {
     if (user) {
       loadProfile();
     }
-  }, [user]);
+  }, [user, profileForm]);
 
   // Password form
   const passwordForm = useFormValidation<PasswordFormData>({

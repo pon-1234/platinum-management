@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/common";
 import { reportService } from "@/services/report.service";
 import type {
-  MonthlySalesReport,
   CastPerformanceReport,
-  CustomerReport,
   InventoryReport,
   MonthlyReportSummary,
 } from "@/types/report.types";

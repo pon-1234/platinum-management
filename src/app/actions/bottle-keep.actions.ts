@@ -3,14 +3,6 @@
 import { bottleKeepService } from "@/services/bottle-keep.service";
 import { authenticatedAction } from "@/lib/actions";
 import { z } from "zod";
-import type {
-  BottleKeepDetail,
-  BottleKeepStats,
-  BottleKeepAlert,
-  CustomerBottleKeepSummary,
-  ExpiryManagement,
-  BottleKeepInventory,
-} from "@/types/bottle-keep.types";
 
 // ========== BottleKeep Actions ==========
 

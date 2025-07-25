@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/Card";
 import { LoadingSpinner, EmptyState } from "@/components/common";
 import { BottleKeepDashboard } from "@/components/bottle-keep/BottleKeepDashboard";
 import { BottleKeepList } from "@/components/bottle-keep/BottleKeepList";
@@ -11,12 +10,7 @@ import {
   getBottleKeeps,
   getStorageLocations,
   createBottleKeep,
-  updateBottleKeep,
   useBottleKeep,
-  type GetBottleKeepsInput,
-  type CreateBottleKeepInput,
-  type UpdateBottleKeepInput,
-  type UseBottleKeepInput,
 } from "@/app/actions/bottle-keep.actions";
 import { searchCustomers } from "@/app/actions/customer.actions";
 import { getProducts } from "@/app/actions/inventory.actions";
@@ -117,24 +111,6 @@ export default function BottleKeepPage() {
         loadBottleKeeps(currentFilter);
       } else {
         toast.error(result.error || "ボトルキープの登録に失敗しました");
-      }
-    } catch (error) {
-      toast.error("エラーが発生しました");
-      console.error(error);
-    }
-  };
-
-  const handleUpdateBottleKeep = async (
-    id: string,
-    data: Omit<UpdateBottleKeepInput, "id">
-  ) => {
-    try {
-      const result = await updateBottleKeep({ id, ...data });
-      if (result.success) {
-        toast.success("ボトルキープを更新しました");
-        loadBottleKeeps(currentFilter);
-      } else {
-        toast.error("ボトルキープの更新に失敗しました");
       }
     } catch (error) {
       toast.error("エラーが発生しました");
