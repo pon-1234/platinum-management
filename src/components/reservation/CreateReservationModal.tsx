@@ -64,6 +64,7 @@ export function CreateReservationModal({
     if (watchedDate && watchedTime) {
       loadAvailableTables();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedDate, watchedTime]);
 
   const loadInitialData = async () => {

@@ -174,18 +174,18 @@ export class ReportService extends BaseService {
     const casts = data || [];
 
     // Add UI-compatible aliases
-    const topCasts = casts.map(
-      (cast: {
-        castId: string;
-        castName: string;
-        totalOrders: number;
-        totalSales: number;
-      }) => ({
-        ...cast,
-        orderCount: cast.totalOrders, // alias for UI
-        totalAmount: cast.totalSales, // alias for UI
-      })
-    );
+    interface CastData {
+      castId: string;
+      castName: string;
+      totalOrders: number;
+      totalSales: number;
+    }
+
+    const topCasts = casts.map((cast: CastData) => ({
+      ...cast,
+      orderCount: cast.totalOrders, // alias for UI
+      totalAmount: cast.totalSales, // alias for UI
+    }));
 
     // Filter for specific cast if castId is provided
     const filteredCasts = castId
@@ -240,10 +240,12 @@ export class ReportService extends BaseService {
     const totalVisits = visits?.length || 0;
     const totalSpent =
       visits?.reduce((sum, visit) => {
+        interface BillingItem {
+          amount: number;
+        }
         const visitTotal =
           visit.billing_items?.reduce(
-            (itemSum: number, item: { amount: number }) =>
-              itemSum + item.amount,
+            (itemSum: number, item: BillingItem) => itemSum + item.amount,
             0
           ) || 0;
         return sum + visitTotal;
@@ -263,7 +265,7 @@ export class ReportService extends BaseService {
           date: visit.check_in_at,
           amount:
             visit.billing_items?.reduce(
-              (sum: number, item: { amount: number }) => sum + item.amount,
+              (sum: number, item: BillingItem) => sum + item.amount,
               0
             ) || 0,
         })) || [],

@@ -25,8 +25,7 @@ import { toast } from "react-hot-toast";
 type ViewMode = "dashboard" | "generate" | "scan" | "history";
 
 export default function QRAttendancePage() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [viewMode, setViewMode] = useState<ViewMode>("dashboard");
+  const [viewMode] = useState<ViewMode>("dashboard");
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<QRCodeStats | null>(null);
   const [attendanceHistory, setAttendanceHistory] = useState<

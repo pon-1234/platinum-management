@@ -18,12 +18,15 @@ vi.mock("@/lib/supabase/client", () => ({
 
 describe("InventoryService", () => {
   let service: InventoryService;
-  let mockSupabase: unknown;
+  let mockSupabase: {
+    from: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = new InventoryService();
-    mockSupabase = (service as { supabase: unknown }).supabase;
+    mockSupabase = (service as { supabase: typeof mockSupabase }).supabase;
   });
 
   describe("Product Management", () => {
@@ -300,7 +303,7 @@ describe("InventoryService", () => {
           }),
         };
 
-        mockSupabase.from = vi.fn((table) => {
+        mockSupabase.from = vi.fn((table: string) => {
           if (table === "inventory_movements") {
             return { insert: vi.fn().mockReturnValue(movementQuery) };
           } else if (table === "products") {
@@ -354,7 +357,7 @@ describe("InventoryService", () => {
           single: vi.fn().mockResolvedValue({ data: mockProduct, error: null }),
         };
 
-        mockSupabase.from = vi.fn((table) => {
+        mockSupabase.from = vi.fn((table: string) => {
           if (table === "inventory_movements") {
             return { insert: vi.fn().mockReturnValue(movementQuery) };
           } else if (table === "products") {
@@ -432,22 +435,29 @@ describe("InventoryService", () => {
         ];
 
         mockSupabase.from = vi.fn().mockImplementation(() => ({
-          select: vi.fn().mockImplementation((fields, options) => {
-            if (options?.count === "exact" && options?.head === true) {
-              return countQuery;
-            }
-            if (fields === "stock_quantity, cost") {
-              return {
-                eq: vi.fn().mockResolvedValue({
-                  data: productsData,
-                  error: null,
-                }),
-              };
-            }
-            return {
-              eq: vi.fn().mockReturnValue(outOfStockQuery),
-            };
-          }),
+          select: vi
+            .fn()
+            .mockImplementation(
+              (
+                fields: string,
+                options?: { count?: string; head?: boolean }
+              ) => {
+                if (options?.count === "exact" && options?.head === true) {
+                  return countQuery;
+                }
+                if (fields === "stock_quantity, cost") {
+                  return {
+                    eq: vi.fn().mockResolvedValue({
+                      data: productsData,
+                      error: null,
+                    }),
+                  };
+                }
+                return {
+                  eq: vi.fn().mockReturnValue(outOfStockQuery),
+                };
+              }
+            ),
         }));
 
         mockSupabase.rpc = vi.fn().mockResolvedValue({

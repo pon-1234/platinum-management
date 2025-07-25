@@ -562,7 +562,10 @@ export class BottleKeepService extends BaseService {
 
       if (error) {
         throw new Error(
-          this.handleDatabaseError(error, "期限切れボトル更新に失敗しました")
+          this.handleDatabaseError(
+            error as { code?: string },
+            "期限切れボトル更新に失敗しました"
+          )
         );
       }
 
@@ -673,7 +676,15 @@ export class BottleKeepService extends BaseService {
           alert_message: string;
         }>;
         sent_count: number;
-      };
+      } | null;
+
+      if (!result) {
+        return {
+          success: false,
+          sentCount: 0,
+          alerts: [],
+        };
+      }
 
       // 実際の通知送信処理
       const alertsToSend: AlertNotificationData[] = result.alerts.map(

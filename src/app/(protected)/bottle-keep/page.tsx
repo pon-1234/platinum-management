@@ -10,7 +10,7 @@ import {
   getBottleKeeps,
   getStorageLocations,
   createBottleKeep,
-  useBottleKeep,
+  useBottleKeep as recordBottleKeepUsage,
 } from "@/app/actions/bottle-keep.actions";
 import { searchCustomers } from "@/app/actions/customer.actions";
 import { getProducts } from "@/app/actions/inventory.actions";
@@ -126,8 +126,7 @@ export default function BottleKeepPage() {
 
   const handleUseBottleKeep = async (data: UseBottleKeepRequest) => {
     try {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const result = await useBottleKeep(data);
+      const result = await recordBottleKeepUsage(data);
       if (result.success) {
         toast.success("ボトルキープの使用を記録しました");
         setShowUsageForm(false);

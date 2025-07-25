@@ -79,7 +79,9 @@ export default function OrderTicketManagement({
       );
       setTables(availableTables);
     } catch (error) {
-      console.error("Failed to load data:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load data:", error);
+      }
       toast.error("データの読み込みに失敗しました");
     } finally {
       setIsLoading(false);
@@ -102,7 +104,9 @@ export default function OrderTicketManagement({
       onVisitUpdate?.();
       toast.success("新しい来店を作成しました");
     } catch (error) {
-      console.error("Failed to create visit:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to create visit:", error);
+      }
       toast.error("来店の作成に失敗しました");
     }
   };
@@ -112,7 +116,9 @@ export default function OrderTicketManagement({
       const visitDetails = await billingService.getVisitWithDetails(visitId);
       setSelectedVisit(visitDetails);
     } catch (error) {
-      console.error("Failed to load visit details:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load visit details:", error);
+      }
       toast.error("来店詳細の読み込みに失敗しました");
     }
   };
@@ -123,7 +129,9 @@ export default function OrderTicketManagement({
       setBillCalculation(calculation);
       setPaymentForm((prev) => ({ ...prev, amount: calculation.totalAmount }));
     } catch (error) {
-      console.error("Failed to calculate bill:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to calculate bill:", error);
+      }
       toast.error("料金計算に失敗しました");
     }
   };
@@ -151,7 +159,9 @@ export default function OrderTicketManagement({
       onVisitUpdate?.();
       toast.success("お会計が完了しました");
     } catch (error) {
-      console.error("Failed to process payment:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to process payment:", error);
+      }
       toast.error("お会計の処理に失敗しました");
     }
   };
@@ -166,7 +176,9 @@ export default function OrderTicketManagement({
       // Reload visit details
       await handleSelectVisit(selectedVisit.id);
     } catch (error) {
-      console.error("Failed to delete order item:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to delete order item:", error);
+      }
       toast.error("注文の削除に失敗しました");
     }
   };

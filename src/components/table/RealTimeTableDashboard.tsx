@@ -49,7 +49,9 @@ export default function RealTimeTableDashboard({
           }
         );
       } catch (error) {
-        console.error("Failed to initialize real-time connection:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to initialize real-time connection:", error);
+        }
         handleConnectionError();
       }
     };
@@ -108,7 +110,9 @@ export default function RealTimeTableDashboard({
       await tableService.updateTableStatus(tableId, newStatus);
       toast.success("テーブルステータスを更新しました");
     } catch (error) {
-      console.error("Failed to update table status:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to update table status:", error);
+      }
       toast.error("ステータス更新に失敗しました");
     }
   };

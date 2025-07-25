@@ -81,6 +81,7 @@ export function ReservationDetailModal({
         loadEditingData();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, reservation, isEditing, reset]);
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export function ReservationDetailModal({
         loadAvailableTables();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, watchedDate, watchedTime, reservation]);
 
   const loadEditingData = async () => {

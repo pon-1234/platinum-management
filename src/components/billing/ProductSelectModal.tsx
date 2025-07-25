@@ -54,6 +54,7 @@ export default function ProductSelectModal({
 
   useEffect(() => {
     filterProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, selectedCategory, products]); // filterProducts depends on these state variables
 
   const loadProducts = async () => {
@@ -63,7 +64,9 @@ export default function ProductSelectModal({
       setProducts(data);
       setFilteredProducts(data);
     } catch (error) {
-      console.error("Failed to load products:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load products:", error);
+      }
       toast.error("商品の読み込みに失敗しました");
     } finally {
       setIsLoading(false);
@@ -160,7 +163,9 @@ export default function ProductSelectModal({
       onItemsAdded();
       onClose();
     } catch (error) {
-      console.error("Failed to add order items:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to add order items:", error);
+      }
       toast.error("商品の追加に失敗しました");
     } finally {
       setIsSubmitting(false);
