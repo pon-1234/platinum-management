@@ -418,44 +418,43 @@ describe("InventoryService", () => {
         let callCount = 0;
         mockSupabase.from.mockImplementation(() => {
           const query = {
-            select: vi
-              .fn()
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              .mockImplementation(
-                (
-                  fields: string,
-                  options?: { count?: string; head?: boolean }
-                ) => {
-                  callCount++;
-                  if (callCount === 1) {
-                    // First call: total product count
-                    return {
+            select: vi.fn().mockImplementation(
+              (
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                fields: string,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                options?: { count?: string; head?: boolean }
+              ) => {
+                callCount++;
+                if (callCount === 1) {
+                  // First call: total product count
+                  return {
+                    eq: vi.fn().mockResolvedValue({
+                      count: 100,
+                      error: null,
+                    }),
+                  };
+                } else if (callCount === 2) {
+                  // Second call: out of stock count
+                  return {
+                    eq: vi.fn().mockReturnValue({
                       eq: vi.fn().mockResolvedValue({
-                        count: 100,
+                        count: 5,
                         error: null,
                       }),
-                    };
-                  } else if (callCount === 2) {
-                    // Second call: out of stock count
-                    return {
-                      eq: vi.fn().mockReturnValue({
-                        eq: vi.fn().mockResolvedValue({
-                          count: 5,
-                          error: null,
-                        }),
-                      }),
-                    };
-                  } else {
-                    // Third call: product data for value calculation
-                    return {
-                      eq: vi.fn().mockResolvedValue({
-                        data: productsData,
-                        error: null,
-                      }),
-                    };
-                  }
+                    }),
+                  };
+                } else {
+                  // Third call: product data for value calculation
+                  return {
+                    eq: vi.fn().mockResolvedValue({
+                      data: productsData,
+                      error: null,
+                    }),
+                  };
                 }
-              ),
+              }
+            ),
           };
           return query;
         });
