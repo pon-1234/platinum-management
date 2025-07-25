@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { createSafeAction } from "@/lib/safe-action";
 
 // Validation schemas
 export const profileUpdateSchema = z.object({
@@ -25,19 +26,10 @@ export const passwordUpdateSchema = z.object({
 export type ProfileUpdateData = z.infer<typeof profileUpdateSchema>;
 export type PasswordUpdateData = z.infer<typeof passwordUpdateSchema>;
 
-export async function updateProfile(data: ProfileUpdateData) {
-  try {
-    const supabase = await createClient();
-
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return { success: false, error: "認証エラーが発生しました" };
-    }
+export const updateProfile = createSafeAction(
+  profileUpdateSchema,
+  async (data, { userId }) => {
+    const supabase = createClient();
 
     // Update auth metadata
     const { error: authError } = await supabase.auth.updateUser({
@@ -50,7 +42,7 @@ export async function updateProfile(data: ProfileUpdateData) {
     });
 
     if (authError) {
-      return { success: false, error: authError.message };
+      throw new Error(authError.message);
     }
 
     // Update staff profile if exists
@@ -62,7 +54,7 @@ export async function updateProfile(data: ProfileUpdateData) {
         phone: data.phone || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     if (staffError) {
       if (process.env.NODE_ENV === "development") {
@@ -72,28 +64,14 @@ export async function updateProfile(data: ProfileUpdateData) {
     }
 
     revalidatePath("/profile");
-    return { success: true };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Profile update error:", error);
-    }
-    return { success: false, error: "プロフィールの更新に失敗しました" };
+    return null;
   }
-}
+);
 
-export async function updatePassword(data: PasswordUpdateData) {
-  try {
-    const supabase = await createClient();
-
-    // Verify current password by re-authenticating
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return { success: false, error: "認証エラーが発生しました" };
-    }
+export const updatePassword = createSafeAction(
+  passwordUpdateSchema,
+  async (data, { userId }) => {
+    const supabase = createClient();
 
     // Update password
     const { error: passwordError } = await supabase.auth.updateUser({
@@ -101,21 +79,17 @@ export async function updatePassword(data: PasswordUpdateData) {
     });
 
     if (passwordError) {
-      return { success: false, error: passwordError.message };
+      throw new Error(passwordError.message);
     }
 
-    return { success: true };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Password update error:", error);
-    }
-    return { success: false, error: "パスワードの更新に失敗しました" };
+    return null;
   }
-}
+);
 
-export async function getUserProfile() {
-  try {
-    const supabase = await createClient();
+export const getUserProfile = createSafeAction(
+  z.object({}),
+  async (_, { userId }) => {
+    const supabase = createClient();
 
     const {
       data: { user },
@@ -123,14 +97,14 @@ export async function getUserProfile() {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return { success: false, error: "認証エラーが発生しました" };
+      throw new Error("認証エラーが発生しました");
     }
 
     // Get staff profile
     const { data: staff, error: staffError } = await supabase
       .from("staffs")
       .select("name, email, phone, created_at")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (staffError && staffError.code !== "PGRST116") {
@@ -152,11 +126,6 @@ export async function getUserProfile() {
       bio: user.user_metadata?.bio || "",
     };
 
-    return { success: true, data: profile };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Get profile error:", error);
-    }
-    return { success: false, error: "プロフィールの取得に失敗しました" };
+    return profile;
   }
-}
+);

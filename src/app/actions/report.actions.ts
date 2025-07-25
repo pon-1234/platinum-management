@@ -1,7 +1,7 @@
 "use server";
 
 import { reportService } from "@/services/report.service";
-import { authenticatedAction } from "@/lib/actions";
+import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
 // 月次売上レポート取得
@@ -10,11 +10,11 @@ const getMonthlySalesReportSchema = z.object({
   month: z.number().min(1).max(12),
 });
 
-export const getMonthlySalesReport = authenticatedAction(
+export const getMonthlySalesReport = createSafeAction(
   getMonthlySalesReportSchema,
   async ({ year, month }) => {
     const report = await reportService.getMonthlySalesReport(year, month);
-    return { success: true, data: report };
+    return report;
   }
 );
 
@@ -24,42 +24,39 @@ const getCastPerformanceReportSchema = z.object({
   endDate: z.string(),
 });
 
-export const getCastPerformanceReport = authenticatedAction(
+export const getCastPerformanceReport = createSafeAction(
   getCastPerformanceReportSchema,
   async ({ startDate, endDate }) => {
     const report = await reportService.getCastPerformanceReport(
       startDate,
       endDate
     );
-    return { success: true, data: report };
+    return report;
   }
 );
 
 // 顧客レポート取得
-export const getCustomerReport = authenticatedAction(z.object({}), async () => {
+export const getCustomerReport = createSafeAction(z.object({}), async () => {
   const report = await reportService.getCustomerReport();
-  return { success: true, data: report };
+  return report;
 });
 
 // 在庫レポート取得
-export const getInventoryReport = authenticatedAction(
-  z.object({}),
-  async () => {
-    const report = await reportService.getInventoryReport();
-    return { success: true, data: report };
-  }
-);
+export const getInventoryReport = createSafeAction(z.object({}), async () => {
+  const report = await reportService.getInventoryReport();
+  return report;
+});
 
 // 日次売上レポート取得
 const getDailyRevenueReportSchema = z.object({
   date: z.string(),
 });
 
-export const getDailyRevenueReport = authenticatedAction(
+export const getDailyRevenueReport = createSafeAction(
   getDailyRevenueReportSchema,
   async ({ date }) => {
     const report = await reportService.getDailyRevenueReport(date);
-    return { success: true, data: report };
+    return report;
   }
 );
 

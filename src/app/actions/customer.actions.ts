@@ -1,7 +1,7 @@
 "use server";
 
 import { customerService } from "@/services/customer.service";
-import { authenticatedAction } from "@/lib/actions";
+import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
 const searchCustomersSchema = z.object({
@@ -10,10 +10,10 @@ const searchCustomersSchema = z.object({
   limit: z.number().min(1).max(100).optional().default(50),
 });
 
-export const searchCustomers = authenticatedAction(
+export const searchCustomers = createSafeAction(
   searchCustomersSchema,
-  async (params: z.infer<typeof searchCustomersSchema>) => {
+  async (params) => {
     const customers = await customerService.searchCustomers(params);
-    return { success: true, data: customers };
+    return customers;
   }
 );

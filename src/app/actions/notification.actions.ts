@@ -2,77 +2,42 @@
 
 import { bottleKeepService } from "@/services/bottle-keep.service";
 import { revalidatePath } from "next/cache";
+import { createSafeAction } from "@/lib/safe-action";
+import { z } from "zod";
 
 /**
  * ボトルキープ期限アラートを送信
  */
-export async function sendBottleKeepExpiryAlerts() {
-  try {
+export const sendBottleKeepExpiryAlerts = createSafeAction(
+  z.object({}),
+  async () => {
     const result = await bottleKeepService.sendExpiryAlerts();
 
     // 関連ページのキャッシュを無効化
     revalidatePath("/bottle-keep");
     revalidatePath("/dashboard");
 
-    return {
-      success: true,
-      data: result,
-    };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Alert sending action error:", error);
-    }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    return result;
   }
-}
+);
 
 /**
  * 未送信アラート一覧を取得
  */
-export async function getUnsentAlerts() {
-  try {
-    const alerts = await bottleKeepService.getUnsentAlerts();
-
-    return {
-      success: true,
-      data: alerts,
-    };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Get unsent alerts action error:", error);
-    }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
+export const getUnsentAlerts = createSafeAction(z.object({}), async () => {
+  const alerts = await bottleKeepService.getUnsentAlerts();
+  return alerts;
+});
 
 /**
  * 期限切れボトルのステータスを更新
  */
-export async function updateExpiredBottles() {
-  try {
-    const updatedCount = await bottleKeepService.updateExpiredBottles();
+export const updateExpiredBottles = createSafeAction(z.object({}), async () => {
+  const updatedCount = await bottleKeepService.updateExpiredBottles();
 
-    // 関連ページのキャッシュを無効化
-    revalidatePath("/bottle-keep");
-    revalidatePath("/dashboard");
+  // 関連ページのキャッシュを無効化
+  revalidatePath("/bottle-keep");
+  revalidatePath("/dashboard");
 
-    return {
-      success: true,
-      data: { updatedCount },
-    };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Update expired bottles action error:", error);
-    }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
+  return { updatedCount };
+});

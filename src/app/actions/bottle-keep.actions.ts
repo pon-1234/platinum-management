@@ -1,7 +1,7 @@
 "use server";
 
 import { bottleKeepService } from "@/services/bottle-keep.service";
-import { authenticatedAction } from "@/lib/actions";
+import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
 // ========== BottleKeep Actions ==========
@@ -18,11 +18,11 @@ const getBottleKeepsSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
-export const getBottleKeeps = authenticatedAction(
+export const getBottleKeeps = createSafeAction(
   getBottleKeepsSchema,
-  async (filter: z.infer<typeof getBottleKeepsSchema>) => {
+  async (filter) => {
     const bottleKeeps = await bottleKeepService.getBottleKeeps(filter);
-    return { success: true, data: bottleKeeps };
+    return bottleKeeps;
   }
 );
 
@@ -30,14 +30,14 @@ const getBottleKeepByIdSchema = z.object({
   id: z.string(),
 });
 
-export const getBottleKeepById = authenticatedAction(
+export const getBottleKeepById = createSafeAction(
   getBottleKeepByIdSchema,
   async ({ id }) => {
     const bottleKeep = await bottleKeepService.getBottleKeepById(id);
     if (!bottleKeep) {
-      return { success: false, error: "ボトルキープが見つかりません" };
+      throw new Error("ボトルキープが見つかりません");
     }
-    return { success: true, data: bottleKeep };
+    return bottleKeep;
   }
 );
 
@@ -51,11 +51,11 @@ const createBottleKeepSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const createBottleKeep = authenticatedAction(
+export const createBottleKeep = createSafeAction(
   createBottleKeepSchema,
-  async (data: z.infer<typeof createBottleKeepSchema>) => {
+  async (data) => {
     const bottleKeep = await bottleKeepService.createBottleKeep(data);
-    return { success: true, data: bottleKeep };
+    return bottleKeep;
   }
 );
 
@@ -68,7 +68,7 @@ const updateBottleKeepSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const updateBottleKeep = authenticatedAction(
+export const updateBottleKeep = createSafeAction(
   updateBottleKeepSchema,
   async ({ id, ...data }) => {
     const bottleKeep = await bottleKeepService.updateBottleKeep(id, {
@@ -78,7 +78,7 @@ export const updateBottleKeep = authenticatedAction(
       remaining_amount: data.remainingAmount,
       notes: data.notes,
     });
-    return { success: true, data: bottleKeep };
+    return bottleKeep;
   }
 );
 
@@ -89,93 +89,75 @@ const useBottleKeepSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const useBottleKeep = authenticatedAction(
+export const useBottleKeep = createSafeAction(
   useBottleKeepSchema,
-  async (data: z.infer<typeof useBottleKeepSchema>) => {
+  async (data) => {
     await bottleKeepService.useBottleKeep(data);
-    return { success: true };
+    return null;
   }
 );
 
 // ========== Statistics and Reports Actions ==========
 
-export const getBottleKeepStats = authenticatedAction(
-  z.object({}),
-  async () => {
-    const stats = await bottleKeepService.getBottleKeepStats();
-    return { success: true, data: stats };
-  }
-);
+export const getBottleKeepStats = createSafeAction(z.object({}), async () => {
+  const stats = await bottleKeepService.getBottleKeepStats();
+  return stats;
+});
 
-export const getBottleKeepAlerts = authenticatedAction(
-  z.object({}),
-  async () => {
-    const alerts = await bottleKeepService.getBottleKeepAlerts();
-    return { success: true, data: alerts };
-  }
-);
+export const getBottleKeepAlerts = createSafeAction(z.object({}), async () => {
+  const alerts = await bottleKeepService.getBottleKeepAlerts();
+  return alerts;
+});
 
 const getCustomerBottleKeepSummarySchema = z.object({
   customerId: z.string(),
 });
 
-export const getCustomerBottleKeepSummary = authenticatedAction(
+export const getCustomerBottleKeepSummary = createSafeAction(
   getCustomerBottleKeepSummarySchema,
   async ({ customerId }) => {
     const summary =
       await bottleKeepService.getCustomerBottleKeepSummary(customerId);
-    return { success: true, data: summary };
+    return summary;
   }
 );
 
-export const getExpiryManagement = authenticatedAction(
-  z.object({}),
-  async () => {
-    const expiry = await bottleKeepService.getExpiryManagement();
-    return { success: true, data: expiry };
-  }
-);
+export const getExpiryManagement = createSafeAction(z.object({}), async () => {
+  const expiry = await bottleKeepService.getExpiryManagement();
+  return expiry;
+});
 
-export const getBottleKeepInventory = authenticatedAction(
+export const getBottleKeepInventory = createSafeAction(
   z.object({}),
   async () => {
     const inventory = await bottleKeepService.getBottleKeepInventory();
-    return { success: true, data: inventory };
+    return inventory;
   }
 );
 
-export const updateExpiredBottles = authenticatedAction(
-  z.object({}),
-  async () => {
-    const count = await bottleKeepService.updateExpiredBottles();
-    return { success: true, data: { updatedCount: count } };
-  }
-);
+export const updateExpiredBottles = createSafeAction(z.object({}), async () => {
+  const count = await bottleKeepService.updateExpiredBottles();
+  return { updatedCount: count };
+});
 
-export const getStorageLocations = authenticatedAction(
-  z.object({}),
-  async () => {
-    const locations = await bottleKeepService.getStorageLocations();
-    return { success: true, data: locations };
-  }
-);
+export const getStorageLocations = createSafeAction(z.object({}), async () => {
+  const locations = await bottleKeepService.getStorageLocations();
+  return locations;
+});
 
 // ========== Alert Actions ==========
 
-export const sendExpiryAlerts = authenticatedAction(z.object({}), async () => {
+export const sendExpiryAlerts = createSafeAction(z.object({}), async () => {
   const result = await bottleKeepService.sendExpiryAlerts();
   return {
-    success: result.success,
-    data: {
-      sentCount: result.sentCount,
-      alerts: result.alerts,
-    },
+    sentCount: result.sentCount,
+    alerts: result.alerts,
   };
 });
 
-export const getUnsentAlerts = authenticatedAction(z.object({}), async () => {
+export const getUnsentAlerts = createSafeAction(z.object({}), async () => {
   const alerts = await bottleKeepService.getUnsentAlerts();
-  return { success: true, data: alerts };
+  return alerts;
 });
 
 // ========== Types for client-side use ==========

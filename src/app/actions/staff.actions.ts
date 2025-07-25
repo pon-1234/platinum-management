@@ -1,78 +1,65 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createSafeAction } from "@/lib/safe-action";
+import { z } from "zod";
 
-export async function getAvailableStaffForCast() {
-  const supabase = await createClient();
+export const getAvailableStaffForCast = createSafeAction(
+  z.object({}),
+  async (_, { userId }) => {
+    const supabase = createClient();
 
-  // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error("認証されていません");
-  }
-
-  // Get all staff that are not already casts and not admin
-  const { data: staffs, error } = await supabase
-    .from("staffs")
-    .select(
+    // Get all staff that are not already casts and not admin
+    const { data: staffs, error } = await supabase
+      .from("staffs")
+      .select(
+        `
+        id,
+        full_name,
+        full_name_kana,
+        role,
+        status
       `
-      id,
-      full_name,
-      full_name_kana,
-      role,
-      status
-    `
-    )
-    .neq("role", "admin")
-    .eq("status", "active")
-    .order("full_name_kana");
+      )
+      .neq("role", "admin")
+      .eq("status", "active")
+      .order("full_name_kana");
 
-  if (error) {
-    throw new Error("スタッフ情報の取得に失敗しました");
-  }
-
-  // Get all existing cast staff IDs
-  const { data: casts } = await supabase
-    .from("casts_profile")
-    .select("staff_id");
-
-  const castStaffIds = new Set(casts?.map((c) => c.staff_id) || []);
-
-  // Filter out staff that are already casts
-  const availableStaff =
-    staffs?.filter((staff) => !castStaffIds.has(staff.id)) || [];
-
-  return availableStaff.map((staff) => ({
-    id: staff.id,
-    fullName: staff.full_name,
-    fullNameKana: staff.full_name_kana,
-    role: staff.role,
-    status: staff.status,
-  }));
-}
-
-export async function getUnregisteredStaff(
-  page: number = 1,
-  limit: number = 20,
-  searchQuery?: string
-) {
-  const supabase = await createClient();
-
-  try {
-    // Check if user is authenticated
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Authentication error:", authError);
-      }
-      throw new Error("認証が必要です");
+    if (error) {
+      throw new Error("スタッフ情報の取得に失敗しました");
     }
+
+    // Get all existing cast staff IDs
+    const { data: casts } = await supabase
+      .from("casts_profile")
+      .select("staff_id");
+
+    const castStaffIds = new Set(casts?.map((c) => c.staff_id) || []);
+
+    // Filter out staff that are already casts
+    const availableStaff =
+      staffs?.filter((staff) => !castStaffIds.has(staff.id)) || [];
+
+    return availableStaff.map((staff) => ({
+      id: staff.id,
+      fullName: staff.full_name,
+      fullNameKana: staff.full_name_kana,
+      role: staff.role,
+      status: staff.status,
+    }));
+  }
+);
+
+const getUnregisteredStaffSchema = z.object({
+  page: z.number().min(1).default(1),
+  limit: z.number().min(1).max(100).default(20),
+  searchQuery: z.string().optional(),
+});
+
+export const getUnregisteredStaff = createSafeAction(
+  getUnregisteredStaffSchema,
+  async ({ page, limit, searchQuery }, { userId }) => {
+    const supabase = createClient();
 
     // Server-side call with proper authentication context
     const { data, error } = await supabase.rpc("get_unregistered_staff", {
@@ -109,12 +96,5 @@ export async function getUnregisteredStaff(
     }));
 
     return { data: staffList, totalCount, hasMore };
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Failed to get unregistered staff:", error);
-    }
-    throw error instanceof Error
-      ? error
-      : new Error("未登録スタッフの取得に失敗しました");
   }
-}
+);

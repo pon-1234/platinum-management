@@ -1,7 +1,7 @@
 "use server";
 
 import { inventoryService } from "@/services/inventory.service";
-import { authenticatedAction } from "@/lib/actions";
+import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
 // ========== Product Actions ==========
@@ -15,26 +15,23 @@ const getProductsSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
-export const getProducts = authenticatedAction(
-  getProductsSchema,
-  async (data: z.infer<typeof getProductsSchema>) => {
-    const products = await inventoryService.getProducts(data);
-    return { success: true, data: products };
-  }
-);
+export const getProducts = createSafeAction(getProductsSchema, async (data) => {
+  const products = await inventoryService.getProducts(data);
+  return products;
+});
 
 const getProductByIdSchema = z.object({
   id: z.number(),
 });
 
-export const getProductById = authenticatedAction(
+export const getProductById = createSafeAction(
   getProductByIdSchema,
   async ({ id }) => {
     const product = await inventoryService.getProductById(id);
     if (!product) {
-      return { success: false, error: "商品が見つかりません" };
+      throw new Error("商品が見つかりません");
     }
-    return { success: true, data: product };
+    return product;
   }
 );
 
@@ -49,11 +46,11 @@ const createProductSchema = z.object({
   max_stock: z.number().min(0),
 });
 
-export const createProduct = authenticatedAction(
+export const createProduct = createSafeAction(
   createProductSchema,
-  async (data: z.infer<typeof createProductSchema>) => {
+  async (data) => {
     const product = await inventoryService.createProduct(data);
-    return { success: true, data: product };
+    return product;
   }
 );
 
@@ -70,11 +67,11 @@ const updateProductSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
-export const updateProduct = authenticatedAction(
+export const updateProduct = createSafeAction(
   updateProductSchema,
   async ({ id, ...data }) => {
     const product = await inventoryService.updateProduct(id, data);
-    return { success: true, data: product };
+    return product;
   }
 );
 
@@ -82,11 +79,11 @@ const deleteProductSchema = z.object({
   id: z.number(),
 });
 
-export const deleteProduct = authenticatedAction(
+export const deleteProduct = createSafeAction(
   deleteProductSchema,
   async ({ id }) => {
     await inventoryService.deleteProduct(id);
-    return { success: true };
+    return null;
   }
 );
 
@@ -101,11 +98,11 @@ const createInventoryMovementSchema = z.object({
   referenceId: z.string().optional(),
 });
 
-export const createInventoryMovement = authenticatedAction(
+export const createInventoryMovement = createSafeAction(
   createInventoryMovementSchema,
-  async (data: z.infer<typeof createInventoryMovementSchema>) => {
+  async (data) => {
     const movement = await inventoryService.createInventoryMovement(data);
-    return { success: true, data: movement };
+    return movement;
   }
 );
 
@@ -115,7 +112,7 @@ const getInventoryMovementsSchema = z.object({
   endDate: z.string().optional(),
 });
 
-export const getInventoryMovements = authenticatedAction(
+export const getInventoryMovements = createSafeAction(
   getInventoryMovementsSchema,
   async ({ productId, startDate, endDate }) => {
     const movements = await inventoryService.getInventoryMovements(
@@ -123,7 +120,7 @@ export const getInventoryMovements = authenticatedAction(
       startDate,
       endDate
     );
-    return { success: true, data: movements };
+    return movements;
   }
 );
 
@@ -134,38 +131,35 @@ const adjustInventorySchema = z.object({
   reason: z.string().min(1, "調整理由は必須です"),
 });
 
-export const adjustInventory = authenticatedAction(
+export const adjustInventory = createSafeAction(
   adjustInventorySchema,
-  async (data: z.infer<typeof adjustInventorySchema>) => {
+  async (data) => {
     const movement = await inventoryService.adjustInventory(data);
-    return { success: true, data: movement };
+    return movement;
   }
 );
 
 // ========== Statistics and Reports Actions ==========
 
-export const getInventoryStats = authenticatedAction(z.object({}), async () => {
+export const getInventoryStats = createSafeAction(z.object({}), async () => {
   const stats = await inventoryService.getInventoryStats();
-  return { success: true, data: stats };
+  return stats;
 });
 
-export const getInventoryAlerts = authenticatedAction(
-  z.object({}),
-  async () => {
-    const alerts = await inventoryService.getInventoryAlerts();
-    return { success: true, data: alerts };
-  }
-);
+export const getInventoryAlerts = createSafeAction(z.object({}), async () => {
+  const alerts = await inventoryService.getInventoryAlerts();
+  return alerts;
+});
 
 const getInventoryReportSchema = z.object({
   productId: z.number(),
 });
 
-export const getInventoryReport = authenticatedAction(
+export const getInventoryReport = createSafeAction(
   getInventoryReportSchema,
   async ({ productId }) => {
     const report = await inventoryService.getInventoryReport(productId);
-    return { success: true, data: report };
+    return report;
   }
 );
 
@@ -174,25 +168,25 @@ const getPeriodReportSchema = z.object({
   endDate: z.string(),
 });
 
-export const getPeriodReport = authenticatedAction(
+export const getPeriodReport = createSafeAction(
   getPeriodReportSchema,
   async ({ startDate, endDate }) => {
     const report = await inventoryService.getPeriodReport(startDate, endDate);
-    return { success: true, data: report };
+    return report;
   }
 );
 
-export const getReorderSuggestions = authenticatedAction(
+export const getReorderSuggestions = createSafeAction(
   z.object({}),
   async () => {
     const suggestions = await inventoryService.getReorderSuggestions();
-    return { success: true, data: suggestions };
+    return suggestions;
   }
 );
 
-export const getCategories = authenticatedAction(z.object({}), async () => {
+export const getCategories = createSafeAction(z.object({}), async () => {
   const categories = await inventoryService.getCategories();
-  return { success: true, data: categories };
+  return categories;
 });
 
 // ========== Batch Operations ==========
@@ -207,7 +201,7 @@ const batchUpdateStockSchema = z.object({
   ),
 });
 
-export const batchUpdateStock = authenticatedAction(
+export const batchUpdateStock = createSafeAction(
   batchUpdateStockSchema,
   async ({ updates }) => {
     const results = await Promise.all(
@@ -220,7 +214,7 @@ export const batchUpdateStock = authenticatedAction(
         })
       )
     );
-    return { success: true, data: results };
+    return results;
   }
 );
 

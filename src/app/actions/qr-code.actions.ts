@@ -1,7 +1,7 @@
 "use server";
 
 import { QRCodeService } from "@/services/qr-code.service";
-import { authenticatedAction } from "@/lib/actions";
+import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
 // Create singleton instance
@@ -15,11 +15,11 @@ const generateQRCodeSchema = z.object({
   location: z.string().optional(),
 });
 
-export const generateQRCode = authenticatedAction(
+export const generateQRCode = createSafeAction(
   generateQRCodeSchema,
-  async (data: z.infer<typeof generateQRCodeSchema>) => {
+  async (data) => {
     const qrCode = await qrCodeService.generateQRCode(data);
-    return { success: true, data: qrCode };
+    return qrCode;
   }
 );
 
@@ -29,15 +29,15 @@ const validateQRCodeSchema = z.object({
   location: z.string().optional(),
 });
 
-export const validateQRCode = authenticatedAction(
+export const validateQRCode = createSafeAction(
   validateQRCodeSchema,
-  async (data: z.infer<typeof validateQRCodeSchema>) => {
+  async (data) => {
     const result = await qrCodeService.validateQRCode(
       data.qrData,
       data.signature,
       data.location
     );
-    return { success: true, data: result };
+    return result;
   }
 );
 
@@ -56,11 +56,11 @@ const recordAttendanceSchema = z.object({
     .optional(),
 });
 
-export const recordAttendance = authenticatedAction(
+export const recordAttendance = createSafeAction(
   recordAttendanceSchema,
-  async (data: z.infer<typeof recordAttendanceSchema>) => {
+  async (data) => {
     const response = await qrCodeService.recordAttendance(data);
-    return { success: true, data: response };
+    return response;
   }
 );
 
@@ -71,11 +71,11 @@ const getAttendanceHistorySchema = z.object({
   limit: z.number().min(1).max(100).optional(),
 });
 
-export const getAttendanceHistory = authenticatedAction(
+export const getAttendanceHistory = createSafeAction(
   getAttendanceHistorySchema,
-  async (filter: z.infer<typeof getAttendanceHistorySchema>) => {
+  async (filter) => {
     const history = await qrCodeService.getAttendanceHistory(filter);
-    return { success: true, data: history };
+    return history;
   }
 );
 
@@ -83,30 +83,30 @@ const getCurrentAttendanceStatusSchema = z.object({
   staffId: z.string(),
 });
 
-export const getCurrentAttendanceStatus = authenticatedAction(
+export const getCurrentAttendanceStatus = createSafeAction(
   getCurrentAttendanceStatusSchema,
   async ({ staffId }) => {
     const status = await qrCodeService.getCurrentAttendanceStatus(staffId);
-    return { success: true, data: status };
+    return status;
   }
 );
 
 // ========== Statistics and Management Actions ==========
 
-export const getQRCodeStats = authenticatedAction(z.object({}), async () => {
+export const getQRCodeStats = createSafeAction(z.object({}), async () => {
   const stats = await qrCodeService.getQRCodeStats();
-  return { success: true, data: stats };
+  return stats;
 });
 
 const getStaffQRInfoSchema = z.object({
   staffId: z.string(),
 });
 
-export const getStaffQRInfo = authenticatedAction(
+export const getStaffQRInfo = createSafeAction(
   getStaffQRInfoSchema,
   async ({ staffId }) => {
     const info = await qrCodeService.getStaffQRInfo(staffId);
-    return { success: true, data: info };
+    return info;
   }
 );
 
@@ -114,11 +114,11 @@ const deactivateQRCodeSchema = z.object({
   qrCodeId: z.string(),
 });
 
-export const deactivateQRCode = authenticatedAction(
+export const deactivateQRCode = createSafeAction(
   deactivateQRCodeSchema,
   async ({ qrCodeId }) => {
     await qrCodeService.deactivateQRCode(qrCodeId);
-    return { success: true };
+    return null;
   }
 );
 
@@ -126,23 +126,20 @@ const deactivateStaffQRCodesSchema = z.object({
   staffId: z.string(),
 });
 
-export const deactivateStaffQRCodes = authenticatedAction(
+export const deactivateStaffQRCodes = createSafeAction(
   deactivateStaffQRCodesSchema,
   async ({ staffId }) => {
     await qrCodeService.deactivateStaffQRCodes(staffId);
-    return { success: true };
+    return null;
   }
 );
 
 // ========== Location and Settings Actions ==========
 
-export const getLocationSettings = authenticatedAction(
-  z.object({}),
-  async () => {
-    const settings = await qrCodeService.getLocationSettings();
-    return { success: true, data: settings };
-  }
-);
+export const getLocationSettings = createSafeAction(z.object({}), async () => {
+  const settings = await qrCodeService.getLocationSettings();
+  return settings;
+});
 
 const updateLocationSettingsSchema = z.object({
   allowedLocations: z.array(z.string()),
@@ -150,21 +147,21 @@ const updateLocationSettingsSchema = z.object({
   maxDistanceMeters: z.number().min(1).optional(),
 });
 
-export const updateLocationSettings = authenticatedAction(
+export const updateLocationSettings = createSafeAction(
   updateLocationSettingsSchema,
-  async (data: z.infer<typeof updateLocationSettingsSchema>) => {
+  async (data) => {
     const settings = await qrCodeService.updateLocationSettings(data);
-    return { success: true, data: settings };
+    return settings;
   }
 );
 
 // ========== Cleanup Actions ==========
 
-export const cleanupExpiredQRCodes = authenticatedAction(
+export const cleanupExpiredQRCodes = createSafeAction(
   z.object({}),
   async () => {
     const count = await qrCodeService.cleanupExpiredQRCodes();
-    return { success: true, data: { cleanedCount: count } };
+    return { cleanedCount: count };
   }
 );
 
