@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/Card";
 import { LoadingSpinner, EmptyState } from "@/components/common";
 import { BottleKeepDashboard } from "@/components/bottle-keep/BottleKeepDashboard";
 import { BottleKeepList } from "@/components/bottle-keep/BottleKeepList";
+import { BottleKeepForm } from "@/components/bottle-keep/BottleKeepForm";
+import { BottleKeepUsageForm } from "@/components/bottle-keep/BottleKeepUsageForm";
 import {
   getBottleKeeps,
   getStorageLocations,
@@ -16,14 +18,21 @@ import {
   type UpdateBottleKeepInput,
   type UseBottleKeepInput,
 } from "@/app/actions/bottle-keep.actions";
+import { searchCustomers } from "@/app/actions/customer.actions";
+import { getProducts } from "@/app/actions/inventory.actions";
 import type {
   BottleKeepDetail,
   BottleKeepSearchFilter,
+  CreateBottleKeepRequest,
+  UseBottleKeepRequest,
 } from "@/types/bottle-keep.types";
+import type { Customer } from "@/types/customer.types";
+import type { Product } from "@/types/inventory.types";
 import {
   BeakerIcon,
   PlusIcon,
   AdjustmentsHorizontalIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 
@@ -34,6 +43,8 @@ export default function BottleKeepPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [bottleKeeps, setBottleKeeps] = useState<BottleKeepDetail[]>([]);
   const [storageLocations, setStorageLocations] = useState<string[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BottleKeepSearchFilter>(
     {}
   );
@@ -43,6 +54,7 @@ export default function BottleKeepPage() {
   const [showUsageForm, setShowUsageForm] = useState(false);
   const [selectedBottleKeep, setSelectedBottleKeep] =
     useState<BottleKeepDetail | null>(null);
+  const [currentVisitId, setCurrentVisitId] = useState<string | undefined>();
 
   useEffect(() => {
     loadInitialData();
@@ -50,10 +62,21 @@ export default function BottleKeepPage() {
 
   const loadInitialData = async () => {
     try {
-      const [locationsResult] = await Promise.all([getStorageLocations({})]);
+      const [locationsResult, customersResult, productsResult] =
+        await Promise.all([
+          getStorageLocations({}),
+          searchCustomers({ status: "active" }),
+          getProducts({}),
+        ]);
 
       if (locationsResult.success) {
         setStorageLocations(locationsResult.data);
+      }
+      if (customersResult.success) {
+        setCustomers(customersResult.data);
+      }
+      if (productsResult.success) {
+        setProducts(productsResult.data);
       }
     } catch (error) {
       toast.error("初期データの読み込みに失敗しました");
@@ -84,15 +107,16 @@ export default function BottleKeepPage() {
     loadBottleKeeps(filter);
   };
 
-  const handleCreateBottleKeep = async (data: CreateBottleKeepInput) => {
+  const handleCreateBottleKeep = async (data: CreateBottleKeepRequest) => {
     try {
       const result = await createBottleKeep(data);
       if (result.success) {
         toast.success("ボトルキープを登録しました");
         setShowCreateForm(false);
+        setSelectedBottleKeep(null);
         loadBottleKeeps(currentFilter);
       } else {
-        toast.error("ボトルキープの登録に失敗しました");
+        toast.error(result.error || "ボトルキープの登録に失敗しました");
       }
     } catch (error) {
       toast.error("エラーが発生しました");
@@ -118,7 +142,7 @@ export default function BottleKeepPage() {
     }
   };
 
-  const handleUseBottleKeep = async (data: UseBottleKeepInput) => {
+  const handleUseBottleKeep = async (data: UseBottleKeepRequest) => {
     try {
       const result = await useBottleKeep(data);
       if (result.success) {
@@ -127,7 +151,7 @@ export default function BottleKeepPage() {
         setSelectedBottleKeep(null);
         loadBottleKeeps(currentFilter);
       } else {
-        toast.error("使用記録の登録に失敗しました");
+        toast.error(result.error || "使用記録の登録に失敗しました");
       }
     } catch (error) {
       toast.error("エラーが発生しました");
@@ -157,6 +181,9 @@ export default function BottleKeepPage() {
 
   const handleUseBottleKeepClick = (bottleKeep: BottleKeepDetail) => {
     setSelectedBottleKeep(bottleKeep);
+    // TODO: 現在の来店IDを取得する処理を実装
+    // 現在は来店IDなしで使用記録を作成
+    setCurrentVisitId(undefined);
     setShowUsageForm(true);
   };
 
@@ -268,48 +295,73 @@ export default function BottleKeepPage() {
       {/* Content */}
       {renderContent()}
 
-      {/* Modals would go here - placeholder for now */}
+      {/* Create/Edit Form Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4">
-              {selectedBottleKeep ? "ボトルキープ編集" : "新規ボトルキープ登録"}
-            </h3>
-            <p className="text-gray-500 mb-4">フォーム実装中...</p>
-            <div className="flex space-x-3">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium">
+                {selectedBottleKeep
+                  ? "ボトルキープ編集"
+                  : "新規ボトルキープ登録"}
+              </h3>
               <button
                 onClick={() => {
                   setShowCreateForm(false);
                   setSelectedBottleKeep(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                className="text-gray-400 hover:text-gray-500"
               >
-                キャンセル
+                <XMarkIcon className="h-6 w-6" />
               </button>
+            </div>
+            <div className="p-6">
+              <BottleKeepForm
+                bottleKeep={selectedBottleKeep}
+                customers={customers}
+                products={products}
+                storageLocations={storageLocations}
+                onSubmit={handleCreateBottleKeep}
+                onCancel={() => {
+                  setShowCreateForm(false);
+                  setSelectedBottleKeep(null);
+                }}
+                loading={isLoading}
+              />
             </div>
           </div>
         </div>
       )}
 
+      {/* Usage Form Modal */}
       {showUsageForm && selectedBottleKeep && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4">ボトルキープ使用記録</h3>
-            <p className="text-gray-500 mb-2">
-              {selectedBottleKeep.customer?.name} -{" "}
-              {selectedBottleKeep.product?.name}
-            </p>
-            <p className="text-sm text-gray-500 mb-4">使用フォーム実装中...</p>
-            <div className="flex space-x-3">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium">ボトルキープ使用記録</h3>
               <button
                 onClick={() => {
                   setShowUsageForm(false);
                   setSelectedBottleKeep(null);
+                  setCurrentVisitId(undefined);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                className="text-gray-400 hover:text-gray-500"
               >
-                キャンセル
+                <XMarkIcon className="h-6 w-6" />
               </button>
+            </div>
+            <div className="p-6">
+              <BottleKeepUsageForm
+                bottleKeep={selectedBottleKeep}
+                visitId={currentVisitId}
+                onSubmit={handleUseBottleKeep}
+                onCancel={() => {
+                  setShowUsageForm(false);
+                  setSelectedBottleKeep(null);
+                  setCurrentVisitId(undefined);
+                }}
+                loading={isLoading}
+              />
             </div>
           </div>
         </div>
