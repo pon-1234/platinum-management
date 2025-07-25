@@ -3,7 +3,17 @@ import type { Cast, CastPerformance } from "@/types/cast.types";
 
 // Hoisted mock
 const { mockSupabaseInstance } = vi.hoisted(() => {
-  const instance: any = {
+  const instance: {
+    auth: { getUser: ReturnType<typeof vi.fn> };
+    from: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    in: ReturnType<typeof vi.fn>;
+    gte: ReturnType<typeof vi.fn>;
+    lte: ReturnType<typeof vi.fn>;
+    order: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
+  } = {
     auth: {
       getUser: vi.fn(),
     },

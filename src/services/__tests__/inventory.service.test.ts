@@ -420,6 +420,7 @@ describe("InventoryService", () => {
           const query = {
             select: vi
               .fn()
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               .mockImplementation(
                 (
                   fields: string,
