@@ -23,10 +23,11 @@ export async function createAction<T, R>(
   }
 }
 
-export async function authenticatedAction<T, R>(
-  fn: (data: T, userId: string) => Promise<R>
-): Promise<(data: T) => Promise<ActionResult<R>>> {
-  return async (data: T) => {
+export function authenticatedAction<TInput, TOutput>(
+  schema: { parse: (data: unknown) => TInput },
+  fn: (data: TInput, userId?: string) => Promise<ActionResult<TOutput>>
+) {
+  return async (data: TInput): Promise<ActionResult<TOutput>> => {
     try {
       const supabase = createClient();
       const {
@@ -38,8 +39,10 @@ export async function authenticatedAction<T, R>(
         return { success: false, error: "Unauthorized" };
       }
 
-      const result = await fn(data, user.id);
-      return { success: true, data: result };
+      // Validate input
+      const validatedData = schema.parse(data);
+
+      return await fn(validatedData, user.id);
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("Authenticated action error:", error);
