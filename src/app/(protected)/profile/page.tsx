@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useAuthStore } from "@/stores/auth.store";
@@ -15,6 +15,8 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { z } from "zod";
+import { updateProfile, updatePassword, getUserProfile } from "./actions";
+import { toast } from "sonner";
 
 // Validation schemas
 const profileSchema = z.object({
@@ -50,17 +52,45 @@ export default function ProfilePage() {
     "profile" | "password" | "notifications" | "security"
   >("profile");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // Profile form
   const profileForm = useFormValidation<ProfileFormData>({
     schema: profileSchema,
     defaultValues: {
-      name: user?.email?.split("@")[0] || "",
-      email: user?.email || "",
+      name: "",
+      email: "",
       phone: "",
       bio: "",
     },
   });
+
+  // Load user profile on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      setIsLoadingProfile(true);
+      try {
+        const result = await getUserProfile();
+        if (result.success && result.data) {
+          profileForm.reset({
+            name: result.data.name,
+            email: result.data.email,
+            phone: result.data.phone || "",
+            bio: result.data.bio || "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+        toast.error("プロフィールの読み込みに失敗しました");
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
 
   // Password form
   const passwordForm = useFormValidation<PasswordFormData>({
@@ -70,26 +100,38 @@ export default function ProfilePage() {
   const handleProfileSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Profile updated:", data);
-      setIsEditing(false);
+      const result = await updateProfile(data);
+      if (result.success) {
+        toast.success("プロフィールを更新しました");
+        setIsEditing(false);
+        // Update auth store if email changed
+        if (data.email !== user?.email) {
+          await useAuthStore.getState().checkAuth();
+        }
+      } else {
+        toast.error(result.error || "プロフィールの更新に失敗しました");
+      }
     } catch (error) {
       console.error("Profile update failed:", error);
+      toast.error("プロフィールの更新に失敗しました");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handlePasswordSubmit = async () => {
+  const handlePasswordSubmit = async (data: PasswordFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Password updated");
-      passwordForm.reset();
+      const result = await updatePassword(data);
+      if (result.success) {
+        toast.success("パスワードを変更しました");
+        passwordForm.reset();
+      } else {
+        toast.error(result.error || "パスワードの変更に失敗しました");
+      }
     } catch (error) {
       console.error("Password update failed:", error);
+      toast.error("パスワードの変更に失敗しました");
     } finally {
       setIsLoading(false);
     }
@@ -175,123 +217,131 @@ export default function ProfilePage() {
         {/* Tab Content */}
         <div className="lg:col-span-3">
           <Card className="p-6">
-            {activeTab === "profile" && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    プロフィール情報
-                  </h3>
-                  {!isEditing ? (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700"
-                    >
-                      <PencilIcon className="w-4 h-4" />
-                      編集
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-700"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                        キャンセル
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <form
-                  onSubmit={profileForm.handleAsyncSubmit(handleProfileSubmit)}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      名前
-                    </label>
-                    <input
-                      type="text"
-                      {...profileForm.register("name")}
-                      disabled={!isEditing}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    />
-                    {profileForm.formState.errors.name && (
-                      <ErrorMessage
-                        message={profileForm.formState.errors.name.message!}
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      メールアドレス
-                    </label>
-                    <input
-                      type="email"
-                      {...profileForm.register("email")}
-                      disabled={!isEditing}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    />
-                    {profileForm.formState.errors.email && (
-                      <ErrorMessage
-                        message={profileForm.formState.errors.email.message!}
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      電話番号
-                    </label>
-                    <input
-                      type="tel"
-                      {...profileForm.register("phone")}
-                      disabled={!isEditing}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    />
-                    {profileForm.formState.errors.phone && (
-                      <ErrorMessage
-                        message={profileForm.formState.errors.phone.message!}
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      自己紹介
-                    </label>
-                    <textarea
-                      {...profileForm.register("bio")}
-                      disabled={!isEditing}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-                    />
-                    {profileForm.formState.errors.bio && (
-                      <ErrorMessage
-                        message={profileForm.formState.errors.bio.message!}
-                      />
-                    )}
-                  </div>
-
-                  {isEditing && (
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <LoadingSpinner size="sm" />
-                        ) : (
-                          <CheckIcon className="w-4 h-4" />
-                        )}
-                        保存
-                      </button>
-                    </div>
-                  )}
-                </form>
+            {activeTab === "profile" && isLoadingProfile ? (
+              <div className="flex justify-center items-center h-64">
+                <LoadingSpinner size="lg" />
               </div>
+            ) : (
+              activeTab === "profile" && (
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      プロフィール情報
+                    </h3>
+                    {!isEditing ? (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                        編集
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setIsEditing(false)}
+                          className="flex items-center gap-2 text-gray-600 hover:text-gray-700"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                          キャンセル
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <form
+                    onSubmit={profileForm.handleAsyncSubmit(
+                      handleProfileSubmit
+                    )}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        名前
+                      </label>
+                      <input
+                        type="text"
+                        {...profileForm.register("name")}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
+                      />
+                      {profileForm.formState.errors.name && (
+                        <ErrorMessage
+                          message={profileForm.formState.errors.name.message!}
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        メールアドレス
+                      </label>
+                      <input
+                        type="email"
+                        {...profileForm.register("email")}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
+                      />
+                      {profileForm.formState.errors.email && (
+                        <ErrorMessage
+                          message={profileForm.formState.errors.email.message!}
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        電話番号
+                      </label>
+                      <input
+                        type="tel"
+                        {...profileForm.register("phone")}
+                        disabled={!isEditing}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
+                      />
+                      {profileForm.formState.errors.phone && (
+                        <ErrorMessage
+                          message={profileForm.formState.errors.phone.message!}
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        自己紹介
+                      </label>
+                      <textarea
+                        {...profileForm.register("bio")}
+                        disabled={!isEditing}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
+                      />
+                      {profileForm.formState.errors.bio && (
+                        <ErrorMessage
+                          message={profileForm.formState.errors.bio.message!}
+                        />
+                      )}
+                    </div>
+
+                    {isEditing && (
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <LoadingSpinner size="sm" />
+                          ) : (
+                            <CheckIcon className="w-4 h-4" />
+                          )}
+                          保存
+                        </button>
+                      </div>
+                    )}
+                  </form>
+                </div>
+              )
             )}
 
             {activeTab === "password" && (
@@ -300,8 +350,8 @@ export default function ProfilePage() {
                   パスワード変更
                 </h3>
                 <form
-                  onSubmit={passwordForm.handleAsyncSubmit(
-                    handlePasswordSubmit
+                  onSubmit={passwordForm.handleAsyncSubmit(() =>
+                    handlePasswordSubmit(passwordForm.getValues())
                   )}
                   className="space-y-4"
                 >
