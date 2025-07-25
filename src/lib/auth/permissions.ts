@@ -1,4 +1,5 @@
 import type { User, UserRole } from "@/types/auth.types";
+import { authService } from "@/services/auth.service";
 
 export interface PermissionCheck {
   resource: string;
@@ -148,76 +149,6 @@ export function hasPermission(
 ): boolean {
   if (!user) return false;
 
-  // Admin has all permissions
-  if (user.role === "admin") return true;
-
-  // Define specific permissions for each role
-  const permissions: Record<UserRole, PermissionCheck[]> = {
-    admin: [{ resource: "*", action: "*" }],
-    manager: [
-      { resource: "customers", action: "create" },
-      { resource: "customers", action: "view" },
-      { resource: "customers", action: "edit" },
-      { resource: "customers", action: "delete" },
-      { resource: "staff", action: "manage" },
-      { resource: "staff", action: "view" },
-      { resource: "staff", action: "edit" },
-      { resource: "bookings", action: "manage" },
-      { resource: "bookings", action: "view" },
-      { resource: "bookings", action: "edit" },
-      { resource: "bookings", action: "delete" },
-      { resource: "billing", action: "manage" },
-      { resource: "billing", action: "view" },
-      { resource: "reports", action: "view" },
-      { resource: "reports", action: "export" },
-      { resource: "inventory", action: "manage" },
-      { resource: "inventory", action: "view" },
-      { resource: "inventory", action: "edit" },
-      { resource: "attendance", action: "manage" },
-      { resource: "attendance", action: "view" },
-      { resource: "attendance", action: "edit" },
-      { resource: "tables", action: "manage" },
-      { resource: "tables", action: "view" },
-      { resource: "cast", action: "manage" },
-      { resource: "cast", action: "view" },
-      { resource: "cast", action: "edit" },
-      { resource: "compliance", action: "manage" },
-      { resource: "compliance", action: "view" },
-    ],
-    hall: [
-      { resource: "customers", action: "view" },
-      { resource: "customers", action: "edit" },
-      { resource: "bookings", action: "manage" },
-      { resource: "bookings", action: "view" },
-      { resource: "bookings", action: "edit" },
-      { resource: "tables", action: "manage" },
-      { resource: "tables", action: "view" },
-      { resource: "attendance", action: "view" },
-      { resource: "attendance", action: "clock" },
-    ],
-    cashier: [
-      { resource: "billing", action: "manage" },
-      { resource: "billing", action: "view" },
-      { resource: "billing", action: "process" },
-      { resource: "reports", action: "view" },
-      { resource: "customers", action: "view" },
-    ],
-    cast: [
-      { resource: "profile", action: "view" },
-      { resource: "profile", action: "edit" },
-      { resource: "schedule", action: "view" },
-      { resource: "schedule", action: "submit" },
-      { resource: "performance", action: "view" },
-      { resource: "attendance", action: "view" },
-      { resource: "attendance", action: "clock" },
-    ],
-  };
-
-  const rolePermissions = permissions[user.role];
-
-  return rolePermissions.some(
-    (permission) =>
-      (permission.resource === "*" || permission.resource === resource) &&
-      (permission.action === "*" || permission.action === action)
-  );
+  // Use authService.checkUserPermission to avoid duplication
+  return authService.checkUserPermission(user, resource, action);
 }

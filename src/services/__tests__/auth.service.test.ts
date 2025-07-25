@@ -152,7 +152,7 @@ describe("AuthService", () => {
     });
   });
 
-  describe("hasPermission", () => {
+  describe("checkUserPermission", () => {
     const testUser: User = {
       id: "user-1",
       email: "test@example.com",
@@ -162,47 +162,47 @@ describe("AuthService", () => {
     it("should grant permission to admin for any resource and action", () => {
       const adminUser: User = { ...testUser, role: "admin" };
 
-      expect(authService.hasPermission(adminUser, "customers", "create")).toBe(
-        true
-      );
-      expect(authService.hasPermission(adminUser, "staff", "delete")).toBe(
-        true
-      );
-      expect(authService.hasPermission(adminUser, "reports", "view")).toBe(
-        true
-      );
+      expect(
+        authService.checkUserPermission(adminUser, "customers", "create")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(adminUser, "staff", "delete")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(adminUser, "reports", "view")
+      ).toBe(true);
     });
 
     it("should grant manager permissions correctly", () => {
       const managerUser: User = { ...testUser, role: "manager" };
 
       expect(
-        authService.hasPermission(managerUser, "customers", "create")
+        authService.checkUserPermission(managerUser, "customers", "create")
       ).toBe(true);
-      expect(authService.hasPermission(managerUser, "customers", "view")).toBe(
-        true
-      );
-      expect(authService.hasPermission(managerUser, "staff", "manage")).toBe(
-        true
-      );
-      expect(authService.hasPermission(managerUser, "reports", "view")).toBe(
-        true
-      );
+      expect(
+        authService.checkUserPermission(managerUser, "customers", "view")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(managerUser, "staff", "manage")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(managerUser, "reports", "view")
+      ).toBe(true);
     });
 
     it("should grant hall staff permissions correctly", () => {
       const hallUser: User = { ...testUser, role: "hall" };
 
-      expect(authService.hasPermission(hallUser, "customers", "view")).toBe(
-        true
-      );
-      expect(authService.hasPermission(hallUser, "bookings", "manage")).toBe(
-        true
-      );
-      expect(authService.hasPermission(hallUser, "customers", "delete")).toBe(
-        false
-      );
-      expect(authService.hasPermission(hallUser, "staff", "manage")).toBe(
+      expect(
+        authService.checkUserPermission(hallUser, "customers", "view")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(hallUser, "bookings", "manage")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(hallUser, "customers", "delete")
+      ).toBe(false);
+      expect(authService.checkUserPermission(hallUser, "staff", "manage")).toBe(
         false
       );
     });
@@ -210,31 +210,35 @@ describe("AuthService", () => {
     it("should grant cashier permissions correctly", () => {
       const cashierUser: User = { ...testUser, role: "cashier" };
 
-      expect(authService.hasPermission(cashierUser, "billing", "manage")).toBe(
-        true
-      );
-      expect(authService.hasPermission(cashierUser, "reports", "view")).toBe(
-        true
-      );
       expect(
-        authService.hasPermission(cashierUser, "customers", "create")
+        authService.checkUserPermission(cashierUser, "billing", "manage")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(cashierUser, "reports", "view")
+      ).toBe(true);
+      expect(
+        authService.checkUserPermission(cashierUser, "customers", "create")
       ).toBe(false);
-      expect(authService.hasPermission(cashierUser, "staff", "manage")).toBe(
-        false
-      );
+      expect(
+        authService.checkUserPermission(cashierUser, "staff", "manage")
+      ).toBe(false);
     });
 
     it("should grant cast permissions correctly", () => {
       const castUser: User = { ...testUser, role: "cast" };
 
-      expect(authService.hasPermission(castUser, "profile", "view")).toBe(true);
-      expect(authService.hasPermission(castUser, "profile", "edit")).toBe(true);
-      expect(authService.hasPermission(castUser, "customers", "view")).toBe(
-        false
+      expect(authService.checkUserPermission(castUser, "profile", "view")).toBe(
+        true
       );
-      expect(authService.hasPermission(castUser, "billing", "manage")).toBe(
-        false
+      expect(authService.checkUserPermission(castUser, "profile", "edit")).toBe(
+        true
       );
+      expect(
+        authService.checkUserPermission(castUser, "customers", "view")
+      ).toBe(false);
+      expect(
+        authService.checkUserPermission(castUser, "billing", "manage")
+      ).toBe(false);
     });
   });
 });

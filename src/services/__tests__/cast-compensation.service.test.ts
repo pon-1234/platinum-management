@@ -121,21 +121,9 @@ describe("CastCompensationService", () => {
 
     mockCastService = {
       getCastById: vi.fn(),
-      mapToCast: vi.fn((data) => ({
-        ...data,
-        id: data.id,
-        stageName: data.stage_name || data.stageName,
-        hourlyRate: data.hourly_rate || data.hourlyRate || 0,
-        backPercentage: data.back_percentage || data.backPercentage || 0,
-      })),
     };
     mockPerformanceService = {
       getCastPerformances: vi.fn(),
-      mapToCastPerformance: vi.fn((data) => ({
-        ...data,
-        castId: data.cast_id || data.castId,
-        salesAmount: data.sales_amount || data.salesAmount || 0,
-      })),
     };
 
     // 依存性注入でモックを渡す

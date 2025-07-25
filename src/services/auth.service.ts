@@ -155,7 +155,7 @@ export class AuthService extends BaseService {
     }
   }
 
-  hasPermission(user: User, resource: string, action: string): boolean {
+  checkUserPermission(user: User, resource: string, action: string): boolean {
     const permissions = PERMISSIONS[user.role];
 
     // Check for wildcard permissions (admin)

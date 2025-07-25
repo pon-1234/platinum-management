@@ -56,7 +56,7 @@ describe("InventoryService", () => {
 
     // Mock createClient to return our mockSupabase
     vi.mocked(createClient).mockReturnValue(
-      mockSupabase as ReturnType<typeof createClient>
+      mockSupabase as unknown as ReturnType<typeof createClient>
     );
 
     service = new InventoryService();
@@ -487,6 +487,7 @@ describe("InventoryService", () => {
             stock_quantity: 0,
             low_stock_threshold: 20,
             reorder_point: 30,
+            supplier_info: null,
             max_stock: 200,
             is_active: true,
             created_at: "2024-01-01T00:00:00Z",
@@ -503,6 +504,7 @@ describe("InventoryService", () => {
             stock_quantity: 15,
             low_stock_threshold: 20,
             reorder_point: 30,
+            supplier_info: null,
             max_stock: 100,
             is_active: true,
             created_at: "2024-01-01T00:00:00Z",
@@ -542,6 +544,7 @@ describe("InventoryService", () => {
             stock_quantity: 25,
             low_stock_threshold: 20,
             reorder_point: 30,
+            supplier_info: null,
             max_stock: 200,
             is_active: true,
             created_at: "2024-01-01T00:00:00Z",
