@@ -70,7 +70,7 @@ export const updateProfile = createSafeAction(
 
 export const updatePassword = createSafeAction(
   passwordUpdateSchema,
-  async (data, { userId }) => {
+  async (data) => {
     const supabase = createClient();
 
     // Update password
