@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createSafeAction } from "@/lib/safe-action";
 
 // Validation schemas
-export const profileUpdateSchema = z.object({
+const profileUpdateSchema = z.object({
   name: z.string().min(1, "名前は必須です"),
   email: z.string().email("有効なメールアドレスを入力してください"),
   phone: z.string().min(10, "有効な電話番号を入力してください").optional(),
@@ -16,7 +16,7 @@ export const profileUpdateSchema = z.object({
     .optional(),
 });
 
-export const passwordUpdateSchema = z.object({
+const passwordUpdateSchema = z.object({
   currentPassword: z.string().min(1, "現在のパスワードは必須です"),
   newPassword: z
     .string()
