@@ -1,23 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Cast, CastPerformance } from "@/types/cast.types";
+
+// Hoisted mock
+const { mockSupabaseInstance } = vi.hoisted(() => {
+  const instance: any = {
+    auth: {
+      getUser: vi.fn(),
+    },
+    from: vi.fn(),
+    select: vi.fn(),
+    eq: vi.fn(),
+    in: vi.fn(),
+    gte: vi.fn(),
+    lte: vi.fn(),
+    order: vi.fn(),
+    single: vi.fn(),
+  };
+
+  // Setup default chain behavior
+  instance.from.mockReturnValue(instance);
+  instance.select.mockReturnValue(instance);
+  instance.eq.mockReturnValue(instance);
+  instance.in.mockReturnValue(instance);
+  instance.gte.mockReturnValue(instance);
+  instance.lte.mockReturnValue(instance);
+
+  return { mockSupabaseInstance: instance };
+});
+
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: vi.fn(() => mockSupabaseInstance),
+}));
+
+// Import after mocks are set up
 import { CastCompensationService } from "../cast-compensation.service";
 import { CastService } from "../cast.service";
 import { CastPerformanceService } from "../cast-performance.service";
-import type { Cast, CastPerformance } from "@/types/cast.types";
-
-// モックは手動で作成するため、vi.mockは使用しない
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: vi.fn(() => ({
-    auth: {
-      getUser: vi.fn().mockResolvedValue({
-        data: { user: { id: "test-user-id" } },
-      }),
-    },
-    from: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn(),
-  })),
-}));
 
 describe("CastCompensationService", () => {
   let compensationService: CastCompensationService;
@@ -78,11 +96,36 @@ describe("CastCompensationService", () => {
   ];
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Reset auth mock
+    mockSupabaseInstance.auth.getUser.mockResolvedValue({
+      data: { user: { id: "test-user-id" } },
+    });
+
+    // Reset order mock default
+    mockSupabaseInstance.order.mockReturnValue({
+      data: [],
+      error: null,
+    });
+
     mockCastService = {
       getCastById: vi.fn(),
+      mapToCast: vi.fn((data) => ({
+        ...data,
+        id: data.id,
+        stageName: data.stage_name || data.stageName,
+        hourlyRate: data.hourly_rate || data.hourlyRate || 0,
+        backPercentage: data.back_percentage || data.backPercentage || 0,
+      })),
     };
     mockPerformanceService = {
       getCastPerformances: vi.fn(),
+      mapToCastPerformance: vi.fn((data) => ({
+        ...data,
+        castId: data.cast_id || data.castId,
+        salesAmount: data.sales_amount || data.salesAmount || 0,
+      })),
     };
 
     // 依存性注入でモックを渡す
@@ -146,28 +189,25 @@ describe("CastCompensationService", () => {
     it("should calculate compensation for multiple casts", async () => {
       const castIds = ["cast-1", "cast-2"];
 
-      // Mock the compensation calculations
-      vi.spyOn(compensationService, "calculateCastCompensation")
-        .mockResolvedValueOnce({
-          castId: "cast-1",
-          cast: { ...mockCast, id: "cast-1", stageName: "Alice" },
-          period: "2024-01-01 - 2024-01-31",
-          hourlyWage: 30000,
-          backAmount: 50000,
-          totalAmount: 80000,
-          workHours: 10,
-          performances: [],
-        })
-        .mockResolvedValueOnce({
-          castId: "cast-2",
-          cast: { ...mockCast, id: "cast-2", stageName: "Bob" },
-          period: "2024-01-01 - 2024-01-31",
-          hourlyWage: 25000,
-          backAmount: 40000,
-          totalAmount: 65000,
-          workHours: 8,
-          performances: [],
-        });
+      // Mock casts data
+      const mockCastsData = [
+        { ...mockCast, id: "cast-1", stage_name: "Alice" },
+        { ...mockCast, id: "cast-2", stage_name: "Bob" },
+      ];
+
+      // First in() call returns casts data
+      mockSupabaseInstance.in.mockReturnValueOnce({
+        data: mockCastsData,
+        error: null,
+      });
+
+      // gte().lte().order() chain returns performances data (empty for this test)
+      mockSupabaseInstance.gte.mockReturnValueOnce(mockSupabaseInstance);
+      mockSupabaseInstance.lte.mockReturnValueOnce(mockSupabaseInstance);
+      mockSupabaseInstance.order.mockReturnValueOnce({
+        data: [],
+        error: null,
+      });
 
       const result =
         await compensationService.calculateMultipleCastsCompensation(
@@ -178,9 +218,10 @@ describe("CastCompensationService", () => {
 
       expect(result).toHaveLength(2);
       expect(result[0].castId).toBe("cast-1");
-      expect(result[0].totalAmount).toBe(80000);
+      // performances are empty, so totalAmount should be 0
+      expect(result[0].totalAmount).toBe(0);
       expect(result[1].castId).toBe("cast-2");
-      expect(result[1].totalAmount).toBe(65000);
+      expect(result[1].totalAmount).toBe(0);
     });
   });
 });

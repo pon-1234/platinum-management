@@ -278,9 +278,16 @@ describe("TableService", () => {
         error: null,
       });
 
-      // Mock availability check
+      // Mock availability check - RPC returns array of available table IDs
       mockSupabase.rpc.mockResolvedValue({
-        data: true,
+        data: ["123e4567-e89b-12d3-a456-426614174000"],
+        error: null,
+      });
+
+      // Mock fetching tables by IDs
+      mockSupabase.in.mockReturnThis();
+      mockSupabase.eq.mockResolvedValue({
+        data: mockTables,
         error: null,
       });
 
@@ -290,14 +297,11 @@ describe("TableService", () => {
         "19:00"
       );
 
-      expect(mockSupabase.rpc).toHaveBeenCalledWith(
-        "check_table_availability",
-        {
-          p_table_id: "123e4567-e89b-12d3-a456-426614174000",
-          p_reservation_date: "2024-01-01",
-          p_reservation_time: "19:00",
-        }
-      );
+      expect(mockSupabase.rpc).toHaveBeenCalledWith("get_available_tables", {
+        p_reservation_date: "2024-01-01",
+        p_reservation_time: "19:00",
+        p_min_capacity: 4,
+      });
       expect(result).toHaveLength(1);
     });
   });

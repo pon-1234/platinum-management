@@ -1,6 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
+import { BaseService } from "./base.service";
 import type { User, UserRole, AuthResult } from "@/types/auth.types";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { CacheUtils } from "@/lib/cache-utils";
 
 type PermissionMatrix = {
@@ -42,11 +41,9 @@ const PERMISSIONS: PermissionMatrix = {
   },
 };
 
-export class AuthService {
-  private supabase: SupabaseClient;
-
+export class AuthService extends BaseService {
   constructor() {
-    this.supabase = createClient();
+    super();
   }
 
   async signIn(email: string, password: string): Promise<AuthResult> {

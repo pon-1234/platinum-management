@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { InventoryService } from "../inventory.service";
+import { createClient } from "@/lib/supabase/client";
 import type {
   Product,
   CreateProductData,
@@ -10,10 +11,7 @@ import type {
 
 // Mock Supabase client
 vi.mock("@/lib/supabase/client", () => ({
-  createClient: vi.fn(() => ({
-    from: vi.fn(),
-    rpc: vi.fn(),
-  })),
+  createClient: vi.fn(),
 }));
 
 describe("InventoryService", () => {
@@ -21,12 +19,47 @@ describe("InventoryService", () => {
   let mockSupabase: {
     from: ReturnType<typeof vi.fn>;
     rpc: ReturnType<typeof vi.fn>;
+    auth: {
+      getUser: ReturnType<typeof vi.fn>;
+    };
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Create a fresh mock for each test
+    mockSupabase = {
+      from: vi.fn(),
+      rpc: vi.fn(),
+      auth: {
+        getUser: vi
+          .fn()
+          .mockResolvedValue({ data: { user: null }, error: null }),
+      },
+    };
+
+    // Set up default mock implementations
+    const mockQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      single: vi.fn(),
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+    };
+
+    mockSupabase.from.mockReturnValue(mockQuery);
+
+    // Mock createClient to return our mockSupabase
+    vi.mocked(createClient).mockReturnValue(
+      mockSupabase as ReturnType<typeof createClient>
+    );
+
     service = new InventoryService();
-    mockSupabase = (service as { supabase: typeof mockSupabase }).supabase;
   });
 
   describe("Product Management", () => {
@@ -42,6 +75,7 @@ describe("InventoryService", () => {
             stock_quantity: 100,
             low_stock_threshold: 20,
             reorder_point: 30,
+            supplier_info: null,
             max_stock: 200,
             is_active: true,
             created_at: "2024-01-01T00:00:00Z",
@@ -138,6 +172,12 @@ describe("InventoryService", () => {
         const mockProduct: Product = {
           id: 1,
           ...createData,
+          cost: createData.cost || 200,
+          stock_quantity: createData.stock_quantity || 50,
+          low_stock_threshold: createData.low_stock_threshold || 15,
+          supplier_info: createData.supplier_info || null,
+          reorder_point: createData.reorder_point || 15,
+          max_stock: createData.max_stock || 100,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
@@ -175,7 +215,7 @@ describe("InventoryService", () => {
 
         await expect(
           service.createProduct({} as CreateProductData)
-        ).rejects.toThrow("商品作成エラー: Database error");
+        ).rejects.toThrow("商品作成に失敗しました");
       });
     });
 
@@ -195,6 +235,7 @@ describe("InventoryService", () => {
           stock_quantity: 120,
           low_stock_threshold: 20,
           reorder_point: 30,
+          supplier_info: null,
           max_stock: 200,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
@@ -251,7 +292,7 @@ describe("InventoryService", () => {
         };
 
         const mockMovement: InventoryMovement = {
-          id: "mov-1",
+          id: 1,
           product_id: 1,
           movement_type: "in",
           quantity: 50,
@@ -271,6 +312,7 @@ describe("InventoryService", () => {
           stock_quantity: 100,
           low_stock_threshold: 20,
           reorder_point: 30,
+          supplier_info: null,
           max_stock: 200,
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
@@ -279,39 +321,25 @@ describe("InventoryService", () => {
           updated_by: "user1",
         };
 
-        // Mock movement creation
-        const movementQuery = {
-          select: vi.fn().mockReturnThis(),
-          single: vi
-            .fn()
-            .mockResolvedValue({ data: mockMovement, error: null }),
-        };
+        // Mock RPC function for inventory movement
+        mockSupabase.rpc = vi.fn().mockResolvedValue({
+          data: {
+            movement_id: 1,
+            product: { ...mockProduct, stock_quantity: 150 },
+          },
+          error: null,
+        });
 
-        // Mock product fetch
-        const productQuery = {
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: mockProduct, error: null }),
-        };
-
-        // Mock product update
-        const updateQuery = {
-          eq: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: { ...mockProduct, stock_quantity: 150 },
-            error: null,
+        // Mock fetching the created movement
+        mockSupabase.from = vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: mockMovement,
+                error: null,
+              }),
+            }),
           }),
-        };
-
-        mockSupabase.from = vi.fn((table: string) => {
-          if (table === "inventory_movements") {
-            return { insert: vi.fn().mockReturnValue(movementQuery) };
-          } else if (table === "products") {
-            return {
-              select: vi.fn().mockReturnValue(productQuery),
-              update: vi.fn().mockReturnValue(updateQuery),
-            };
-          }
         });
 
         const result = await service.createInventoryMovement(movementData);
@@ -327,42 +355,10 @@ describe("InventoryService", () => {
           reason: "販売",
         };
 
-        const mockProduct: Product = {
-          id: 1,
-          name: "ビール",
-          category: "飲料",
-          price: 500,
-          cost: 200,
-          stock_quantity: 100, // Current stock is 100
-          low_stock_threshold: 20,
-          reorder_point: 30,
-          max_stock: 200,
-          is_active: true,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          created_by: "user1",
-          updated_by: "user1",
-        };
-
-        const movementQuery = {
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: { id: "mov-1" },
-            error: null,
-          }),
-        };
-
-        const productQuery = {
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: mockProduct, error: null }),
-        };
-
-        mockSupabase.from = vi.fn((table: string) => {
-          if (table === "inventory_movements") {
-            return { insert: vi.fn().mockReturnValue(movementQuery) };
-          } else if (table === "products") {
-            return { select: vi.fn().mockReturnValue(productQuery) };
-          }
+        // Mock RPC function to return insufficient stock error
+        mockSupabase.rpc = vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: "在庫が不足しています" },
         });
 
         await expect(
@@ -381,7 +377,7 @@ describe("InventoryService", () => {
         };
 
         const mockMovement: InventoryMovement = {
-          id: "mov-1",
+          id: 1,
           product_id: 1,
           movement_type: "adjustment",
           quantity: 80,
@@ -413,54 +409,57 @@ describe("InventoryService", () => {
   describe("Inventory Statistics and Reports", () => {
     describe("getInventoryStats", () => {
       it("should return inventory statistics", async () => {
-        // Mock product count
-        const countQuery = {
-          eq: vi.fn().mockResolvedValue({
-            count: 100,
-            error: null,
-          }),
-        };
-
-        // Mock out of stock count
-        const outOfStockQuery = {
-          eq: vi.fn().mockReturnThis(),
-          count: 5,
-          error: null,
-        };
-
         // Mock product data for value calculation
         const productsData = [
           { stock_quantity: 100, cost: 200 },
           { stock_quantity: 50, cost: 300 },
         ];
 
-        mockSupabase.from = vi.fn().mockImplementation(() => ({
-          select: vi
-            .fn()
-            .mockImplementation(
-              (
-                fields: string,
-                options?: { count?: string; head?: boolean }
-              ) => {
-                if (options?.count === "exact" && options?.head === true) {
-                  return countQuery;
+        let callCount = 0;
+        mockSupabase.from.mockImplementation(() => {
+          const query = {
+            select: vi
+              .fn()
+              .mockImplementation(
+                (
+                  fields: string,
+                  options?: { count?: string; head?: boolean }
+                ) => {
+                  callCount++;
+                  if (callCount === 1) {
+                    // First call: total product count
+                    return {
+                      eq: vi.fn().mockResolvedValue({
+                        count: 100,
+                        error: null,
+                      }),
+                    };
+                  } else if (callCount === 2) {
+                    // Second call: out of stock count
+                    return {
+                      eq: vi.fn().mockReturnValue({
+                        eq: vi.fn().mockResolvedValue({
+                          count: 5,
+                          error: null,
+                        }),
+                      }),
+                    };
+                  } else {
+                    // Third call: product data for value calculation
+                    return {
+                      eq: vi.fn().mockResolvedValue({
+                        data: productsData,
+                        error: null,
+                      }),
+                    };
+                  }
                 }
-                if (fields === "stock_quantity, cost") {
-                  return {
-                    eq: vi.fn().mockResolvedValue({
-                      data: productsData,
-                      error: null,
-                    }),
-                  };
-                }
-                return {
-                  eq: vi.fn().mockReturnValue(outOfStockQuery),
-                };
-              }
-            ),
-        }));
+              ),
+          };
+          return query;
+        });
 
-        mockSupabase.rpc = vi.fn().mockResolvedValue({
+        mockSupabase.rpc.mockResolvedValue({
           data: 10,
           error: null,
         });

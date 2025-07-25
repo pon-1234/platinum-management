@@ -33,6 +33,7 @@ describe("Cast Services Integration", () => {
       insert: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
@@ -269,26 +270,27 @@ describe("Cast Services Integration", () => {
         "123e4567-e89b-12d3-a456-426614174003",
       ];
 
-      // Mock multiple compensation calculations
-      castIds.forEach((castId, index) => {
-        mockSupabase.single.mockResolvedValueOnce({
-          data: {
-            id: castId,
-            staff_id: `223e4567-e89b-12d3-a456-42661417400${index + 1}`,
-            stage_name: `キャスト${index + 1}`,
-            hourly_rate: 3000,
-            back_percentage: 50,
-            is_active: true,
-            created_at: "2024-01-01T00:00:00Z",
-            updated_at: "2024-01-01T00:00:00Z",
-          },
-          error: null,
-        });
+      // Mock casts fetch
+      mockSupabase.in.mockReturnValueOnce({
+        data: castIds.map((castId, index) => ({
+          id: castId,
+          staff_id: `223e4567-e89b-12d3-a456-42661417400${index + 1}`,
+          stage_name: `キャスト${index + 1}`,
+          hourly_rate: 3000,
+          back_percentage: 50,
+          is_active: true,
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+        })),
+        error: null,
+      });
 
-        mockSupabase.range.mockResolvedValueOnce({
+      // Mock performances fetch
+      mockSupabase.lte.mockReturnValueOnce({
+        order: vi.fn().mockReturnValue({
           data: [],
           error: null,
-        });
+        }),
       });
 
       const startTime = Date.now();

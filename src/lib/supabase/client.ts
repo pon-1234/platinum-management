@@ -11,11 +11,16 @@ async function fetchWithRetry(
       return response;
     } catch (error) {
       const isLastAttempt = attempt === maxRetries;
-      const isResourceError =
+      const isRetriableError =
         error instanceof Error &&
-        error.message.includes("ERR_INSUFFICIENT_RESOURCES");
+        (error.message.includes("ERR_INSUFFICIENT_RESOURCES") ||
+          error.message.includes("ERR_NETWORK_CHANGED") ||
+          error.message.includes("ERR_INTERNET_DISCONNECTED") ||
+          error.message.includes("ERR_NETWORK_IO_SUSPENDED") ||
+          error.message.includes("ECONNREFUSED") ||
+          error.message.includes("ETIMEDOUT"));
 
-      if (isResourceError && !isLastAttempt) {
+      if (isRetriableError && !isLastAttempt) {
         const delay = Math.pow(2, attempt) * 1000;
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;

@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
-import { useAuthStore } from "@/stores/auth.store";
 
 export abstract class BaseService {
   protected supabase: SupabaseClient<Database>;
@@ -40,11 +39,8 @@ export abstract class BaseService {
    * @returns The staff ID or null if not authenticated
    */
   protected async getCurrentStaffId(): Promise<string | null> {
-    // まずストアからスタッフIDを取得してみる
-    const authState = useAuthStore.getState();
-    if (authState.user?.staffId) {
-      return authState.user.staffId;
-    }
+    // Note: Store access removed to avoid circular dependency
+    // Staff ID is cached at instance level instead
 
     // キャッシュが有効かどうかチェック
     const now = Date.now();

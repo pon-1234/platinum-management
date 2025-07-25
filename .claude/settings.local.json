@@ -71,7 +71,8 @@
       "Bash(rm:*)",
       "Bash(npx pnpm install:*)",
       "Bash(git diff:*)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": []
   }
