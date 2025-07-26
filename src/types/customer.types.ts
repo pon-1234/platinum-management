@@ -1,6 +1,27 @@
-export type CustomerStatus = "normal" | "vip" | "caution" | "blacklisted";
-export type VisitStatus = "active" | "completed" | "cancelled";
+import { z } from "zod";
+import {
+  customerStatusSchema,
+  visitStatusSchema,
+  createCustomerSchema,
+  updateCustomerSchema,
+  createVisitSchema,
+  updateVisitSchema,
+  customerSearchSchema,
+  type CreateCustomerInput,
+  type UpdateCustomerInput,
+  type CustomerSearchInput,
+  type CreateVisitInput,
+  type UpdateVisitInput,
+  type CustomerStatus,
+  type VisitStatus,
+} from "@/lib/validations/customer";
 
+// Re-export types from Zod schemas
+export type { CustomerStatus, VisitStatus };
+export type { CreateCustomerInput, UpdateCustomerInput, CustomerSearchInput };
+export type { CreateVisitInput, UpdateVisitInput };
+
+// Base types that include database fields (id, createdAt, etc.)
 export interface Customer {
   id: string;
   name: string;
@@ -31,44 +52,20 @@ export interface Visit {
   updatedAt: string;
 }
 
-export interface CreateCustomerData {
-  name: string;
-  nameKana?: string;
-  phoneNumber?: string;
-  lineId?: string;
-  birthday?: string;
-  memo?: string;
-  status?: CustomerStatus;
-}
+// Legacy aliases for backward compatibility
+export type CreateCustomerData = CreateCustomerInput;
+export type UpdateCustomerData = UpdateCustomerInput;
+export type CreateVisitData = CreateVisitInput;
+export type UpdateVisitData = UpdateVisitInput;
+export type CustomerSearchParams = CustomerSearchInput;
 
-export interface UpdateCustomerData {
-  name?: string;
-  nameKana?: string;
-  phoneNumber?: string;
-  lineId?: string;
-  birthday?: string;
-  memo?: string;
-  status?: CustomerStatus;
-}
-
-export interface CreateVisitData {
-  customerId: string;
-  tableId: number;
-  numGuests?: number;
-  checkInAt?: string;
-}
-
-export interface UpdateVisitData {
-  tableId?: number;
-  checkOutAt?: string;
-  numGuests?: number;
-  totalAmount?: number;
-  status?: VisitStatus;
-}
-
-export interface CustomerSearchParams {
-  query?: string;
-  status?: CustomerStatus;
-  limit?: number;
-  offset?: number;
-}
+// Export schemas for runtime validation
+export {
+  customerStatusSchema,
+  visitStatusSchema,
+  createCustomerSchema,
+  updateCustomerSchema,
+  createVisitSchema,
+  updateVisitSchema,
+  customerSearchSchema,
+};
