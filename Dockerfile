@@ -17,6 +17,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
     apt-get install -y --no-install-recommends gh && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /home/node/.claude && chown -R node:node /home/node/.claude
+
 USER node
 WORKDIR /workspace
-
