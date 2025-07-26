@@ -59,7 +59,7 @@ export default function BottleKeepPage() {
       const [locationsResult, customersResult, productsResult] =
         await Promise.all([
           getStorageLocations({}),
-          searchCustomers({ limit: 50 }),
+          searchCustomers({ limit: 50, offset: 0 }),
           getProducts({}),
         ]);
 

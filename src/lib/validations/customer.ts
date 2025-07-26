@@ -119,18 +119,12 @@ export const createCustomerFormSchema = z.object({
 
 export const updateCustomerFormSchema = createCustomerFormSchema.partial();
 
-export const customerSearchSchema = z
-  .object({
-    query: z.string().optional(),
-    status: customerStatusSchema.optional(),
-    limit: z.number().int().positive().max(100).default(20),
-    offset: z.number().int().nonnegative().default(0),
-  })
-  .partial()
-  .extend({
-    limit: z.number().int().positive().max(100).default(20),
-    offset: z.number().int().nonnegative().default(0),
-  });
+export const customerSearchSchema = z.object({
+  query: z.string().optional(),
+  status: customerStatusSchema.optional(),
+  limit: z.number().int().positive().max(100).default(20).optional(),
+  offset: z.number().int().nonnegative().default(0).optional(),
+});
 
 export const visitStatusSchema = z.enum(["active", "completed", "cancelled"]);
 

@@ -38,6 +38,8 @@ export function ReservationList({
         startDate: date,
         endDate: date,
         status,
+        limit: 100,
+        offset: 0,
       });
 
       setReservations(data);

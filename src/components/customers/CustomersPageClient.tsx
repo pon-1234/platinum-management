@@ -36,7 +36,7 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
   const [error, setError] = useState<string | null>(initialData.error ?? null);
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
 
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadCustomers = useCallback(
     async (query?: string, filter?: CustomerStatus | "") => {

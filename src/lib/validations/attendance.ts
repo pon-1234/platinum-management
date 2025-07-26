@@ -48,6 +48,7 @@ export const shiftRequestStatusSchema = z.enum([
 export const shiftRequestSchema = z.object({
   id: z.string().uuid(),
   staffId: z.string().uuid(),
+  staffName: z.string().optional(),
   shiftTemplateId: z.string().uuid().nullable(),
   requestedDate: z
     .string()
@@ -85,26 +86,20 @@ export const approveShiftRequestSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
-export const shiftRequestSearchSchema = z
-  .object({
-    staffId: z.string().uuid().optional(),
-    status: shiftRequestStatusSchema.optional(),
-    startDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    endDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().nonnegative().default(0),
-  })
-  .partial()
-  .extend({
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().nonnegative().default(0),
-  });
+export const shiftRequestSearchSchema = z.object({
+  staffId: z.string().uuid().optional(),
+  status: shiftRequestStatusSchema.optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  limit: z.number().int().positive().max(100).default(50).optional(),
+  offset: z.number().int().nonnegative().default(0).optional(),
+});
 
 // Confirmed Shift schemas
 export const confirmedShiftStatusSchema = z.enum([
@@ -140,26 +135,20 @@ export const createConfirmedShiftSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const confirmedShiftSearchSchema = z
-  .object({
-    staffId: z.string().uuid().optional(),
-    startDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    endDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    status: confirmedShiftStatusSchema.optional(),
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().nonnegative().default(0),
-  })
-  .partial()
-  .extend({
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().nonnegative().default(0),
-  });
+export const confirmedShiftSearchSchema = z.object({
+  staffId: z.string().uuid().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  status: confirmedShiftStatusSchema.optional(),
+  limit: z.number().int().positive().max(100).default(50).optional(),
+  offset: z.number().int().nonnegative().default(0).optional(),
+});
 
 // Attendance Record schemas
 export const attendanceStatusSchema = z.enum([
@@ -220,26 +209,20 @@ export const createAttendanceRecordSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const attendanceSearchSchema = z
-  .object({
-    staffId: z.string().uuid().optional(),
-    startDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    endDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    status: attendanceStatusSchema.optional(),
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().nonnegative().default(0),
-  })
-  .partial()
-  .extend({
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().nonnegative().default(0),
-  });
+export const attendanceSearchSchema = z.object({
+  staffId: z.string().uuid().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  status: attendanceStatusSchema.optional(),
+  limit: z.number().int().positive().max(100).default(50).optional(),
+  offset: z.number().int().nonnegative().default(0).optional(),
+});
 
 // Clock Action schemas
 export const clockActionTypeSchema = z.enum([
