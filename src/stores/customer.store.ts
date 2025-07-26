@@ -23,6 +23,8 @@ interface CustomerState {
   searchCustomers: (params: {
     query?: string;
     status?: CustomerStatus;
+    limit?: number;
+    offset?: number;
   }) => Promise<void>;
   getCustomerById: (id: string) => Promise<Customer | null>;
   selectCustomer: (customer: Customer | null) => void;
@@ -57,7 +59,10 @@ export const useCustomerStore = create<CustomerState>()(
       fetchCustomers: async () => {
         set({ isLoading: true, error: null });
         try {
-          const customers = await customerService.searchCustomers({});
+          const customers = await customerService.searchCustomers({
+            limit: 100,
+            offset: 0,
+          });
           set({ customers, isLoading: false });
         } catch (error) {
           const errorMessage =
@@ -69,7 +74,11 @@ export const useCustomerStore = create<CustomerState>()(
       searchCustomers: async (params) => {
         set({ isLoading: true, error: null });
         try {
-          const customers = await customerService.searchCustomers(params);
+          const customers = await customerService.searchCustomers({
+            ...params,
+            limit: params.limit || 100,
+            offset: params.offset || 0,
+          });
           set({ customers, isLoading: false });
         } catch (error) {
           const errorMessage =

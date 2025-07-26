@@ -59,6 +59,8 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
             staffId: staff.id,
             startDate: today,
             endDate: today,
+            limit: 1,
+            offset: 0,
           });
 
           if (records.length > 0) {

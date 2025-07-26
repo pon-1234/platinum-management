@@ -30,7 +30,10 @@ export default function DashboardPage() {
         const todayString = today.toISOString().split("T")[0]; // Format as YYYY-MM-DD
 
         // Get total customers
-        const customers = await customerService.searchCustomers({});
+        const customers = await customerService.searchCustomers({
+          limit: 1000, // ダッシュボードで全顧客数を取得
+          offset: 0,
+        });
 
         // Get today's reservations
         const reservations = await reservationService.searchReservations({

@@ -67,7 +67,7 @@ export default function OrderTicketManagement({
       setIsLoading(true);
       const [visitsData, customersData, tablesData] = await Promise.all([
         billingService.searchVisits({ status: "active" }),
-        customerService.searchCustomers({}),
+        customerService.searchCustomers({ limit: 100, offset: 0 }),
         tableService.searchTables(),
       ]);
 

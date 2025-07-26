@@ -145,10 +145,9 @@ export class CustomerService extends BaseService {
     }
 
     // Apply pagination
-    query = query.range(
-      validatedParams.offset,
-      validatedParams.offset + validatedParams.limit - 1
-    );
+    const offset = validatedParams.offset ?? 0;
+    const limit = validatedParams.limit ?? 20;
+    query = query.range(offset, offset + limit - 1);
 
     const { data, error } = await query;
 

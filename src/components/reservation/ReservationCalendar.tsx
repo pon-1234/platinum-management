@@ -48,6 +48,8 @@ export function ReservationCalendar({
       const reservations = await reservationService.searchReservations({
         startDate: format(start, "yyyy-MM-dd"),
         endDate: format(end, "yyyy-MM-dd"),
+        limit: 1000,
+        offset: 0,
       });
 
       // Group reservations by date

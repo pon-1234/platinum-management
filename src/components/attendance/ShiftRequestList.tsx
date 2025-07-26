@@ -43,6 +43,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
       const data = await attendanceService.searchShiftRequests({
         status: statusFilter === "all" ? undefined : statusFilter,
         limit: 100,
+        offset: 0,
       });
       setRequests(data);
     } catch (error) {

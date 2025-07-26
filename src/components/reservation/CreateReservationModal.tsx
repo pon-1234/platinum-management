@@ -71,7 +71,7 @@ export function CreateReservationModal({
     setIsLoadingData(true);
     try {
       const [customersData, castsData] = await Promise.all([
-        customerService.searchCustomers({ limit: 100 }),
+        customerService.searchCustomers({ limit: 100, offset: 0 }),
         castService.searchCasts({ isActive: true, limit: 50 }),
       ]);
 

@@ -140,6 +140,7 @@ describe("CustomerService", () => {
         customerService.createCustomer({
           name: "田中太郎",
           phoneNumber: "090-1234-5678",
+          status: "normal",
         })
       ).rejects.toThrow("既に同じデータが存在します");
     });
@@ -225,6 +226,8 @@ describe("CustomerService", () => {
 
       const result = await customerService.searchCustomers({
         query: "田中",
+        limit: 20,
+        offset: 0,
       });
 
       expect(result).toHaveLength(1);
@@ -257,6 +260,8 @@ describe("CustomerService", () => {
 
       const result = await customerService.searchCustomers({
         status: "vip",
+        limit: 20,
+        offset: 0,
       });
 
       expect(result).toHaveLength(1);
