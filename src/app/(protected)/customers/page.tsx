@@ -2,18 +2,29 @@ import { customerService } from "@/services/customer.service";
 import { CustomersPageClient } from "@/components/customers/CustomersPageClient";
 import type { Customer } from "@/types/customer.types";
 
-async function getInitialCustomers(): Promise<Customer[]> {
+interface InitialData {
+  customers: Customer[];
+  error?: string;
+}
+
+async function getInitialCustomers(): Promise<InitialData> {
   try {
-    const customers = await customerService.searchCustomers({});
-    return customers;
+    const customers = await customerService.searchCustomers({
+      limit: 50,
+      offset: 0,
+    });
+    return { customers };
   } catch (error) {
     console.error("Failed to fetch initial customers:", error);
-    return [];
+    return {
+      customers: [],
+      error: "初期データの取得に失敗しました。ページを再読み込みしてください。",
+    };
   }
 }
 
 export default async function CustomersPage() {
-  const initialCustomers = await getInitialCustomers();
+  const initialData = await getInitialCustomers();
 
-  return <CustomersPageClient initialCustomers={initialCustomers} />;
+  return <CustomersPageClient initialData={initialData} />;
 }
