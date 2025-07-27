@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS user_roles_cache (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role TEXT NOT NULL,
   is_active BOOLEAN DEFAULT true,
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  CONSTRAINT fk_user_roles_cache_staffs FOREIGN KEY (user_id) REFERENCES staffs(user_id) ON DELETE CASCADE
+  updated_at TIMESTAMPTZ DEFAULT now()
+  -- CONSTRAINT fk_user_roles_cache_staffs FOREIGN KEY (user_id) REFERENCES staffs(user_id) ON DELETE CASCADE
 );
 
 -- Create indexes for performance
@@ -64,7 +64,7 @@ WHERE user_id IS NOT NULL
 ON CONFLICT (user_id) DO NOTHING;
 
 -- Now create better RLS policies for staffs table using the cache
-DROP POLICY IF EXISTS "authenticated_users_conditional_access" ON staffs;
+-- DROP POLICY IF EXISTS "authenticated_users_conditional_access" ON staffs;
 
 -- New non-recursive policies using the cache table
 CREATE POLICY "staff_can_view_own_record_v2" ON staffs
@@ -87,7 +87,7 @@ CREATE POLICY "service_role_full_access_v2" ON staffs
   USING (auth.role() = 'service_role');
 
 -- Update other policies to use the cache
-DROP POLICY IF EXISTS "managers_can_insert_staff" ON staffs;
+-- DROP POLICY IF EXISTS "managers_can_insert_staff" ON staffs;
 CREATE POLICY "managers_can_insert_staff_v2" ON staffs
   FOR INSERT
   WITH CHECK (
@@ -100,7 +100,7 @@ CREATE POLICY "managers_can_insert_staff_v2" ON staffs
     OR auth.role() = 'service_role'
   );
 
-DROP POLICY IF EXISTS "managers_can_update_staff" ON staffs;
+-- DROP POLICY IF EXISTS "managers_can_update_staff" ON staffs;
 CREATE POLICY "managers_can_update_staff_v2" ON staffs
   FOR UPDATE
   USING (
@@ -113,7 +113,7 @@ CREATE POLICY "managers_can_update_staff_v2" ON staffs
     OR auth.role() = 'service_role'
   );
 
-DROP POLICY IF EXISTS "admins_can_delete_staff" ON staffs;
+-- DROP POLICY IF EXISTS "admins_can_delete_staff" ON staffs;
 CREATE POLICY "admins_can_delete_staff_v2" ON staffs
   FOR DELETE
   USING (
