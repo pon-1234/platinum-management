@@ -15,6 +15,7 @@
     "db:check-tables": "node scripts/check-tables.js",
     "db:check-data": "node scripts/check-data.js",
     "db:insert-demo": "node scripts/insert-demo-data.js",
+    "db:setup-v2": "node scripts/setup-database-v2.js",
     "security:audit": "node scripts/security-audit.js"
   },
   "dependencies": {

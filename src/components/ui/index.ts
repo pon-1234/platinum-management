@@ -1,4 +1,5 @@
 export { Card } from "./Card";
+export { Input } from "./Input";
 export { Modal } from "./Modal";
 export { RoleBadge } from "./RoleBadge";
 export { SearchInput } from "./SearchInput";

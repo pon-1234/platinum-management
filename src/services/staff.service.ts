@@ -8,6 +8,7 @@ import type {
   CreateCastProfileData,
   UpdateCastProfileData,
 } from "@/types/staff.types";
+import type { UserRole } from "@/types/auth.types";
 
 export class StaffService extends BaseService {
   constructor() {
@@ -148,6 +149,73 @@ export class StaffService extends BaseService {
     }
   }
 
+  async getAvailableStaffForCast(): Promise<Staff[]> {
+    // Get all staff that are not already casts and not admin
+    const { data: staffs, error } = await this.supabase
+      .from("staffs")
+      .select("*")
+      .neq("role", "admin")
+      .eq("status", "active")
+      .order("full_name_kana");
+
+    if (error) {
+      this.handleError(error, "スタッフ情報の取得に失敗しました");
+    }
+
+    // Get all existing cast staff IDs
+    const { data: casts } = await this.supabase
+      .from("casts_profile")
+      .select("staff_id");
+
+    const castStaffIds = new Set(casts?.map((c) => c.staff_id) || []);
+
+    // Filter out staff that are already casts
+    const availableStaff =
+      staffs?.filter((staff) => !castStaffIds.has(staff.id)) || [];
+
+    return availableStaff.map((staff) => this.mapToStaff(staff));
+  }
+
+  async getUnregisteredStaff(
+    page: number = 1,
+    limit: number = 20,
+    searchQuery?: string
+  ): Promise<{ data: Staff[]; totalCount: number; hasMore: boolean }> {
+    const { data, error } = await this.supabase.rpc("get_unregistered_staff", {
+      p_page: page,
+      p_limit: limit,
+      p_search_query: searchQuery || null,
+    });
+
+    if (error) {
+      this.handleError(error, "未登録スタッフの取得に失敗しました");
+    }
+
+    if (!data || data.length === 0) {
+      return { data: [], totalCount: 0, hasMore: false };
+    }
+
+    // Extract total count and hasMore from the first row
+    const totalCount = data[0].total_count || 0;
+    const hasMore = data[0].has_more || false;
+
+    // Map the data to Staff type
+    const staffList = data.map((item: Record<string, unknown>) => ({
+      id: item.id as string,
+      userId: item.user_id as string,
+      fullName: item.full_name as string,
+      fullNameKana: item.full_name_kana as string | undefined,
+      role: item.role as string,
+      hireDate: item.hire_date as string,
+      isActive: item.is_active as boolean,
+      status: item.status as string,
+      createdAt: item.created_at as string,
+      updatedAt: item.updated_at as string,
+    }));
+
+    return { data: staffList, totalCount, hasMore };
+  }
+
   async createCastProfile(data: CreateCastProfileData): Promise<CastProfile> {
     const { data: profile, error } = await this.supabase
       .from("casts_profile")
@@ -252,18 +320,23 @@ export class StaffService extends BaseService {
   }
 
   private mapToStaff = (
-    data: Database["public"]["Tables"]["staffs"]["Row"]
+    data: Database["public"]["Tables"]["staffs"]["Row"] & {
+      full_name_kana?: string;
+      status?: string;
+    }
   ): Staff => {
-    return this.toCamelCase({
+    return {
       id: data.id,
       userId: data.user_id,
       fullName: data.full_name,
-      role: data.role,
+      fullNameKana: data.full_name_kana,
+      role: data.role as UserRole,
       hireDate: data.hire_date,
       isActive: data.is_active,
+      status: data.status,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    }) as Staff;
+    };
   };
 
   private mapToCastProfile = (

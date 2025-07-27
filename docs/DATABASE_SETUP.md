@@ -2,128 +2,92 @@
 
 ## 概要
 
-Platinum Management Systemでは、データベースの初期セットアップを簡単にするため、`supabase/V1_init_schema.sql`という単一のスキーマファイルを提供しています。
+本ドキュメントでは、platinum-managementシステムのデータベースセットアップ手順を説明します。
 
-## 新規セットアップ手順
+## セットアップ方法
 
-### 1. Supabaseプロジェクトの作成
+### 推奨方法: 自動セットアップスクリプト
 
-1. [Supabase](https://supabase.com)でアカウントを作成
-2. 新しいプロジェクトを作成
-3. データベースの初期化が完了するまで待機
-
-### 2. スキーマファイルの実行
-
-#### 方法1: SQL Editorを使用（推奨）
-
-1. SupabaseダッシュボードのSQL Editorにアクセス
-2. `supabase/V1_init_schema.sql`の内容をコピー&ペースト
-3. 「RUN」ボタンをクリックして実行
-
-#### 方法2: ローカルからpsqlを使用
+最も簡単で確実な方法は、自動セットアップスクリプトを使用することです：
 
 ```bash
-# 環境変数から接続URLを取得して実行
-<<<<<<< HEAD
-psql "$POSTGRES_URL_NON_POOLING" -f supabase/V1_init_schema.sql
-
-# または、.env.localファイルから読み込む場合：
-# psql "$(grep POSTGRES_URL_NON_POOLING .env.local | cut -d= -f2- | tr -d '"')" \
-#   -f supabase/V1_init_schema.sql
-=======
-psql "$(grep POSTGRES_URL_NON_POOLING .env.local | cut -d= -f2- | tr -d '"')" \
-  -f supabase/V1_init_schema.sql
->>>>>>> origin/main
+# データベースのセットアップ（テーブル作成、RLS設定、初期データ投入）
+npm run db:setup-v2
 ```
 
-### 3. セットアップの確認
+このスクリプトは以下を自動的に実行します：
+1. 必要なテーブルの作成
+2. Row Level Security (RLS) の設定
+3. インデックスの作成
+4. 初期データの投入
 
-以下のクエリでテーブルが正常に作成されたことを確認してください：
+### 手動セットアップ（開発者向け）
 
-```sql
--- テーブル一覧を確認
-SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
+開発環境で細かい制御が必要な場合は、以下の手順で手動セットアップも可能です：
 
--- RLS関数の確認
-SELECT proname FROM pg_proc WHERE proname LIKE 'current_user%' OR proname = 'get_current_user_staff_role';
+1. **スキーマの作成**
+   ```bash
+   # Supabase Dashboardで以下のSQLを実行
+   # supabase/migrations/V1_init_schema.sql の内容を実行
+   ```
 
--- ポリシー一覧の確認
-SELECT schemaname, tablename, policyname FROM pg_policies WHERE schemaname = 'public' ORDER BY tablename;
+2. **テーブルの確認**
+   ```bash
+   npm run db:check-tables
+   ```
+
+3. **デモデータの投入（オプション）**
+   ```bash
+   npm run db:insert-demo
+   ```
+
+## マイグレーション管理
+
+### 新しいマイグレーションの作成
+
+```bash
+# Supabase CLIを使用して差分マイグレーションを生成
+supabase db diff -f "マイグレーション名"
 ```
 
-## スキーマファイルに含まれる内容
+### マイグレーションの適用
 
-`V1_init_schema.sql`には以下が含まれています：
+```bash
+# ローカル環境
+supabase db push
 
-### テーブル定義
-- **staffs**: スタッフ管理（管理者、マネージャー、ホール、レジ、キャスト）
-- **casts_profile**: キャストプロフィール情報
-- **cast_performances**: キャスト実績記録
-- **customers**: 顧客情報管理
-- **visits**: 来店履歴
-- **tables**: テーブル管理
-- **reservations**: 予約管理
-- **products**: 商品管理
-- **order_items**: 注文アイテム
-- **shift_templates**: シフトテンプレート
-- **shift_requests**: シフト希望
-- **confirmed_shifts**: 確定シフト
-- **attendance_records**: 出退勤記録
-- **attendance_corrections**: 出退勤修正
-- **qr_codes**: QRコード管理
-- **qr_attendance_logs**: QR出退勤ログ
-- **inventory_movements**: 在庫変動履歴
-- **bottle_keeps**: ボトルキープ管理
-- **bottle_keep_usage**: ボトルキープ使用履歴
-- **id_verifications**: 身分証確認記録
-- **compliance_reports**: 法定帳簿出力履歴
-
-### セキュリティ設定
-- **Row Level Security (RLS)**: 全テーブルでRLSを有効化
-- **セキュリティポリシー**: ユーザーロールに応じたアクセス制御
-- **SECURITY DEFINER関数**: RLS無限再帰を回避する安全な関数群
-
-### パフォーマンス最適化
-- **インデックス**: クエリパフォーマンス向上のためのインデックス
-- **トリガー**: updated_at自動更新等のトリガー関数
-
-### ユーティリティ関数
-- **get_current_user_staff_role()**: 現在ユーザーのロール取得
-- **current_user_has_role()**: ロール権限チェック
-- **get_cast_ranking()**: キャストランキング計算
-
-## アーカイブされたマイグレーションファイルについて
-
-`supabase/migrations/archive/`ディレクトリには、開発過程で作成された古いマイグレーションファイルが保存されています。これらは：
-
-- **使用しないでください**: 開発の試行錯誤の履歴であり、最新のスキーマとは異なる場合があります
-- **参考資料**: テーブル設計の変遷や、特定の機能の実装方法を理解するための参考資料として利用できます
-- **統合済み**: 全ての内容は`V1_init_schema.sql`に統合されています
+# 本番環境
+supabase db push --linked
+```
 
 ## トラブルシューティング
 
-### よくあるエラーと対処法
+### よくある問題
 
-#### 1. "extension "uuid-ossp" already exists"
-- **原因**: 拡張機能が既にインストール済み
-- **対処**: NOTICEメッセージなので、無視して問題ありません
+1. **RLSポリシーエラー**
+   - 原因: Row Level Securityが有効だが、適切なポリシーが設定されていない
+   - 解決: `npm run db:setup-v2` を実行してRLSポリシーを再設定
 
-#### 2. "relation already exists" エラー
-- **原因**: テーブルが既に存在している
-- **対処**: `DROP TABLE IF EXISTS テーブル名 CASCADE;` で削除してから再実行、または新しいSupabaseプロジェクトで実行
+2. **外部キー制約エラー**
+   - 原因: 依存関係のあるテーブルの順序が正しくない
+   - 解決: 自動セットアップスクリプトを使用（正しい順序で実行される）
 
-#### 3. RLS関数のエラー
-- **原因**: auth.uid()関数が利用できない環境
-- **対処**: Supabaseの認証機能が有効になっていることを確認
+3. **権限エラー**
+   - 原因: Supabaseのサービスロールキーが設定されていない
+   - 解決: `.env.local` に `SUPABASE_SERVICE_ROLE_KEY` を設定
 
-### 問題が解決しない場合
+### データベースの状態確認
 
-1. Supabaseプロジェクトのログを確認
-2. SQL Editorでクエリを分割して実行
-3. 新しいSupabaseプロジェクトで再試行
+```bash
+# テーブルの存在確認
+npm run db:check-tables
 
-## 本番環境への適用
+# データの確認
+npm run db:check-data
+```
 
-**注意**: 本番環境で既にデータが存在する場合は、このスキーマファイルをそのまま実行しないでください。代わりに、段階的なマイグレーション戦略を検討してください。
+## 参考資料
 
-新しい本番環境の場合は、開発環境と同じ手順でセットアップできます。
+- [Supabase公式ドキュメント](https://supabase.com/docs)
+- [システム設計書](./SYSTEM_DESIGN.md)
+- [開発ガイド](./DEVELOPMENT_GUIDE.md)
