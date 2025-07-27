@@ -325,18 +325,23 @@ export class StaffService extends BaseService {
       status?: string;
     }
   ): Staff => {
-    return {
+    const staff = this.toCamelCase({
       id: data.id,
       userId: data.user_id,
       fullName: data.full_name,
       fullNameKana: data.full_name_kana,
-      role: data.role as UserRole,
+      role: data.role,
       hireDate: data.hire_date,
       isActive: data.is_active,
       status: data.status,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-    };
+    }) as Staff;
+
+    // roleの型を保証
+    staff.role = data.role as UserRole;
+
+    return staff;
   };
 
   private mapToCastProfile = (

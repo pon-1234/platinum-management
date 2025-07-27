@@ -28,7 +28,7 @@ npm run db:setup-v2
 1. **スキーマの作成**
    ```bash
    # Supabase Dashboardで以下のSQLを実行
-   # supabase/migrations/V1_init_schema.sql の内容を実行
+   # supabase/V1_init_schema.sql の内容を実行
    ```
 
 2. **テーブルの確認**
