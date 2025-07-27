@@ -1,200 +1,162 @@
-// Shift Template types
-export interface ShiftTemplate {
-  id: string;
-  name: string;
-  startTime: string; // HH:MM format
-  endTime: string; // HH:MM format
-  daysOfWeek: number[]; // 0-6 (Sunday-Saturday)
-  isActive: boolean;
-  createdBy: string | null;
-  updatedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  type ShiftTemplate,
+  type CreateShiftTemplateInput,
+  type UpdateShiftTemplateInput,
+  type ShiftRequest,
+  type ShiftRequestStatus,
+  type CreateShiftRequestInput,
+  type ApproveShiftRequestInput,
+  type ShiftRequestSearchInput,
+  type ConfirmedShift,
+  type ConfirmedShiftStatus,
+  type CreateConfirmedShiftInput,
+  type ConfirmedShiftSearchInput,
+  type AttendanceRecord,
+  type AttendanceStatus,
+  type CreateAttendanceRecordInput,
+  type AttendanceSearchInput,
+  type ClockAction,
+  type ClockActionType,
+  type CalendarShift,
+  type DailySchedule,
+  type WeeklySchedule,
+  type ShiftType,
+  type AttendanceDashboard,
+  type MonthlyAttendanceSummary,
+  shiftTemplateSchema,
+  createShiftTemplateSchema,
+  updateShiftTemplateSchema,
+  shiftRequestSchema,
+  shiftRequestStatusSchema,
+  createShiftRequestSchema,
+  approveShiftRequestSchema,
+  shiftRequestSearchSchema,
+  confirmedShiftSchema,
+  confirmedShiftStatusSchema,
+  createConfirmedShiftSchema,
+  confirmedShiftSearchSchema,
+  attendanceRecordSchema,
+  attendanceStatusSchema,
+  createAttendanceRecordSchema,
+  attendanceSearchSchema,
+  clockActionSchema,
+  clockActionTypeSchema,
+  calendarShiftSchema,
+  dailyScheduleSchema,
+  weeklyScheduleSchema,
+  shiftTypeSchema,
+  attendanceDashboardSchema,
+  monthlyAttendanceSummarySchema,
+} from "@/lib/validations/attendance";
 
-export interface CreateShiftTemplateData {
-  name: string;
-  startTime: string;
-  endTime: string;
-  daysOfWeek: number[];
-  isActive?: boolean;
-}
+// Re-export types from Zod schemas
+export type {
+  ShiftTemplate,
+  CreateShiftTemplateInput,
+  UpdateShiftTemplateInput,
+};
+export type {
+  ShiftRequest,
+  ShiftRequestStatus,
+  CreateShiftRequestInput,
+  ApproveShiftRequestInput,
+  ShiftRequestSearchInput,
+};
+export type {
+  ConfirmedShift,
+  ConfirmedShiftStatus,
+  CreateConfirmedShiftInput,
+  ConfirmedShiftSearchInput,
+};
+export type {
+  AttendanceRecord,
+  AttendanceStatus,
+  CreateAttendanceRecordInput,
+  AttendanceSearchInput,
+};
+export type { ClockAction, ClockActionType };
+export type { CalendarShift, DailySchedule, WeeklySchedule, ShiftType };
+export type { AttendanceDashboard, MonthlyAttendanceSummary };
 
-export interface UpdateShiftTemplateData {
-  name?: string;
-  startTime?: string;
-  endTime?: string;
-  daysOfWeek?: number[];
-  isActive?: boolean;
-}
+// Legacy aliases for backward compatibility
+export type CreateShiftTemplateData = CreateShiftTemplateInput;
+export type UpdateShiftTemplateData = UpdateShiftTemplateInput;
+export type CreateShiftRequestData = CreateShiftRequestInput;
+export type ApproveShiftRequestData = ApproveShiftRequestInput;
+export type ShiftRequestSearchParams = ShiftRequestSearchInput;
+export type CreateConfirmedShiftData = CreateConfirmedShiftInput;
+export type ConfirmedShiftSearchParams = ConfirmedShiftSearchInput;
+export type CreateAttendanceRecordData = CreateAttendanceRecordInput;
+export type AttendanceSearchParams = AttendanceSearchInput;
 
-// Shift Request types
-export interface ShiftRequest {
-  id: string;
-  staffId: string;
-  shiftTemplateId: string | null;
-  requestedDate: string; // YYYY-MM-DD format
-  startTime: string | null; // HH:MM format
-  endTime: string | null; // HH:MM format
-  status: "pending" | "approved" | "rejected";
-  notes: string | null;
-  approvedBy: string | null;
-  approvedAt: string | null;
-  rejectionReason: string | null;
-  createdAt: string;
-  updatedAt: string;
-  // Additional fields from joins
+// Export schemas for runtime validation
+export {
+  shiftTemplateSchema,
+  createShiftTemplateSchema,
+  updateShiftTemplateSchema,
+  shiftRequestSchema,
+  shiftRequestStatusSchema,
+  createShiftRequestSchema,
+  approveShiftRequestSchema,
+  shiftRequestSearchSchema,
+  confirmedShiftSchema,
+  confirmedShiftStatusSchema,
+  createConfirmedShiftSchema,
+  confirmedShiftSearchSchema,
+  attendanceRecordSchema,
+  attendanceStatusSchema,
+  createAttendanceRecordSchema,
+  attendanceSearchSchema,
+  clockActionSchema,
+  clockActionTypeSchema,
+  calendarShiftSchema,
+  dailyScheduleSchema,
+  weeklyScheduleSchema,
+  shiftTypeSchema,
+  attendanceDashboardSchema,
+  monthlyAttendanceSummarySchema,
+};
+
+// Extended types with additional fields from joins
+export interface ShiftRequestWithDetails extends ShiftRequest {
+  cast?: {
+    id: string;
+    fullName: string;
+    castProfile?: {
+      nickname: string;
+    };
+  };
+  approver?: {
+    id: string;
+    fullName: string;
+  };
   staffName?: string;
   staffRole?: string;
   templateName?: string;
 }
 
-export type ShiftRequestStatus = "pending" | "approved" | "rejected";
-
-export interface CreateShiftRequestData {
-  shiftTemplateId?: string;
-  requestedDate: string;
-  startTime?: string;
-  endTime?: string;
-  notes?: string;
-}
-
-export interface UpdateShiftRequestData {
-  startTime?: string;
-  endTime?: string;
-  notes?: string;
-}
-
-export interface ApproveShiftRequestData {
-  approved: boolean;
-  rejectionReason?: string;
-  notes?: string;
-}
-
-export interface ShiftRequestSearchParams {
-  staffId?: string;
-  shiftTemplateId?: string;
-  status?: "pending" | "approved" | "rejected";
-  startDate?: string;
-  endDate?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  limit?: number;
-  offset?: number;
-}
-
-// Confirmed Shift types
-export interface ConfirmedShift {
-  id: string;
-  staffId: string;
-  shiftTemplateId: string | null;
-  shiftRequestId: string | null;
-  date: string; // YYYY-MM-DD format
-  startTime: string; // HH:MM format
-  endTime: string; // HH:MM format
-  status: "scheduled" | "completed" | "cancelled";
-  notes: string | null;
-  createdBy: string | null;
-  updatedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-  // Additional fields from joins
+export interface ConfirmedShiftWithDetails extends ConfirmedShift {
+  staff?: {
+    id: string;
+    fullName: string;
+    role: string;
+  };
   staffName?: string;
   staffRole?: string;
   templateName?: string;
 }
 
-export type ShiftType = "regular" | "overtime" | "holiday";
-
-export interface CreateConfirmedShiftData {
-  staffId: string;
-  shiftTemplateId?: string;
-  shiftRequestId?: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status?: "scheduled" | "completed" | "cancelled";
-  notes?: string;
-}
-
-export interface UpdateConfirmedShiftData {
-  startTime?: string;
-  endTime?: string;
-  shiftType?: ShiftType;
-  notes?: string;
-}
-
-export interface ConfirmedShiftSearchParams {
-  staffId?: string;
-  shiftTemplateId?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: "scheduled" | "completed" | "cancelled";
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  limit?: number;
-  offset?: number;
-}
-
-// Attendance Record types
-export interface AttendanceRecord {
-  id: string;
-  staffId: string;
-  confirmedShiftId: string | null;
-  attendanceDate: string; // YYYY-MM-DD format
-  clockInTime: string | null; // HH:MM format
-  clockOutTime: string | null; // HH:MM format
-  breakStartTime: string | null; // HH:MM format
-  breakEndTime: string | null; // HH:MM format
-  totalWorkingMinutes: number | null;
-  totalBreakMinutes: number | null;
-  status: "present" | "absent" | "late" | "early_leave";
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  // Additional fields from joins
+export interface AttendanceRecordWithDetails extends AttendanceRecord {
+  staff?: {
+    id: string;
+    fullName: string;
+    role: string;
+  };
   staffName?: string;
   staffRole?: string;
   scheduledStartTime?: string;
   scheduledEndTime?: string;
   shiftTemplateName?: string;
-}
-
-export type AttendanceStatus = "present" | "absent" | "late" | "early_leave";
-
-export interface CreateAttendanceRecordData {
-  staffId: string;
-  confirmedShiftId?: string;
-  attendanceDate: string;
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
-  clockInTime?: string;
-  clockOutTime?: string;
-  breakStartTime?: string;
-  breakEndTime?: string;
-  status?: "present" | "absent" | "late" | "early_leave";
-  notes?: string;
-}
-
-export interface UpdateAttendanceRecordData {
-  clockInTime?: string;
-  clockOutTime?: string;
-  breakStartTime?: string;
-  breakEndTime?: string;
-  status?: AttendanceStatus;
-  notes?: string;
-}
-
-export interface AttendanceSearchParams {
-  staffId?: string;
-  confirmedShiftId?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: "present" | "absent" | "late" | "early_leave";
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  limit?: number;
-  offset?: number;
 }
 
 // Attendance Correction types
@@ -230,106 +192,6 @@ export interface CreateAttendanceCorrectionData {
 
 export interface ApproveCorrectionData {
   status: "approved" | "rejected";
-}
-
-// Related types with details
-export interface ShiftRequestWithDetails extends ShiftRequest {
-  cast?: {
-    id: string;
-    fullName: string;
-    castProfile?: {
-      nickname: string;
-    };
-  };
-  approver?: {
-    id: string;
-    fullName: string;
-  };
-}
-
-export interface ConfirmedShiftWithDetails extends ConfirmedShift {
-  staff?: {
-    id: string;
-    fullName: string;
-    role: string;
-  };
-}
-
-export interface AttendanceRecordWithDetails extends AttendanceRecord {
-  staff?: {
-    id: string;
-    fullName: string;
-    role: string;
-  };
-  corrections?: AttendanceCorrection[];
-}
-
-// Monthly summary types
-export interface MonthlyAttendanceSummary {
-  totalWorkDays: number;
-  totalWorkHours: number;
-  totalOvertimeHours: number;
-  presentDays: number;
-  absentDays: number;
-  lateDays: number;
-}
-
-// Calendar and schedule types
-export interface CalendarShift {
-  id: string;
-  staffId: string;
-  staffName: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  shiftType: ShiftType;
-  shiftStatus?: "scheduled" | "completed" | "cancelled"; // ConfirmedShiftのstatus
-  attendanceStatus?: AttendanceStatus; // 出勤記録のstatus
-  isConfirmed: boolean;
-}
-
-export interface DailySchedule {
-  date: string;
-  shifts: CalendarShift[];
-  totalStaff: number;
-  confirmedStaff: number;
-}
-
-export interface WeeklySchedule {
-  weekStart: string;
-  weekEnd: string;
-  days: DailySchedule[];
-}
-
-// Time clock types
-export type ClockActionType =
-  | "clock_in"
-  | "clock_out"
-  | "break_start"
-  | "break_end";
-
-export interface ClockAction {
-  type: ClockActionType;
-  timestamp: string;
-  notes?: string;
-}
-
-export interface AttendanceDashboard {
-  today: {
-    totalStaff: number;
-    presentStaff: number;
-    lateStaff: number;
-    absentStaff: number;
-  };
-  thisWeek: {
-    averageAttendance: number;
-    totalWorkHours: number;
-    totalOvertimeHours: number;
-  };
-  pendingRequests: {
-    shiftRequests: number;
-    corrections: number;
-  };
 }
 
 // Validation and utility types

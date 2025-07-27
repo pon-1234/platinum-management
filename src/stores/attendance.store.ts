@@ -116,6 +116,8 @@ export const useAttendanceStore = create<AttendanceState>()(
               | "approved"
               | "rejected"
               | undefined,
+            limit: params.limit || 100,
+            offset: 0,
           });
           set({ shiftRequests, requestsLoading: false });
         } catch (error) {
