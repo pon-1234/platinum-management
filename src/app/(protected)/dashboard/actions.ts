@@ -34,7 +34,8 @@ export async function getDashboardStats() {
     const { data: todayVisits, error: visitsError } = await supabase
       .from("visits")
       .select("id")
-      .eq("visit_date", today)
+      .gte("check_in_at", `${today}T00:00:00`)
+      .lt("check_in_at", `${today}T23:59:59`)
       .eq("status", "completed");
 
     if (visitsError) {
