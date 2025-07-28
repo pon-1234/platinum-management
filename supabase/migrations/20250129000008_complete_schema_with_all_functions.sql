@@ -106,6 +106,7 @@ CREATE TABLE tables (
     table_number VARCHAR(10) NOT NULL UNIQUE,
     capacity INTEGER NOT NULL DEFAULT 4,
     is_available BOOLEAN NOT NULL DEFAULT true,
+    is_active BOOLEAN NOT NULL DEFAULT true,
     location VARCHAR(100),
     current_status table_status DEFAULT 'available',
     current_visit_id UUID,
@@ -364,6 +365,8 @@ CREATE INDEX idx_staffs_role ON staffs(role) WHERE is_active = true;
 CREATE INDEX idx_customers_name ON customers(name);
 CREATE INDEX idx_customers_phone ON customers(phone_number);
 CREATE INDEX idx_customers_status ON customers(status);
+
+CREATE INDEX idx_tables_is_active ON tables(is_active);
 
 CREATE INDEX idx_visits_customer_id ON visits(customer_id);
 CREATE INDEX idx_visits_check_in_at ON visits(check_in_at);
@@ -849,7 +852,14 @@ CREATE POLICY "Enable write access for authenticated users" ON compliance_report
   FOR ALL TO authenticated USING (true);
 
 -- =============================================================================
--- 7. 権限の付与
+-- 7. テーブルコメントの追加
+-- =============================================================================
+
+COMMENT ON COLUMN tables.is_active IS 'テーブルが運用中かどうか（撤去されていないか）';
+COMMENT ON COLUMN tables.is_available IS 'テーブルが現在利用可能かどうか（空席か）';
+
+-- =============================================================================
+-- 8. 権限の付与
 -- =============================================================================
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
@@ -858,7 +868,7 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
 
 -- =============================================================================
--- 8. サンプルデータの挿入
+-- 9. サンプルデータの挿入
 -- =============================================================================
 
 -- サンプルスタッフ
