@@ -776,9 +776,10 @@ ALTER TABLE id_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE compliance_reports ENABLE ROW LEVEL SECURITY;
 
 -- Staffsテーブルのポリシー
-CREATE POLICY "Enable read for authenticated users" ON staffs
+-- 自分の情報のみ閲覧可能（無限再帰を防ぐため）
+CREATE POLICY "Users can view their own staff info" ON staffs
   FOR SELECT TO authenticated
-  USING (true);
+  USING (auth.uid() = user_id);
 
 CREATE POLICY "Enable insert for authenticated users" ON staffs  
   FOR INSERT TO authenticated
