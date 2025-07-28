@@ -594,7 +594,7 @@ export class ReservationService {
             tableName: tableData.table_number,
             capacity: tableData.capacity,
             location: tableData.location,
-            isActive: tableData.is_available,
+            isActive: tableData.is_active,
             currentStatus: tableData.current_status,
             currentVisitId: tableData.current_visit_id,
             createdAt: tableData.created_at,

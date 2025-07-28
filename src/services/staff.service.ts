@@ -332,7 +332,7 @@ export class StaffService extends BaseService {
       fullNameKana: data.full_name_kana,
       role: data.role,
       hireDate: data.hire_date,
-      isActive: data.is_available,
+      isActive: data.is_active,
       status: data.status,
       createdAt: data.created_at,
       updatedAt: data.updated_at,

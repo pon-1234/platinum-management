@@ -174,12 +174,12 @@ export function QRAttendanceDashboard() {
                           {staff.qrCode ? (
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                staff.qrCode.is_available
+                                staff.qrCode.is_active
                                   ? "bg-green-100 text-green-800"
                                   : "bg-gray-100 text-gray-800"
                               }`}
                             >
-                              {staff.qrCode.is_available ? "有効" : "無効"}
+                              {staff.qrCode.is_active ? "有効" : "無効"}
                             </span>
                           ) : (
                             <span className="text-sm text-gray-500">

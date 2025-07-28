@@ -721,7 +721,7 @@ export class BillingService extends BaseService {
       cost: data.cost,
       stockQuantity: data.stock_quantity,
       lowStockThreshold: data.low_stock_threshold,
-      isActive: data.is_available,
+      isActive: data.is_active,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
       createdAt: data.created_at,

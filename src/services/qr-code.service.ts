@@ -711,7 +711,7 @@ export class QRCodeService extends BaseService {
               signature: qrCode.signature,
               expires_at: qrCode.expires_at,
               created_at: qrCode.created_at,
-              is_available: qrCode.is_available,
+              is_active: qrCode.is_active,
             }
           : undefined,
         hasActiveQR: !!qrCode,

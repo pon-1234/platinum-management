@@ -34,7 +34,7 @@ export class TableService extends BaseService {
         table_number: validatedData.tableName,
         capacity: validatedData.capacity,
         location: validatedData.location || null,
-        is_available: validatedData.isActive ?? true,
+        is_active: validatedData.isActive ?? true,
       })
       .select()
       .single();
@@ -133,7 +133,7 @@ export class TableService extends BaseService {
     if (validatedData.tableName !== undefined)
       updateData.table_number = validatedData.tableName;
     if (validatedData.isActive !== undefined)
-      updateData.is_available = validatedData.isActive;
+      updateData.is_active = validatedData.isActive;
     if (validatedData.currentStatus !== undefined)
       updateData.current_status = validatedData.currentStatus;
     if (validatedData.currentVisitId !== undefined)
@@ -188,7 +188,7 @@ export class TableService extends BaseService {
       query = query.eq("current_status", validatedParams.status);
     }
     if (validatedParams.isActive !== undefined) {
-      query = query.eq("is_available", validatedParams.isActive);
+      query = query.eq("is_active", validatedParams.isActive);
     }
     if (validatedParams.minCapacity !== undefined) {
       query = query.gte("capacity", validatedParams.minCapacity);
@@ -288,7 +288,7 @@ export class TableService extends BaseService {
           .from("tables")
           .select("*")
           .in("id", availableTableIds)
-          .eq("is_available", true);
+          .eq("is_active", true);
 
         if (tableError) {
           throw new Error(
@@ -379,7 +379,7 @@ export class TableService extends BaseService {
       tableName: data.table_number,
       capacity: data.capacity,
       location: data.location,
-      isActive: data.is_available,
+      isActive: data.is_active,
       currentStatus: data.current_status,
       currentVisitId: data.current_visit_id,
       createdAt: data.created_at,
