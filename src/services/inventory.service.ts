@@ -386,85 +386,29 @@ export class InventoryService extends BaseService {
   // 在庫統計
   async getInventoryStats(): Promise<InventoryStats> {
     try {
-      // データベースで直接カウントと集計を実行
-      const { count: totalProducts, error: totalError } = await this.supabase
-        .from("products")
-        .select("*", { count: "exact", head: true })
-        .eq("is_active", true);
+      // RPC関数を使用してデータベース側で集計
+      const { data, error } = await this.supabase.rpc("get_inventory_stats");
 
-      if (totalError) {
-        throw new Error(
-          this.handleDatabaseError(totalError, "商品総数取得に失敗しました")
-        );
-      }
-
-      const { count: outOfStockItems, error: outOfStockError } =
-        await this.supabase
-          .from("products")
-          .select("*", { count: "exact", head: true })
-          .eq("is_active", true)
-          .eq("stock_quantity", 0);
-
-      if (outOfStockError) {
-        throw new Error(
-          this.handleDatabaseError(
-            outOfStockError,
-            "在庫切れ商品数取得に失敗しました"
-          )
-        );
-      }
-
-      // 低在庫アイテムは計算列を使用できないため、RPCまたはクライアント側処理
-      let lowStockItems = 0;
-      const { data: lowStockData, error: lowStockError } =
-        await this.supabase.rpc("count_low_stock_products");
-
-      if (lowStockError) {
-        // RPCが存在しない場合はフォールバック
-        const { data: productsData, error: productsError } = await this.supabase
-          .from("products")
-          .select("stock_quantity, low_stock_threshold")
-          .eq("is_active", true);
-
-        if (productsError) {
-          throw new Error(
-            this.handleDatabaseError(
-              productsError,
-              "商品データ取得に失敗しました"
-            )
-          );
+      if (error) {
+        // RPC関数が存在しない場合は従来の方法にフォールバック
+        if (error.message.includes("function get_inventory_stats")) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "RPC get_inventory_stats not found, falling back to client-side calculation"
+            );
+          }
+          return this.getInventoryStatsFallback();
         }
-
-        lowStockItems =
-          productsData?.filter((p) => p.stock_quantity <= p.low_stock_threshold)
-            .length || 0;
-      } else {
-        lowStockItems = lowStockData || 0;
-      }
-
-      // 在庫価値の合計
-      const { data: valueData, error: valueError } = await this.supabase
-        .from("products")
-        .select("stock_quantity, cost")
-        .eq("is_active", true);
-
-      if (valueError) {
         throw new Error(
-          this.handleDatabaseError(
-            valueError,
-            "在庫価値データ取得に失敗しました"
-          )
+          this.handleDatabaseError(error, "在庫統計取得に失敗しました")
         );
       }
-
-      const totalValue =
-        valueData?.reduce((sum, p) => sum + p.stock_quantity * p.cost, 0) || 0;
 
       return {
-        totalProducts: totalProducts || 0,
-        lowStockItems,
-        outOfStockItems: outOfStockItems || 0,
-        totalValue,
+        totalProducts: Number(data.total_products) || 0,
+        lowStockItems: Number(data.low_stock_items) || 0,
+        outOfStockItems: Number(data.out_of_stock_items) || 0,
+        totalValue: Number(data.total_value) || 0,
       };
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
@@ -474,8 +418,132 @@ export class InventoryService extends BaseService {
     }
   }
 
+  // フォールバック用の従来の実装
+  private async getInventoryStatsFallback(): Promise<InventoryStats> {
+    // データベースで直接カウントと集計を実行
+    const { count: totalProducts, error: totalError } = await this.supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true);
+
+    if (totalError) {
+      throw new Error(
+        this.handleDatabaseError(totalError, "商品総数取得に失敗しました")
+      );
+    }
+
+    const { count: outOfStockItems, error: outOfStockError } =
+      await this.supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true)
+        .eq("stock_quantity", 0);
+
+    if (outOfStockError) {
+      throw new Error(
+        this.handleDatabaseError(
+          outOfStockError,
+          "在庫切れ商品数取得に失敗しました"
+        )
+      );
+    }
+
+    // 低在庫アイテムは計算列を使用できないため、RPCまたはクライアント側処理
+    let lowStockItems = 0;
+    const { data: lowStockData, error: lowStockError } =
+      await this.supabase.rpc("count_low_stock_products");
+
+    if (lowStockError) {
+      // RPCが存在しない場合はフォールバック
+      const { data: productsData, error: productsError } = await this.supabase
+        .from("products")
+        .select("stock_quantity, low_stock_threshold")
+        .eq("is_active", true);
+
+      if (productsError) {
+        throw new Error(
+          this.handleDatabaseError(
+            productsError,
+            "商品データ取得に失敗しました"
+          )
+        );
+      }
+
+      lowStockItems =
+        productsData?.filter((p) => p.stock_quantity <= p.low_stock_threshold)
+          .length || 0;
+    } else {
+      lowStockItems = lowStockData || 0;
+    }
+
+    // 在庫価値の合計
+    const { data: valueData, error: valueError } = await this.supabase
+      .from("products")
+      .select("stock_quantity, cost")
+      .eq("is_active", true);
+
+    if (valueError) {
+      throw new Error(
+        this.handleDatabaseError(valueError, "在庫価値データ取得に失敗しました")
+      );
+    }
+
+    const totalValue =
+      valueData?.reduce((sum, p) => sum + p.stock_quantity * p.cost, 0) || 0;
+
+    return {
+      totalProducts: totalProducts || 0,
+      lowStockItems,
+      outOfStockItems: outOfStockItems || 0,
+      totalValue,
+    };
+  }
+
   // 在庫アラート
   async getInventoryAlerts(): Promise<InventoryAlert[]> {
+    try {
+      // RPC関数を使用してデータベース側でアラートを生成
+      const { data, error } = await this.supabase.rpc("get_inventory_alerts");
+
+      if (error) {
+        // RPC関数が存在しない場合は従来の方法にフォールバック
+        if (error.message.includes("function get_inventory_alerts")) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "RPC get_inventory_alerts not found, falling back to client-side calculation"
+            );
+          }
+          return this.getInventoryAlertsFallback();
+        }
+        throw new Error(
+          this.handleDatabaseError(error, "在庫アラート取得に失敗しました")
+        );
+      }
+
+      // RPCからのデータを適切な型に変換
+      return (data || []).map((alert: any) => ({
+        id: alert.id,
+        productId: alert.product_id,
+        productName: alert.product_name,
+        currentStock: alert.current_stock,
+        threshold: alert.threshold,
+        alertType: alert.alert_type as
+          | "out_of_stock"
+          | "low_stock"
+          | "overstock",
+        severity: alert.severity as "critical" | "warning",
+        createdAt: new Date().toISOString(),
+      }));
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getInventoryAlerts failed:", error);
+      }
+      throw error;
+    }
+  }
+
+  // フォールバック用の従来の実装
+  private async getInventoryAlertsFallback(): Promise<InventoryAlert[]> {
     const products = await this.getProducts();
     const alerts: InventoryAlert[] = [];
 
@@ -651,22 +719,113 @@ export class InventoryService extends BaseService {
   // カテゴリー一覧取得
   async getCategories(): Promise<string[]> {
     try {
-      const { data, error } = await this.supabase
-        .from("products")
-        .select("category")
-        .eq("is_active", true);
+      // RPC関数を使用してデータベース側で重複を除去
+      const { data, error } = await this.supabase.rpc(
+        "get_distinct_product_categories"
+      );
 
       if (error) {
+        // RPC関数が存在しない場合は従来の方法にフォールバック
+        if (
+          error.message.includes("function get_distinct_product_categories")
+        ) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "RPC get_distinct_product_categories not found, falling back to client-side calculation"
+            );
+          }
+          return this.getCategoriesFallback();
+        }
         throw new Error(
           this.handleDatabaseError(error, "カテゴリー取得に失敗しました")
         );
       }
 
-      const categories = [...new Set(data?.map((d) => d.category) || [])];
-      return categories.sort();
+      return (data || []).map((row: any) => row.category);
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("getCategories failed:", error);
+      }
+      throw error;
+    }
+  }
+
+  // フォールバック用の従来の実装
+  private async getCategoriesFallback(): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from("products")
+      .select("category")
+      .eq("is_active", true);
+
+    if (error) {
+      throw new Error(
+        this.handleDatabaseError(error, "カテゴリー取得に失敗しました")
+      );
+    }
+
+    const categories = [...new Set(data?.map((d) => d.category) || [])];
+    return categories.sort();
+  }
+
+  // 在庫ページの全データを一度に取得（パフォーマンス最適化）
+  async getInventoryPageData(filter?: InventorySearchFilter) {
+    try {
+      // RPC関数を使用してデータベース側で全データを集約
+      const { data, error } = await this.supabase.rpc(
+        "get_inventory_page_data",
+        {
+          p_category: filter?.category || null,
+          p_search_term: filter?.searchTerm || null,
+        }
+      );
+
+      if (error) {
+        // RPC関数が存在しない場合は従来の方法にフォールバック
+        if (error.message.includes("function get_inventory_page_data")) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "RPC get_inventory_page_data not found, falling back to individual queries"
+            );
+          }
+          // 個別にデータを取得
+          const [products, stats, alerts, categories] = await Promise.all([
+            this.getProducts(filter),
+            this.getInventoryStats(),
+            this.getInventoryAlerts(),
+            this.getCategories(),
+          ]);
+          return { products, stats, alerts, categories };
+        }
+        throw new Error(
+          this.handleDatabaseError(error, "在庫ページデータ取得に失敗しました")
+        );
+      }
+
+      // RPC結果をパース
+      const result = data || {};
+      return {
+        products: result.products || [],
+        stats: result.stats || {
+          totalProducts: 0,
+          lowStockItems: 0,
+          outOfStockItems: 0,
+          totalValue: 0,
+        },
+        alerts: (result.alerts || []).map((alert: any) => ({
+          id: alert.id,
+          productId: alert.product_id,
+          productName: alert.product_name,
+          currentStock: alert.current_stock,
+          threshold: alert.threshold,
+          alertType: alert.alert_type,
+          severity: alert.severity,
+          createdAt: new Date().toISOString(),
+        })),
+        categories: result.categories || [],
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("getInventoryPageData failed:", error);
       }
       throw error;
     }

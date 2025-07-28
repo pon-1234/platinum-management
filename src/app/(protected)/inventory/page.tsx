@@ -14,6 +14,7 @@ import {
   getInventoryStats,
   getInventoryAlerts,
   getCategories,
+  getInventoryPageData,
 } from "@/app/actions/inventory.actions";
 import type {
   Product,
@@ -40,48 +41,41 @@ export default function InventoryPage() {
     try {
       setIsLoading(true);
 
-      // Load all inventory data in parallel
-      const [productsResult, statsResult, alertsResult, categoriesResult] =
-        await Promise.all([
-          getProducts({
-            category: selectedCategory !== "all" ? selectedCategory : undefined,
-            searchTerm: searchTerm || undefined,
-          }),
-          getInventoryStats({}),
-          getInventoryAlerts({}),
-          getCategories({}),
-        ]);
-
-      console.log("Inventory load results:", {
-        products: productsResult,
-        stats: statsResult,
-        alerts: alertsResult,
-        categories: categoriesResult,
+      // Use optimized action that fetches all data in one query
+      const result = await getInventoryPageData({
+        category: selectedCategory !== "all" ? selectedCategory : undefined,
+        searchTerm: searchTerm || undefined,
       });
 
-      if (productsResult.success) {
-        setProducts(productsResult.data);
+      console.log("Inventory page data result:", result);
+
+      if (result.success) {
+        const { products, stats, alerts, categories } = result.data;
+        setProducts(products);
+        setStats(stats);
+        setAlerts(alerts);
+        setCategories(categories);
       } else {
-        console.error("Products load failed:", productsResult.error);
-        toast.error(`商品データ取得エラー: ${productsResult.error}`);
-      }
-      if (statsResult.success) {
-        setStats(statsResult.data);
-      } else {
-        console.error("Stats load failed:", statsResult.error);
-        toast.error(`統計データ取得エラー: ${statsResult.error}`);
-      }
-      if (alertsResult.success) {
-        setAlerts(alertsResult.data);
-      } else {
-        console.error("Alerts load failed:", alertsResult.error);
-        toast.error(`アラートデータ取得エラー: ${alertsResult.error}`);
-      }
-      if (categoriesResult.success) {
-        setCategories(categoriesResult.data);
-      } else {
-        console.error("Categories load failed:", categoriesResult.error);
-        toast.error(`カテゴリーデータ取得エラー: ${categoriesResult.error}`);
+        console.error("Inventory page data load failed:", result.error);
+        toast.error(`在庫データ取得エラー: ${result.error}`);
+
+        // Fallback to individual queries if optimized query fails
+        const [productsResult, statsResult, alertsResult, categoriesResult] =
+          await Promise.all([
+            getProducts({
+              category:
+                selectedCategory !== "all" ? selectedCategory : undefined,
+              searchTerm: searchTerm || undefined,
+            }),
+            getInventoryStats({}),
+            getInventoryAlerts({}),
+            getCategories({}),
+          ]);
+
+        if (productsResult.success) setProducts(productsResult.data);
+        if (statsResult.success) setStats(statsResult.data);
+        if (alertsResult.success) setAlerts(alertsResult.data);
+        if (categoriesResult.success) setCategories(categoriesResult.data);
       }
     } catch (error) {
       toast.error("在庫データの取得に失敗しました");

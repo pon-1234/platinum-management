@@ -189,6 +189,20 @@ export const getCategories = createSafeAction(z.object({}), async () => {
   return categories;
 });
 
+// Optimized action to get all inventory page data in one query
+const getInventoryPageDataSchema = z.object({
+  category: z.string().optional(),
+  searchTerm: z.string().optional(),
+});
+
+export const getInventoryPageData = createSafeAction(
+  getInventoryPageDataSchema,
+  async (filter) => {
+    const data = await inventoryService.getInventoryPageData(filter);
+    return data;
+  }
+);
+
 // ========== Batch Operations ==========
 
 const batchUpdateStockSchema = z.object({
