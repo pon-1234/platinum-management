@@ -34,6 +34,7 @@ export class TableService extends BaseService {
         table_number: validatedData.tableName,
         capacity: validatedData.capacity,
         location: validatedData.location || null,
+        is_available: true, // 新規作成時は利用可能
         is_active: validatedData.isActive ?? true,
       })
       .select()
@@ -379,6 +380,7 @@ export class TableService extends BaseService {
       tableName: data.table_number,
       capacity: data.capacity,
       location: data.location,
+      isAvailable: data.is_available,
       isActive: data.is_active,
       currentStatus: data.current_status,
       currentVisitId: data.current_visit_id,

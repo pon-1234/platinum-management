@@ -32,6 +32,7 @@ export type Table = {
   tableName: string;
   capacity: number;
   location: string | null;
+  isAvailable: boolean;
   isActive: boolean;
   currentStatus: TableStatus;
   currentVisitId: string | null;

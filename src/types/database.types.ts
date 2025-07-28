@@ -256,6 +256,7 @@ export interface Database {
           table_number: string;
           capacity: number;
           location: string | null;
+          is_available: boolean;
           is_active: boolean;
           current_status: Database["public"]["Enums"]["table_status"];
           current_visit_id: string | null;
@@ -267,6 +268,7 @@ export interface Database {
           table_number: string;
           capacity: number;
           location?: string | null;
+          is_available?: boolean;
           is_active?: boolean;
           current_status?: Database["public"]["Enums"]["table_status"];
           current_visit_id?: string | null;
@@ -278,6 +280,7 @@ export interface Database {
           table_name?: string;
           capacity?: number;
           location?: string | null;
+          is_available?: boolean;
           is_active?: boolean;
           current_status?: Database["public"]["Enums"]["table_status"];
           current_visit_id?: string | null;
