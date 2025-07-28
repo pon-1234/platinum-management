@@ -17,10 +17,9 @@ interface CustomerFormProps {
 }
 
 const statusOptions: { value: CustomerStatus; label: string }[] = [
-  { value: "normal", label: "通常" },
+  { value: "active", label: "通常" },
   { value: "vip", label: "VIP" },
-  { value: "caution", label: "要注意" },
-  { value: "blacklisted", label: "ブラックリスト" },
+  { value: "blocked", label: "ブロック" },
 ];
 
 export function CustomerForm({
@@ -51,7 +50,7 @@ export function CustomerForm({
           status: customer.status,
         }
       : {
-          status: "normal",
+          status: "active",
         },
   });
 
