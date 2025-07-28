@@ -63,21 +63,25 @@ export default function InventoryPage() {
         setProducts(productsResult.data);
       } else {
         console.error("Products load failed:", productsResult.error);
+        toast.error(`商品データ取得エラー: ${productsResult.error}`);
       }
       if (statsResult.success) {
         setStats(statsResult.data);
       } else {
         console.error("Stats load failed:", statsResult.error);
+        toast.error(`統計データ取得エラー: ${statsResult.error}`);
       }
       if (alertsResult.success) {
         setAlerts(alertsResult.data);
       } else {
         console.error("Alerts load failed:", alertsResult.error);
+        toast.error(`アラートデータ取得エラー: ${alertsResult.error}`);
       }
       if (categoriesResult.success) {
         setCategories(categoriesResult.data);
       } else {
         console.error("Categories load failed:", categoriesResult.error);
+        toast.error(`カテゴリーデータ取得エラー: ${categoriesResult.error}`);
       }
     } catch (error) {
       toast.error("在庫データの取得に失敗しました");

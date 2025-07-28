@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { customerService } from "@/services/customer.service";
-import { reservationService } from "@/services/reservation.service";
-import { billingService } from "@/services/billing.service";
+import { getDashboardStats } from "./actions";
 
 interface DashboardStats {
   totalCustomers: number;
@@ -26,30 +24,13 @@ export default function DashboardPage() {
         setIsLoading(true);
         setError(null);
 
-        const today = new Date();
-        const todayString = today.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+        const result = await getDashboardStats();
 
-        // Get total customers
-        const customers = await customerService.searchCustomers({
-          limit: 1000, // ダッシュボードで全顧客数を取得
-          offset: 0,
-        });
-
-        // Get today's reservations
-        const reservations = await reservationService.searchReservations({
-          startDate: todayString,
-          endDate: todayString,
-        });
-
-        // Get today's sales data
-        const dailyReport =
-          await billingService.generateDailyReport(todayString);
-
-        setStats({
-          totalCustomers: customers.length,
-          todayReservations: reservations.length,
-          todaySales: dailyReport.totalSales,
-        });
+        if (result.success && result.data) {
+          setStats(result.data);
+        } else {
+          setError(result.error || "ダッシュボードデータの取得に失敗しました");
+        }
       } catch (err) {
         setError("ダッシュボードデータの取得に失敗しました");
         if (process.env.NODE_ENV === "development") {
