@@ -1,11 +1,12 @@
 -- =============================================================================
--- Platinum Management System - 包括的データベース再構築 (Version 3.0)
--- =============================================================================
--- 作成日: 2025-01-29
--- 説明: プロジェクト全体の実装に基づいた完全なデータベーススキーマ
+-- Platinum Management System - 統合マイグレーションスクリプト
+-- 実行日: 2025-01-29
+-- 説明: 既存のスキーマをクリーンアップし、全てのテーブル、関数、RLSポリシーを再構築します。
 -- =============================================================================
 
--- 既存のオブジェクトを削除（CASCADE付きで依存関係も削除）
+-- =============================================================================
+-- 1. スキーマのクリーンアップ（既存のデータを全て削除します）
+-- =============================================================================
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
 
@@ -14,20 +15,21 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =============================================================================
--- 1. ENUM型の定義
+-- 2. ENUM型の定義
 -- =============================================================================
 CREATE TYPE user_role AS ENUM ('admin', 'manager', 'hall', 'cashier', 'cast');
 CREATE TYPE customer_status AS ENUM ('active', 'vip', 'blocked');
 CREATE TYPE visit_status AS ENUM ('active', 'completed', 'cancelled');
 CREATE TYPE payment_status AS ENUM ('pending', 'completed', 'cancelled', 'refunded');
 CREATE TYPE payment_method AS ENUM ('cash', 'credit_card', 'debit_card', 'qr_payment', 'other');
+CREATE TYPE table_status AS ENUM ('available', 'reserved', 'occupied', 'cleaning');
 CREATE TYPE reservation_status AS ENUM ('pending', 'confirmed', 'checked_in', 'completed', 'cancelled', 'no_show');
 CREATE TYPE shift_type AS ENUM ('regular', 'overtime', 'holiday');
 CREATE TYPE shift_request_status AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE bottle_keep_status AS ENUM ('active', 'consumed', 'expired');
 
 -- =============================================================================
--- 2. テーブルの作成
+-- 3. テーブルの作成
 -- =============================================================================
 
 -- スタッフ (Staffs)
@@ -105,6 +107,8 @@ CREATE TABLE tables (
     capacity INTEGER NOT NULL DEFAULT 4,
     is_available BOOLEAN NOT NULL DEFAULT true,
     location VARCHAR(100),
+    current_status table_status DEFAULT 'available',
+    current_visit_id UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -272,8 +276,63 @@ CREATE TABLE notification_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- キャストパフォーマンス (Cast Performances)
+CREATE TABLE cast_performances (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    cast_id UUID NOT NULL REFERENCES casts_profile(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    shimei_count INTEGER NOT NULL DEFAULT 0 CHECK (shimei_count >= 0),
+    dohan_count INTEGER NOT NULL DEFAULT 0 CHECK (dohan_count >= 0),
+    sales_amount INTEGER NOT NULL DEFAULT 0 CHECK (sales_amount >= 0),
+    drink_count INTEGER NOT NULL DEFAULT 0 CHECK (drink_count >= 0),
+    created_by UUID REFERENCES staffs(id),
+    updated_by UUID REFERENCES staffs(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(cast_id, date)
+);
+
+-- 在庫変動 (Inventory Movements)
+CREATE TABLE inventory_movements (
+    id BIGSERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    movement_type VARCHAR(20) NOT NULL CHECK (movement_type IN ('in', 'out', 'adjustment')),
+    quantity INTEGER NOT NULL,
+    unit_cost DECIMAL(10,2),
+    reason VARCHAR(100),
+    reference_id UUID,
+    created_by UUID REFERENCES staffs(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- QRコード (QR Codes)
+CREATE TABLE qr_codes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    staff_id UUID NOT NULL REFERENCES staffs(id),
+    qr_data TEXT NOT NULL UNIQUE,
+    signature TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- QR勤怠ログ (QR Attendance Logs)
+CREATE TABLE qr_attendance_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    qr_code_id UUID REFERENCES qr_codes(id),
+    staff_id UUID REFERENCES staffs(id),
+    action_type TEXT NOT NULL CHECK (action_type IN ('clock_in', 'clock_out', 'break_start', 'break_end')),
+    success BOOLEAN NOT NULL DEFAULT false,
+    error_message TEXT,
+    location_data JSONB,
+    device_info JSONB,
+    scanned_at TIMESTAMPTZ DEFAULT now(),
+    ip_address INET,
+    user_agent TEXT
+);
+
 -- =============================================================================
--- 3. インデックスの作成
+-- 4. インデックスの作成
 -- =============================================================================
 CREATE INDEX idx_staffs_user_id ON staffs(user_id);
 CREATE INDEX idx_staffs_email ON staffs(email);
@@ -297,7 +356,7 @@ CREATE INDEX idx_attendance_records_staff_date ON attendance_records(staff_id, a
 CREATE INDEX idx_bottle_keeps_customer_status ON bottle_keeps(customer_id, status);
 
 -- =============================================================================
--- 4. 関数とトリガーの作成
+-- 5. 関数とトリガーの作成
 -- =============================================================================
 
 -- updated_atを自動更新する関数
@@ -331,6 +390,8 @@ CREATE TRIGGER update_shift_requests_updated_at BEFORE UPDATE ON shift_requests
 CREATE TRIGGER update_confirmed_shifts_updated_at BEFORE UPDATE ON confirmed_shifts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_bottle_keeps_updated_at BEFORE UPDATE ON bottle_keeps
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_cast_performances_updated_at BEFORE UPDATE ON cast_performances
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- 現在のユーザーのスタッフロールを取得する関数
@@ -408,8 +469,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- その他のRPC関数
+CREATE OR REPLACE FUNCTION get_cast_ranking(
+  start_date DATE,
+  end_date DATE,
+  limit_count INTEGER DEFAULT 10
+)
+RETURNS TABLE (
+  cast_id UUID,
+  cast_name VARCHAR,
+  total_shimei BIGINT,
+  total_dohan BIGINT,
+  total_sales BIGINT,
+  total_drinks BIGINT,
+  rank BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    cp.id as cast_id,
+    cp.stage_name as cast_name,
+    COALESCE(SUM(perf.shimei_count), 0) as total_shimei,
+    COALESCE(SUM(perf.dohan_count), 0) as total_dohan,
+    COALESCE(SUM(perf.sales_amount), 0) as total_sales,
+    COALESCE(SUM(perf.drink_count), 0) as total_drinks,
+    RANK() OVER (ORDER BY COALESCE(SUM(perf.sales_amount), 0) DESC) as rank
+  FROM casts_profile cp
+  LEFT JOIN cast_performances perf ON cp.id = perf.cast_id
+    AND perf.date >= start_date
+    AND perf.date <= end_date
+  WHERE cp.is_active = true
+  GROUP BY cp.id, cp.stage_name
+  ORDER BY total_sales DESC
+  LIMIT limit_count;
+END;
+$$ LANGUAGE plpgsql;
+
 -- =============================================================================
--- 5. Row Level Security (RLS) ポリシーの設定
+-- 6. Row Level Security (RLS) ポリシーの設定
 -- =============================================================================
 
 -- 全てのテーブルでRLSを有効化
@@ -427,6 +524,10 @@ ALTER TABLE confirmed_shifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bottle_keeps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_closings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cast_performances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qr_attendance_logs ENABLE ROW LEVEL SECURITY;
 
 -- Staffsテーブルのポリシー
 CREATE POLICY "Enable read for authenticated users" ON staffs
@@ -486,8 +587,20 @@ CREATE POLICY "Enable write access for authenticated users" ON daily_closings
 CREATE POLICY "Enable write access for authenticated users" ON notification_logs
   FOR ALL TO authenticated USING (true);
 
+CREATE POLICY "Enable write access for authenticated users" ON cast_performances
+  FOR ALL TO authenticated USING (true);
+
+CREATE POLICY "Enable write access for authenticated users" ON inventory_movements
+  FOR ALL TO authenticated USING (true);
+
+CREATE POLICY "Enable write access for authenticated users" ON qr_codes
+  FOR ALL TO authenticated USING (true);
+
+CREATE POLICY "Enable write access for authenticated users" ON qr_attendance_logs
+  FOR ALL TO authenticated USING (true);
+
 -- =============================================================================
--- 6. 権限の付与
+-- 7. 権限の付与
 -- =============================================================================
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
@@ -496,7 +609,7 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
 
 -- =============================================================================
--- 7. サンプルデータの挿入
+-- 8. サンプルデータの挿入
 -- =============================================================================
 
 -- サンプルスタッフ
