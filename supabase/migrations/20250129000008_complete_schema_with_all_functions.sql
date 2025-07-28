@@ -812,8 +812,17 @@ CREATE POLICY "Enable write access for authenticated users" ON tables
 CREATE POLICY "Enable write access for authenticated users" ON reservations
   FOR ALL TO authenticated USING (true);
 
-CREATE POLICY "Enable write access for authenticated users" ON products
-  FOR ALL TO authenticated USING (true);
+-- productsテーブルのポリシー
+-- 認証済みユーザーは全てのproductsを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read products" ON products
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- adminとmanagerロールのみがproductsを編集可能にする
+CREATE POLICY "Allow admin and managers to modify products" ON products
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
 CREATE POLICY "Enable write access for authenticated users" ON order_items
   FOR ALL TO authenticated USING (true);
