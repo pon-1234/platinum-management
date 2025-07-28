@@ -912,5 +912,82 @@ INSERT INTO products (name, category, price, cost, stock_quantity, low_stock_thr
   ('ドライフルーツ', 'フード', 1000, 400, 25, 5);
 
 -- =============================================================================
+-- 在庫管理用の追加関数
+-- =============================================================================
+
+-- 在庫ページデータ取得関数
+CREATE OR REPLACE FUNCTION get_inventory_page_data(
+  p_category TEXT DEFAULT NULL,
+  p_search_term TEXT DEFAULT NULL
+)
+RETURNS JSON AS $$
+DECLARE
+  result JSON;
+BEGIN
+  -- 全データを一度のクエリで取得してJSON形式で返す
+  WITH filtered_products AS (
+    SELECT * FROM products
+    WHERE is_active = true
+      AND (p_category IS NULL OR category = p_category)
+      AND (p_search_term IS NULL OR name ILIKE '%' || p_search_term || '%')
+    ORDER BY name
+  ),
+  stats AS (
+    SELECT
+      COUNT(*)::INTEGER AS total_products,
+      COUNT(CASE WHEN stock_quantity <= low_stock_threshold AND stock_quantity > 0 THEN 1 END)::INTEGER AS low_stock_items,
+      COUNT(CASE WHEN stock_quantity = 0 THEN 1 END)::INTEGER AS out_of_stock_items,
+      COALESCE(SUM(stock_quantity * cost), 0)::NUMERIC AS total_value
+    FROM products
+    WHERE is_active = true
+  ),
+  alerts AS (
+    SELECT
+      CASE
+        WHEN stock_quantity = 0 THEN 'out-' || id::TEXT
+        WHEN stock_quantity <= low_stock_threshold THEN 'low-' || id::TEXT
+        ELSE 'over-' || id::TEXT
+      END AS id,
+      id::TEXT AS product_id,
+      name AS product_name,
+      stock_quantity AS current_stock,
+      CASE
+        WHEN stock_quantity = 0 OR stock_quantity <= low_stock_threshold THEN low_stock_threshold
+        ELSE max_stock
+      END AS threshold,
+      CASE
+        WHEN stock_quantity = 0 THEN 'out_of_stock'
+        WHEN stock_quantity <= low_stock_threshold THEN 'low_stock'
+        ELSE 'overstock'
+      END AS alert_type,
+      CASE
+        WHEN stock_quantity = 0 THEN 'critical'
+        ELSE 'warning'
+      END AS severity
+    FROM products
+    WHERE is_active = true
+      AND (stock_quantity = 0 OR stock_quantity <= low_stock_threshold OR stock_quantity >= max_stock)
+    ORDER BY
+      CASE WHEN stock_quantity = 0 THEN 1 ELSE 2 END,
+      stock_quantity
+  ),
+  categories AS (
+    SELECT DISTINCT category
+    FROM products
+    WHERE is_active = true
+    ORDER BY category
+  )
+  SELECT json_build_object(
+    'products', COALESCE((SELECT json_agg(p.*) FROM filtered_products p), '[]'::JSON),
+    'stats', (SELECT row_to_json(s.*) FROM stats s),
+    'alerts', COALESCE((SELECT json_agg(a.*) FROM alerts a), '[]'::JSON),
+    'categories', COALESCE((SELECT json_agg(c.category) FROM categories c), '[]'::JSON)
+  ) INTO result;
+  
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =============================================================================
 -- 完了
 -- =============================================================================
