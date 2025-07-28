@@ -56,20 +56,18 @@ export async function middleware(request: NextRequest) {
 
   // For authenticated users, we need to check permissions
   if (user && !isPublicRoute) {
-    // Get user's staff record directly to avoid RLS recursion
-    const { data: staffData, error: staffError } = await supabase
-      .from("staffs")
-      .select("role, is_active")
-      .eq("user_id", user.id)
-      .single();
+    // Get user's role using the security definer function to avoid RLS recursion
+    const { data: roleData, error: roleError } = await supabase.rpc(
+      "get_current_user_staff_role"
+    );
 
-    if (staffError || !staffData || !staffData.is_active) {
+    if (roleError || !roleData) {
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
     // Check route permissions based on role
-    const role = staffData.role;
+    const role = roleData;
     const pathname = request.nextUrl.pathname;
 
     // Define protected routes and their allowed roles
