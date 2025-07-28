@@ -926,10 +926,13 @@ export class BillingService extends BaseService {
         .from("daily_closings")
         .select("id")
         .eq("closing_date", date)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
-        // If table doesn't exist, consider as not closed
+      if (error) {
+        // If table doesn't exist or other error, consider as not closed
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Failed to check daily closing status:", error);
+        }
         return false;
       }
 

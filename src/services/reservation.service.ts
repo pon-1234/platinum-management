@@ -116,7 +116,7 @@ export class ReservationService {
         assigned_cast:staffs!assigned_cast_id(
           id,
           full_name,
-          casts_profile!casts_profile_staff_id_fkey(stage_name)
+          casts_profile(stage_name)
         )
       `
       )
@@ -243,7 +243,7 @@ export class ReservationService {
         assigned_cast:staffs!assigned_cast_id(
           id,
           full_name,
-          casts_profile!casts_profile_staff_id_fkey(stage_name)
+          casts_profile(stage_name)
         )
       `
       )
@@ -301,7 +301,7 @@ export class ReservationService {
         assigned_cast:staffs!assigned_cast_id(
           id,
           full_name,
-          casts_profile!casts_profile_staff_id_fkey(stage_name)
+          casts_profile(stage_name)
         )
       `
       )
@@ -594,6 +594,7 @@ export class ReservationService {
             tableName: tableData.table_number,
             capacity: tableData.capacity,
             location: tableData.location,
+            isAvailable: tableData.is_available,
             isActive: tableData.is_active,
             currentStatus: tableData.current_status,
             currentVisitId: tableData.current_visit_id,
