@@ -75,7 +75,8 @@
       "Bash(npm ls:*)",
       "Bash(supabase status:*)",
       "Bash(supabase db diff:*)",
-      "Bash(supabase db reset:*)"
+      "Bash(supabase db reset:*)",
+      "Bash(supabase db:*)"
     ],
     "deny": []
   }
