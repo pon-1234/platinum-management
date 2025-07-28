@@ -28,8 +28,18 @@ export type PasswordUpdateData = z.infer<typeof passwordUpdateSchema>;
 
 export const updateProfile = createSafeAction(
   profileUpdateSchema,
-  async (data, { userId }) => {
+  async (data) => {
     const supabase = await createClient();
+
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error("認証エラーが発生しました");
+    }
 
     // Update auth metadata
     const { error: authError } = await supabase.auth.updateUser({
@@ -54,7 +64,7 @@ export const updateProfile = createSafeAction(
         phone: data.phone || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("user_id", userId);
+      .eq("user_id", user.id);
 
     if (staffError) {
       if (process.env.NODE_ENV === "development") {
@@ -86,46 +96,43 @@ export const updatePassword = createSafeAction(
   }
 );
 
-export const getUserProfile = createSafeAction(
-  z.object({}),
-  async (_, { userId }) => {
-    const supabase = await createClient();
+export const getUserProfile = createSafeAction(z.object({}), async (_) => {
+  const supabase = await createClient();
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      throw new Error("認証エラーが発生しました");
-    }
-
-    // Get staff profile
-    const { data: staff, error: staffError } = await supabase
-      .from("staffs")
-      .select("full_name, email, phone, created_at")
-      .eq("user_id", userId)
-      .maybeSingle(); // Use maybeSingle instead of single to avoid error when no rows
-
-    if (staffError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to get staff profile:", staffError);
-      }
-      // Continue even if staff profile doesn't exist
-    }
-
-    // Merge auth metadata and staff data
-    const profile = {
-      name:
-        staff?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0] ||
-        "",
-      email: staff?.email || user.email || "",
-      phone: staff?.phone || user.user_metadata?.phone || "",
-      bio: user.user_metadata?.bio || "",
-    };
-
-    return profile;
+  if (userError || !user) {
+    throw new Error("認証エラーが発生しました");
   }
-);
+
+  // Get staff profile using the auth user's ID
+  const { data: staff, error: staffError } = await supabase
+    .from("staffs")
+    .select("full_name, email, phone, created_at")
+    .eq("user_id", user.id)
+    .maybeSingle(); // Use maybeSingle instead of single to avoid error when no rows
+
+  if (staffError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Failed to get staff profile:", staffError);
+    }
+    // Continue even if staff profile doesn't exist
+  }
+
+  // Merge auth metadata and staff data
+  const profile = {
+    name:
+      staff?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "",
+    email: staff?.email || user.email || "",
+    phone: staff?.phone || user.user_metadata?.phone || "",
+    bio: user.user_metadata?.bio || "",
+  };
+
+  return profile;
+});
