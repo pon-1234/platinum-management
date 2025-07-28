@@ -17,21 +17,36 @@ import type {
 } from "@/types/qr-code.types";
 
 export class QRCodeService extends BaseService {
-  private readonly secretKey: string;
+  private secretKey: string | null = null;
 
   constructor() {
     super();
+  }
 
-    // 環境変数からシークレットキーを取得
-    const secretKey = process.env.QR_CODE_SECRET_KEY;
-    if (!secretKey) {
-      throw new Error(
-        "QR_CODE_SECRET_KEY is not set in environment variables. " +
-          "Please set it in your .env.local file. " +
-          "You can generate a secure key using: openssl rand -base64 32"
-      );
+  private getSecretKey(): string {
+    if (!this.secretKey) {
+      // 環境変数からシークレットキーを取得
+      const secretKey = process.env.QR_CODE_SECRET_KEY;
+      if (!secretKey) {
+        // 開発環境用のデフォルトキー（本番環境では必ず環境変数を設定すること）
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "QR_CODE_SECRET_KEY is not set. Using development default. " +
+              "Please set it in your .env.local file for production. " +
+              "You can generate a secure key using: openssl rand -base64 32"
+          );
+          this.secretKey = "dev-secret-key-do-not-use-in-production";
+        } else {
+          throw new Error(
+            "QR_CODE_SECRET_KEY is not set in environment variables. " +
+              "Please set it in your environment variables."
+          );
+        }
+      } else {
+        this.secretKey = secretKey;
+      }
     }
-    this.secretKey = secretKey;
+    return this.secretKey;
   }
 
   // QRコード生成
@@ -435,7 +450,7 @@ export class QRCodeService extends BaseService {
 
   private generateSignature(data: string): string {
     // 本番環境では crypto.subtle.digest を使用
-    const combined = data + this.secretKey;
+    const combined = data + this.getSecretKey();
     let hash = 0;
     for (let i = 0; i < combined.length; i++) {
       const char = combined.charCodeAt(i);

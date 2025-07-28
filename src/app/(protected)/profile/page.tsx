@@ -78,6 +78,11 @@ export default function ProfilePage() {
             phone: result.data.phone || "",
             bio: result.data.bio || "",
           });
+        } else {
+          console.error("Profile load error:", result);
+          if (!result.success) {
+            toast.error(result.error || "プロフィールの読み込みに失敗しました");
+          }
         }
       } catch (error) {
         if (process.env.NODE_ENV === "development") {
@@ -91,6 +96,8 @@ export default function ProfilePage() {
 
     if (user) {
       loadProfile();
+    } else {
+      setIsLoadingProfile(false);
     }
   }, [user, profileForm]);
 

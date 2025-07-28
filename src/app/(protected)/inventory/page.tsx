@@ -52,17 +52,32 @@ export default function InventoryPage() {
           getCategories({}),
         ]);
 
+      console.log("Inventory load results:", {
+        products: productsResult,
+        stats: statsResult,
+        alerts: alertsResult,
+        categories: categoriesResult,
+      });
+
       if (productsResult.success) {
         setProducts(productsResult.data);
+      } else {
+        console.error("Products load failed:", productsResult.error);
       }
       if (statsResult.success) {
         setStats(statsResult.data);
+      } else {
+        console.error("Stats load failed:", statsResult.error);
       }
       if (alertsResult.success) {
         setAlerts(alertsResult.data);
+      } else {
+        console.error("Alerts load failed:", alertsResult.error);
       }
       if (categoriesResult.success) {
         setCategories(categoriesResult.data);
+      } else {
+        console.error("Categories load failed:", categoriesResult.error);
       }
     } catch (error) {
       toast.error("在庫データの取得に失敗しました");
