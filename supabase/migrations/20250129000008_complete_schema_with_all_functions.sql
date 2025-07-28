@@ -146,7 +146,7 @@ CREATE TABLE reservations (
     reservation_date DATE NOT NULL,
     reservation_time TIME NOT NULL,
     number_of_guests INTEGER NOT NULL DEFAULT 1,
-    assigned_cast_ids UUID[] DEFAULT '{}',
+    assigned_cast_id UUID REFERENCES staffs(id),
     special_requests TEXT,
     status reservation_status NOT NULL DEFAULT 'pending',
     created_by UUID REFERENCES staffs(id),
