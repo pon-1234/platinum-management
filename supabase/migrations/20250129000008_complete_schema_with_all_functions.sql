@@ -777,145 +777,59 @@ ALTER TABLE qr_attendance_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE id_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE compliance_reports ENABLE ROW LEVEL SECURITY;
 
--- Staffsテーブルのポリシー
--- 自分の情報のみ閲覧可能（無限再帰を防ぐため）
-CREATE POLICY "Users can view their own staff info" ON staffs
-  FOR SELECT TO authenticated
-  USING (auth.uid() = user_id);
+-- 汎用的な権限チェック関数 (無限再帰を回避)
+CREATE OR REPLACE FUNCTION is_admin_or_manager()
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- SECURITY DEFINER関数を使ってRLSをバイパスし、現在のユーザーのロールを取得
+  RETURN get_current_user_staff_role() IN ('admin', 'manager');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE POLICY "Enable insert for authenticated users" ON staffs  
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id OR get_current_user_staff_role() IN ('admin', 'manager'));
+-- ポリシー定義
+-- 認証済みユーザーは基本的に全てのデータを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read data" ON staffs FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON casts_profile FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON customers FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON visits FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON tables FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON reservations FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON products FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON order_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON attendance_records FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON shift_requests FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON confirmed_shifts FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON bottle_keeps FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON daily_closings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON notification_logs FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON cast_performances FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON inventory_movements FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON qr_codes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON qr_attendance_logs FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON id_verifications FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to read data" ON compliance_reports FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Enable update own record" ON staffs
-  FOR UPDATE TO authenticated
-  USING (auth.uid() = user_id OR get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (auth.uid() = user_id OR get_current_user_staff_role() IN ('admin', 'manager'));
-
-CREATE POLICY "Enable delete for admin" ON staffs
-  FOR DELETE TO authenticated
-  USING (get_current_user_staff_role() = 'admin');
-
--- その他のテーブルのポリシー（認証されたユーザーに全アクセスを許可）
-CREATE POLICY "Enable write access for authenticated users" ON casts_profile
-  FOR ALL TO authenticated USING (true);
-
--- customersテーブルのポリシー
--- 認証済みユーザーは全てのcustomersを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read customers" ON customers
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがcustomersを編集可能にする
-CREATE POLICY "Allow admin and managers to modify customers" ON customers
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
--- visitsテーブルのポリシー
--- 認証済みユーザーは全てのvisitsを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read visits" ON visits
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがvisitsを編集可能にする
-CREATE POLICY "Allow admin and managers to modify visits" ON visits
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
--- tablesテーブルのポリシー
--- 認証済みユーザーは全てのtablesを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read tables" ON tables
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがtablesを編集可能にする
-CREATE POLICY "Allow admin and managers to modify tables" ON tables
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
--- reservationsテーブルのポリシー
--- 認証済みユーザーは全てのreservationsを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read reservations" ON reservations
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがreservationsを編集可能にする
-CREATE POLICY "Allow admin and managers to modify reservations" ON reservations
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
--- productsテーブルのポリシー
--- 認証済みユーザーは全てのproductsを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read products" ON products
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがproductsを編集可能にする
-CREATE POLICY "Allow admin and managers to modify products" ON products
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
--- order_itemsテーブルのポリシー
--- 認証済みユーザーは全てのorder_itemsを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read order_items" ON order_items
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがorder_itemsを編集可能にする
-CREATE POLICY "Allow admin and managers to modify order_items" ON order_items
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
-CREATE POLICY "Enable write access for authenticated users" ON attendance_records
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON shift_requests
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON confirmed_shifts
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON bottle_keeps
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON daily_closings
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON notification_logs
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON cast_performances
-  FOR ALL TO authenticated USING (true);
-
--- inventory_movementsテーブルのポリシー
--- 認証済みユーザーは全てのinventory_movementsを閲覧可能にする
-CREATE POLICY "Allow authenticated users to read inventory_movements" ON inventory_movements
-  FOR SELECT TO authenticated
-  USING (true);
-
--- adminとmanagerロールのみがinventory_movementsを編集可能にする
-CREATE POLICY "Allow admin and managers to modify inventory_movements" ON inventory_movements
-  FOR ALL TO authenticated
-  USING (get_current_user_staff_role() IN ('admin', 'manager'))
-  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
-
-CREATE POLICY "Enable write access for authenticated users" ON qr_codes
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON qr_attendance_logs
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON id_verifications
-  FOR ALL TO authenticated USING (true);
-
-CREATE POLICY "Enable write access for authenticated users" ON compliance_reports
-  FOR ALL TO authenticated USING (true);
+-- 管理者とマネージャーのみが書き込み・更新・削除を許可されるポリシー
+CREATE POLICY "Allow admin/manager modification" ON staffs FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON casts_profile FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON customers FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON visits FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON tables FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON reservations FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON products FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON order_items FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON attendance_records FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON shift_requests FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON confirmed_shifts FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON bottle_keeps FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON daily_closings FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON notification_logs FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON cast_performances FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON inventory_movements FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON qr_codes FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON qr_attendance_logs FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON id_verifications FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
+CREATE POLICY "Allow admin/manager modification" ON compliance_reports FOR ALL TO authenticated USING (is_admin_or_manager()) WITH CHECK (is_admin_or_manager());
 
 -- =============================================================================
 -- 7. テーブルコメントの追加
