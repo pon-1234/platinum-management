@@ -1,7 +1,7 @@
 -- =============================================================================
--- Platinum Management System - 統合マイグレーションスクリプト
+-- Platinum Management System - 完全統合マイグレーション
 -- 実行日: 2025-01-29
--- 説明: 既存のスキーマをクリーンアップし、全てのテーブル、関数、RLSポリシーを再構築します。
+-- 説明: 全てのテーブル、関数、RLSポリシーを含む完全なスキーマ
 -- =============================================================================
 
 -- =============================================================================
@@ -331,6 +331,29 @@ CREATE TABLE qr_attendance_logs (
     user_agent TEXT
 );
 
+-- 身分証確認 (ID Verifications) - エラーログに出現
+CREATE TABLE id_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID REFERENCES customers(id),
+    id_type TEXT,
+    is_verified BOOLEAN DEFAULT false,
+    verified_by UUID REFERENCES staffs(id),
+    verified_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- コンプライアンスレポート (Compliance Reports) - エラーログに出現
+CREATE TABLE compliance_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    report_type TEXT,
+    status TEXT,
+    generated_by UUID REFERENCES staffs(id),
+    generated_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =============================================================================
 -- 4. インデックスの作成
 -- =============================================================================
@@ -392,6 +415,10 @@ CREATE TRIGGER update_confirmed_shifts_updated_at BEFORE UPDATE ON confirmed_shi
 CREATE TRIGGER update_bottle_keeps_updated_at BEFORE UPDATE ON bottle_keeps
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_cast_performances_updated_at BEFORE UPDATE ON cast_performances
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_id_verifications_updated_at BEFORE UPDATE ON id_verifications
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_compliance_reports_updated_at BEFORE UPDATE ON compliance_reports
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- 現在のユーザーのスタッフロールを取得する関数
@@ -469,7 +496,221 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- その他のRPC関数
+-- 日次請求レポート生成関数
+CREATE OR REPLACE FUNCTION generate_daily_billing_report(report_date DATE)
+RETURNS TABLE(
+  total_sales NUMERIC,
+  total_visits INTEGER,
+  cash_sales NUMERIC,
+  card_sales NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    COALESCE(SUM(total_amount), 0)::NUMERIC AS total_sales,
+    COUNT(*)::INTEGER AS total_visits,
+    COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total_amount ELSE 0 END), 0)::NUMERIC AS cash_sales,
+    COALESCE(SUM(CASE WHEN payment_method = 'credit_card' THEN total_amount ELSE 0 END), 0)::NUMERIC AS card_sales
+  FROM visits
+  WHERE check_in_at::date = report_date
+    AND status = 'completed';
+END;
+$$ LANGUAGE plpgsql;
+
+-- トップキャストパフォーマンス取得関数
+CREATE OR REPLACE FUNCTION get_top_cast_performance(report_date DATE, limit_count INTEGER)
+RETURNS TABLE(
+  cast_id UUID,
+  staff_name TEXT,
+  total_sales NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    s.id AS cast_id,
+    s.full_name AS staff_name,
+    COALESCE(SUM(oi.total_price), 0)::NUMERIC AS total_sales
+  FROM staffs s
+  JOIN order_items oi ON oi.cast_id = s.id
+  JOIN visits v ON oi.visit_id = v.id
+  WHERE v.check_in_at::date = report_date
+    AND v.status = 'completed'
+  GROUP BY s.id, s.full_name
+  ORDER BY total_sales DESC
+  LIMIT limit_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- トップ商品詳細取得関数
+CREATE OR REPLACE FUNCTION get_top_products_with_details(
+  report_date DATE,
+  limit_count INTEGER DEFAULT 10
+)
+RETURNS TABLE(
+  product_id INTEGER,
+  product_name TEXT,
+  quantity_sold NUMERIC,
+  revenue NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    p.id AS product_id,
+    p.name AS product_name,
+    COALESCE(SUM(oi.quantity), 0)::NUMERIC AS quantity_sold,
+    COALESCE(SUM(oi.total_price), 0)::NUMERIC AS revenue
+  FROM products p
+  LEFT JOIN order_items oi ON p.id = oi.product_id
+  LEFT JOIN visits v ON oi.visit_id = v.id
+  WHERE v.check_in_at::date = report_date
+    AND v.status = 'completed'
+  GROUP BY p.id, p.name
+  ORDER BY revenue DESC
+  LIMIT limit_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 勤怠ダッシュボード統計取得関数
+CREATE OR REPLACE FUNCTION get_attendance_dashboard_stats(
+  target_date DATE DEFAULT CURRENT_DATE
+)
+RETURNS TABLE(
+  total_staff BIGINT,
+  present_count BIGINT,
+  late_count BIGINT,
+  absent_count BIGINT,
+  attendance_rate NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH staff_attendance AS (
+    SELECT
+      s.id,
+      CASE
+        WHEN ar.clock_in_time IS NOT NULL THEN 'present'
+        ELSE 'absent'
+      END as status
+    FROM staffs s
+    LEFT JOIN attendance_records ar ON s.id = ar.staff_id
+      AND ar.attendance_date = target_date
+    WHERE s.is_active = true
+  )
+  SELECT
+    COUNT(*)::BIGINT AS total_staff,
+    COUNT(*) FILTER (WHERE status = 'present')::BIGINT AS present_count,
+    0::BIGINT AS late_count,
+    COUNT(*) FILTER (WHERE status = 'absent')::BIGINT AS absent_count,
+    CASE
+      WHEN COUNT(*) > 0 THEN
+        (COUNT(*) FILTER (WHERE status = 'present') * 100.0 / COUNT(*))::NUMERIC
+      ELSE 0::NUMERIC
+    END AS attendance_rate
+  FROM staff_attendance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- キャストパフォーマンス取得関数
+CREATE OR REPLACE FUNCTION get_cast_performance(
+  start_date DATE,
+  end_date DATE
+)
+RETURNS TABLE(
+  cast_id UUID,
+  staff_name TEXT,
+  total_sales NUMERIC,
+  total_orders BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    s.id AS cast_id,
+    s.full_name AS staff_name,
+    COALESCE(SUM(oi.total_price), 0)::NUMERIC AS total_sales,
+    COUNT(DISTINCT oi.visit_id)::BIGINT AS total_orders
+  FROM staffs s
+  LEFT JOIN order_items oi ON s.id = oi.cast_id
+  LEFT JOIN visits v ON oi.visit_id = v.id
+  WHERE s.role = 'cast'
+    AND v.check_in_at::date BETWEEN start_date AND end_date
+    AND v.status = 'completed'
+  GROUP BY s.id, s.full_name
+  ORDER BY total_sales DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 月次売上取得関数
+CREATE OR REPLACE FUNCTION get_monthly_sales(
+  report_year INTEGER,
+  report_month INTEGER
+)
+RETURNS TABLE(
+  total_sales NUMERIC,
+  total_days BIGINT,
+  average_daily_sales NUMERIC,
+  best_day JSONB,
+  worst_day JSONB
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH daily_sales AS (
+    SELECT
+      v.check_in_at::date AS sale_date,
+      COALESCE(SUM(v.total_amount), 0) AS daily_total
+    FROM visits v
+    WHERE EXTRACT(YEAR FROM v.check_in_at) = report_year
+      AND EXTRACT(MONTH FROM v.check_in_at) = report_month
+      AND v.status = 'completed'
+    GROUP BY v.check_in_at::date
+  ),
+  stats AS (
+    SELECT
+      COALESCE(SUM(daily_total), 0) AS total,
+      COUNT(DISTINCT sale_date) AS days,
+      CASE
+        WHEN COUNT(DISTINCT sale_date) > 0 THEN
+          SUM(daily_total) / COUNT(DISTINCT sale_date)
+        ELSE 0
+      END AS avg_daily
+    FROM daily_sales
+  ),
+  best AS (
+    SELECT sale_date, daily_total
+    FROM daily_sales
+    ORDER BY daily_total DESC
+    LIMIT 1
+  ),
+  worst AS (
+    SELECT sale_date, daily_total
+    FROM daily_sales
+    WHERE daily_total > 0
+    ORDER BY daily_total ASC
+    LIMIT 1
+  )
+  SELECT
+    stats.total::NUMERIC,
+    stats.days::BIGINT,
+    stats.avg_daily::NUMERIC,
+    COALESCE(
+      jsonb_build_object(
+        'date', best.sale_date,
+        'amount', best.daily_total
+      ),
+      '{}'::jsonb
+    ) AS best_day,
+    COALESCE(
+      jsonb_build_object(
+        'date', worst.sale_date,
+        'amount', worst.daily_total
+      ),
+      '{}'::jsonb
+    ) AS worst_day
+  FROM stats
+  LEFT JOIN best ON true
+  LEFT JOIN worst ON true;
+END;
+$$ LANGUAGE plpgsql;
+
+-- キャストランキング取得関数
 CREATE OR REPLACE FUNCTION get_cast_ranking(
   start_date DATE,
   end_date DATE,
@@ -528,6 +769,8 @@ ALTER TABLE cast_performances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qr_attendance_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE id_verifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE compliance_reports ENABLE ROW LEVEL SECURITY;
 
 -- Staffsテーブルのポリシー
 CREATE POLICY "Enable read for authenticated users" ON staffs
@@ -597,6 +840,12 @@ CREATE POLICY "Enable write access for authenticated users" ON qr_codes
   FOR ALL TO authenticated USING (true);
 
 CREATE POLICY "Enable write access for authenticated users" ON qr_attendance_logs
+  FOR ALL TO authenticated USING (true);
+
+CREATE POLICY "Enable write access for authenticated users" ON id_verifications
+  FOR ALL TO authenticated USING (true);
+
+CREATE POLICY "Enable write access for authenticated users" ON compliance_reports
   FOR ALL TO authenticated USING (true);
 
 -- =============================================================================
