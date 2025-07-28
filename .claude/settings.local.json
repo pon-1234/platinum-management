@@ -76,7 +76,10 @@
       "Bash(supabase status:*)",
       "Bash(supabase db diff:*)",
       "Bash(supabase db reset:*)",
-      "Bash(supabase db:*)"
+      "Bash(supabase db:*)",
+      "Bash(npx supabase:*)",
+      "Bash(npm run dev:*)",
+      "Bash(psql:*)"
     ],
     "deny": []
   }

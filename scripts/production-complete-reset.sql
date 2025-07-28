@@ -1,0 +1,103 @@
+-- ==========================================
+-- 本番環境完全リセットスクリプト
+-- 実行日: 2025-07-28
+-- 
+-- 警告: このスクリプトは全てのデータを削除します！
+-- 本番環境で実行する前に必ずバックアップを取得してください
+-- ==========================================
+
+-- 既存のオブジェクトを全て削除
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+
+-- 必要な拡張機能を有効化
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ==========================================
+-- 次に以下を実行してください：
+-- ==========================================
+-- 1. /supabase/migrations/20250128000006_complete_reset_with_optimizations.sql の内容を全て実行
+-- 
+-- 2. 修正版のget_dashboard_stats関数を適用：
+-- DROP FUNCTION IF EXISTS get_dashboard_stats(DATE) CASCADE;
+-- 
+-- CREATE OR REPLACE FUNCTION get_dashboard_stats(report_date DATE DEFAULT CURRENT_DATE)
+-- RETURNS TABLE (
+--   today_sales NUMERIC,
+--   today_visits NUMERIC,
+--   today_customers NUMERIC,
+--   today_new_customers NUMERIC,
+--   active_cast_count NUMERIC,
+--   active_table_count NUMERIC,
+--   low_stock_count NUMERIC,
+--   pending_reservations NUMERIC
+-- ) AS $$
+-- BEGIN
+--   RETURN QUERY
+--   SELECT
+--     COALESCE((SELECT SUM(oi.total_price)::NUMERIC
+--      FROM order_items oi
+--      JOIN visits v ON oi.visit_id = v.id
+--      WHERE v.check_in_at::date = report_date
+--        AND v.status = 'completed'), 0)::NUMERIC AS today_sales,
+--     
+--     COALESCE((SELECT COUNT(*)::NUMERIC
+--      FROM visits
+--      WHERE check_in_at::date = report_date
+--        AND status = 'completed'), 0)::NUMERIC AS today_visits,
+--     
+--     COALESCE((SELECT COUNT(DISTINCT customer_id)::NUMERIC
+--      FROM visits
+--      WHERE check_in_at::date = report_date), 0)::NUMERIC AS today_customers,
+--     
+--     COALESCE((SELECT COUNT(*)::NUMERIC
+--      FROM customers
+--      WHERE created_at::date = report_date
+--        AND is_deleted = false), 0)::NUMERIC AS today_new_customers,
+--     
+--     COALESCE((SELECT COUNT(*)::NUMERIC
+--      FROM casts_profile cp
+--      JOIN staffs s ON cp.staff_id = s.id
+--      WHERE cp.is_active = true
+--        AND s.is_active = true), 0)::NUMERIC AS active_cast_count,
+--     
+--     COALESCE((SELECT COUNT(*)::NUMERIC
+--      FROM tables
+--      WHERE is_available = true), 0)::NUMERIC AS active_table_count,
+--     
+--     COALESCE((SELECT COUNT(*)::NUMERIC
+--      FROM products
+--      WHERE is_active = true
+--        AND stock_quantity <= low_stock_threshold), 0)::NUMERIC AS low_stock_count,
+--     
+--     COALESCE((SELECT COUNT(*)::NUMERIC
+--      FROM reservations
+--      WHERE reservation_date = report_date
+--        AND status = 'pending'), 0)::NUMERIC AS pending_reservations;
+-- END;
+-- $$ LANGUAGE plpgsql;
+-- 
+-- GRANT EXECUTE ON FUNCTION get_dashboard_stats(DATE) TO anon, authenticated;
+--
+-- 3. 管理者ユーザーを作成（Supabase Dashboardから）
+-- 
+-- 4. staffsレコードを作成（UUIDを実際の値に置き換えてください）：
+-- INSERT INTO public.staffs (
+--   user_id,
+--   full_name,
+--   email,
+--   phone,
+--   role,
+--   is_active
+-- ) VALUES (
+--   'ここに実際のUUID',
+--   'Admin User',
+--   'admin@platinum-demo.com',
+--   '090-1234-5678',
+--   'admin',
+--   true
+-- );
+--
+-- 5. 動作確認：
+-- SELECT * FROM get_dashboard_stats(CURRENT_DATE);
