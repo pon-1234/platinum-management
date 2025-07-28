@@ -31,11 +31,10 @@ export class TableService extends BaseService {
     const { data: table, error } = await this.supabase
       .from("tables")
       .insert({
-        table_name: validatedData.tableName,
+        table_number: validatedData.tableName,
         capacity: validatedData.capacity,
         location: validatedData.location || null,
-        is_vip: validatedData.isVip ?? false,
-        is_active: validatedData.isActive ?? true,
+        is_available: validatedData.isActive ?? true,
       })
       .select()
       .single();
@@ -132,11 +131,9 @@ export class TableService extends BaseService {
 
     // Map camelCase to snake_case
     if (validatedData.tableName !== undefined)
-      updateData.table_name = validatedData.tableName;
-    if (validatedData.isVip !== undefined)
-      updateData.is_vip = validatedData.isVip;
+      updateData.table_number = validatedData.tableName;
     if (validatedData.isActive !== undefined)
-      updateData.is_active = validatedData.isActive;
+      updateData.is_available = validatedData.isActive;
     if (validatedData.currentStatus !== undefined)
       updateData.current_status = validatedData.currentStatus;
     if (validatedData.currentVisitId !== undefined)
@@ -144,7 +141,6 @@ export class TableService extends BaseService {
 
     // Remove camelCase properties
     delete updateData.tableName;
-    delete updateData.isVip;
     delete updateData.isActive;
     delete updateData.currentStatus;
     delete updateData.currentVisitId;
@@ -182,20 +178,17 @@ export class TableService extends BaseService {
     let query = this.supabase
       .from("tables")
       .select("*")
-      .order("table_name", { ascending: true });
+      .order("table_number", { ascending: true });
 
     // Add filters
     if (validatedParams.search) {
-      query = query.ilike("table_name", `%${validatedParams.search}%`);
+      query = query.ilike("table_number", `%${validatedParams.search}%`);
     }
     if (validatedParams.status !== undefined) {
       query = query.eq("current_status", validatedParams.status);
     }
-    if (validatedParams.isVip !== undefined) {
-      query = query.eq("is_vip", validatedParams.isVip);
-    }
     if (validatedParams.isActive !== undefined) {
-      query = query.eq("is_active", validatedParams.isActive);
+      query = query.eq("is_available", validatedParams.isActive);
     }
     if (validatedParams.minCapacity !== undefined) {
       query = query.gte("capacity", validatedParams.minCapacity);
@@ -295,7 +288,7 @@ export class TableService extends BaseService {
           .from("tables")
           .select("*")
           .in("id", availableTableIds)
-          .eq("is_active", true);
+          .eq("is_available", true);
 
         if (tableError) {
           throw new Error(
@@ -383,11 +376,10 @@ export class TableService extends BaseService {
   ): Table {
     return {
       id: data.id,
-      tableName: data.table_name,
+      tableName: data.table_number,
       capacity: data.capacity,
       location: data.location,
-      isVip: data.is_vip,
-      isActive: data.is_active,
+      isActive: data.is_available,
       currentStatus: data.current_status,
       currentVisitId: data.current_visit_id,
       createdAt: data.created_at,
