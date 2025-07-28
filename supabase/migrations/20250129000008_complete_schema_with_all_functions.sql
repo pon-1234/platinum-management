@@ -997,7 +997,7 @@ BEGIN
   
   RETURN result;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =============================================================================
 -- 完了
