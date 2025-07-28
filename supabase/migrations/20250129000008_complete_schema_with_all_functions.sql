@@ -806,8 +806,17 @@ CREATE POLICY "Enable write access for authenticated users" ON customers
 CREATE POLICY "Enable write access for authenticated users" ON visits
   FOR ALL TO authenticated USING (true);
 
-CREATE POLICY "Enable write access for authenticated users" ON tables
-  FOR ALL TO authenticated USING (true);
+-- tablesテーブルのポリシー
+-- 認証済みユーザーは全てのtablesを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read tables" ON tables
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- adminとmanagerロールのみがtablesを編集可能にする
+CREATE POLICY "Allow admin and managers to modify tables" ON tables
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
 CREATE POLICY "Enable write access for authenticated users" ON reservations
   FOR ALL TO authenticated USING (true);
