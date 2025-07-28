@@ -6,12 +6,7 @@ const phoneNumberRegex = /^(0[0-9]{1,4}-?[0-9]{1,4}-?[0-9]{3,4}|0[0-9]{9,10})$/;
 // カタカナのみ（全角）
 const katakanaRegex = /^[ァ-ヶー　]+$/;
 
-export const customerStatusSchema = z.enum([
-  "normal",
-  "vip",
-  "caution",
-  "blacklisted",
-]);
+export const customerStatusSchema = z.enum(["active", "vip", "blocked"]);
 
 export const createCustomerSchema = z.object({
   name: z
@@ -56,7 +51,7 @@ export const createCustomerSchema = z.object({
     .max(1000, "メモは1000文字以内で入力してください")
     .optional()
     .or(z.literal("")),
-  status: customerStatusSchema.default("normal"),
+  status: customerStatusSchema.default("active"),
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial();

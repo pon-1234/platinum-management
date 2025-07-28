@@ -25,7 +25,7 @@ const customerStatusConfig: Record<
   CustomerStatus,
   { label: string; variant: StatusVariant }
 > = {
-  normal: {
+  active: {
     label: "通常",
     variant: "default",
   },
@@ -33,12 +33,8 @@ const customerStatusConfig: Record<
     label: "VIP",
     variant: "warning",
   },
-  caution: {
-    label: "要注意",
-    variant: "warning",
-  },
-  blacklisted: {
-    label: "ブラックリスト",
+  blocked: {
+    label: "ブロック",
     variant: "error",
   },
 };
