@@ -1,22 +1,14 @@
--- Fix RLS policies for all tables to allow anon access
+-- Quick RLS fix for production
+-- Run this in Supabase SQL Editor
 
--- 1. Customers table
+-- 1. Fix customers table
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable read access for all users" ON customers;
 CREATE POLICY "Enable read access for all users" ON customers FOR SELECT USING (true);
 GRANT SELECT ON customers TO anon;
 
--- Add is_deleted column if missing
-DO $$ 
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='customers' AND column_name='is_deleted') THEN
-    ALTER TABLE customers ADD COLUMN is_deleted BOOLEAN DEFAULT false;
-  END IF;
-END $$;
-
--- 2. Daily closings table
+-- 2. Fix daily_closings table  
 ALTER TABLE daily_closings ENABLE ROW LEVEL SECURITY;
--- Drop all existing policies
 DO $$ 
 DECLARE
     pol RECORD;
@@ -29,13 +21,7 @@ END $$;
 CREATE POLICY "Enable read access for all users" ON daily_closings FOR SELECT USING (true);
 GRANT SELECT ON daily_closings TO anon;
 
--- 3. Products table
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all users" ON products;
-CREATE POLICY "Enable read access for all users" ON products FOR SELECT USING (true);
-GRANT SELECT ON products TO anon;
-
--- Add missing columns
+-- 3. Fix products table
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='reorder_point') THEN
@@ -45,26 +31,29 @@ BEGIN
     ALTER TABLE products ADD COLUMN max_stock INTEGER NOT NULL DEFAULT 100;
   END IF;
 END $$;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all users" ON products;
+CREATE POLICY "Enable read access for all users" ON products FOR SELECT USING (true);
+GRANT SELECT ON products TO anon;
 
--- 4. Staffs table
+-- 4. Fix staffs table
 ALTER TABLE staffs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable read access for all users" ON staffs;
 CREATE POLICY "Enable read access for all users" ON staffs FOR SELECT USING (true);
 GRANT SELECT ON staffs TO anon;
 
--- 5. Reservations table
+-- 5. Fix other tables
 ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable read access for all users" ON reservations;
 CREATE POLICY "Enable read access for all users" ON reservations FOR SELECT USING (true);
 GRANT SELECT ON reservations TO anon;
 
--- 6. Visits table
 ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable read access for all users" ON visits;
 CREATE POLICY "Enable read access for all users" ON visits FOR SELECT USING (true);
 GRANT SELECT ON visits TO anon;
 
--- 7. Create inventory_movements table if not exists
+-- 6. Create inventory_movements if not exists
 CREATE TABLE IF NOT EXISTS inventory_movements (
   id BIGSERIAL PRIMARY KEY,
   product_id INTEGER NOT NULL REFERENCES products(id),
@@ -76,17 +65,15 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
   created_by UUID REFERENCES staffs(id),
   created_at TIMESTAMPTZ DEFAULT now()
 );
-
 ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON inventory_movements FOR SELECT USING (true);
 GRANT SELECT ON inventory_movements TO anon;
 
--- 8. Create inventory RPC functions
--- Drop existing functions first to avoid return type conflicts
+-- 7. Fix RPC functions (drop first to avoid errors)
 DROP FUNCTION IF EXISTS count_low_stock_products();
 DROP FUNCTION IF EXISTS get_low_stock_products();
 
-CREATE OR REPLACE FUNCTION count_low_stock_products()
+CREATE FUNCTION count_low_stock_products()
 RETURNS INTEGER AS $$
 BEGIN
   RETURN (
@@ -99,7 +86,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_low_stock_products()
+CREATE FUNCTION get_low_stock_products()
 RETURNS SETOF products AS $$
 BEGIN
   RETURN QUERY
@@ -113,16 +100,21 @@ $$ LANGUAGE plpgsql;
 GRANT EXECUTE ON FUNCTION count_low_stock_products() TO anon;
 GRANT EXECUTE ON FUNCTION get_low_stock_products() TO anon;
 
--- 9. Insert sample products if empty
+-- 8. Insert sample products
 INSERT INTO products (name, category, price, cost, stock_quantity, low_stock_threshold, reorder_point, max_stock)
 SELECT * FROM (VALUES
   ('ドンペリニヨン', 'シャンパン', 50000, 25000, 10, 5, 3, 20),
   ('モエ・エ・シャンドン', 'シャンパン', 20000, 10000, 15, 5, 3, 30),
   ('ヘネシー XO', 'ブランデー', 40000, 20000, 8, 3, 2, 15),
-  ('レミーマルタン', 'ブランデー', 30000, 15000, 12, 3, 2, 20),
-  ('マッカラン 12年', 'ウイスキー', 25000, 12000, 20, 5, 3, 30),
-  ('山崎 12年', 'ウイスキー', 35000, 18000, 5, 3, 2, 10),
-  ('グレイグース', 'ウォッカ', 15000, 7000, 25, 5, 3, 40),
-  ('ボンベイサファイア', 'ジン', 12000, 6000, 30, 5, 3, 50)
+  ('レミーマルタン', 'ブランデー', 30000, 15000, 12, 3, 2, 20)
 ) AS v(name, category, price, cost, stock_quantity, low_stock_threshold, reorder_point, max_stock)
 WHERE NOT EXISTS (SELECT 1 FROM products LIMIT 1);
+
+-- 9. Verify permissions
+SELECT 
+  tablename,
+  COUNT(*) as policy_count,
+  bool_or(roles::text LIKE '%anon%') as anon_has_access
+FROM pg_policies 
+WHERE tablename IN ('customers', 'daily_closings', 'products', 'staffs', 'reservations', 'visits')
+GROUP BY tablename;
