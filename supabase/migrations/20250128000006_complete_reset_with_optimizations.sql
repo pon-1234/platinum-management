@@ -365,78 +365,78 @@ CREATE TABLE IF NOT EXISTS payments (
 -- ==========================================
 
 -- スタッフ関連
-CREATE INDEX idx_staffs_user_id ON staffs(user_id);
-CREATE INDEX idx_staffs_role ON staffs(role);
-CREATE INDEX idx_staffs_is_active ON staffs(is_active);
+CREATE INDEX IF NOT EXISTS idx_staffs_user_id ON staffs(user_id);
+CREATE INDEX IF NOT EXISTS idx_staffs_role ON staffs(role);
+CREATE INDEX IF NOT EXISTS idx_staffs_is_active ON staffs(is_active);
 
 -- キャスト関連
-CREATE INDEX idx_casts_profile_staff_id ON casts_profile(staff_id);
-CREATE INDEX idx_casts_profile_is_active ON casts_profile(is_active);
-CREATE INDEX idx_cast_performances_cast_id ON cast_performances(cast_id);
-CREATE INDEX idx_cast_performances_date ON cast_performances(date);
+CREATE INDEX IF NOT EXISTS idx_casts_profile_staff_id ON casts_profile(staff_id);
+CREATE INDEX IF NOT EXISTS idx_casts_profile_is_active ON casts_profile(is_active);
+CREATE INDEX IF NOT EXISTS idx_cast_performances_cast_id ON cast_performances(cast_id);
+CREATE INDEX IF NOT EXISTS idx_cast_performances_date ON cast_performances(date);
 
 -- 顧客関連
-CREATE INDEX idx_customers_name ON customers(name);
-CREATE INDEX idx_customers_name_kana ON customers(name_kana);
-CREATE INDEX idx_customers_phone_number ON customers(phone_number);
-CREATE INDEX idx_customers_status ON customers(status);
-CREATE INDEX idx_customers_created_at ON customers(created_at);
-CREATE UNIQUE INDEX idx_customers_phone_unique ON customers(phone_number) WHERE phone_number IS NOT NULL;
-CREATE INDEX idx_customers_created_date ON customers(created_at) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
+CREATE INDEX IF NOT EXISTS idx_customers_name_kana ON customers(name_kana);
+CREATE INDEX IF NOT EXISTS idx_customers_phone_number ON customers(phone_number);
+CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);
+CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_unique ON customers(phone_number) WHERE phone_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_customers_created_date ON customers(created_at) WHERE is_deleted = false;
 
 -- 来店関連
-CREATE INDEX idx_visits_customer_id ON visits(customer_id);
-CREATE INDEX idx_visits_status ON visits(status);
-CREATE INDEX idx_visits_check_in_at ON visits(check_in_at);
-CREATE INDEX idx_visits_created_at ON visits(created_at);
-CREATE INDEX idx_visits_check_in_date ON visits(check_in_at, status);
-CREATE INDEX idx_visits_total_amount ON visits(total_amount) WHERE status = 'completed';
-CREATE INDEX idx_visit_cast_assignments_cast_visit ON visit_cast_assignments(cast_id, visit_id);
+CREATE INDEX IF NOT EXISTS idx_visits_customer_id ON visits(customer_id);
+CREATE INDEX IF NOT EXISTS idx_visits_status ON visits(status);
+CREATE INDEX IF NOT EXISTS idx_visits_check_in_at ON visits(check_in_at);
+CREATE INDEX IF NOT EXISTS idx_visits_created_at ON visits(created_at);
+CREATE INDEX IF NOT EXISTS idx_visits_check_in_date ON visits(check_in_at, status);
+CREATE INDEX IF NOT EXISTS idx_visits_total_amount ON visits(total_amount) WHERE status = 'completed';
+CREATE INDEX IF NOT EXISTS idx_visit_cast_assignments_cast_visit ON visit_cast_assignments(cast_id, visit_id);
 
 -- 予約関連
-CREATE INDEX idx_reservations_customer_id ON reservations(customer_id);
-CREATE INDEX idx_reservations_table_id ON reservations(table_id);
-CREATE INDEX idx_reservations_assigned_cast_id ON reservations(assigned_cast_id);
-CREATE INDEX idx_reservations_date ON reservations(reservation_date);
-CREATE INDEX idx_reservations_status ON reservations(status);
-CREATE INDEX idx_reservations_date_status ON reservations(reservation_date, status);
+CREATE INDEX IF NOT EXISTS idx_reservations_customer_id ON reservations(customer_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_table_id ON reservations(table_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_assigned_cast_id ON reservations(assigned_cast_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_date ON reservations(reservation_date);
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
+CREATE INDEX IF NOT EXISTS idx_reservations_date_status ON reservations(reservation_date, status);
 
 -- 勤怠関連
-CREATE INDEX idx_attendance_records_staff_id ON attendance_records(staff_id);
-CREATE INDEX idx_attendance_records_date ON attendance_records(attendance_date);
-CREATE INDEX idx_attendance_records_date_status ON attendance_records(attendance_date, status);
-CREATE INDEX idx_attendance_records_date_staff ON attendance_records(attendance_date, staff_id);
-CREATE INDEX idx_attendance_records_shift ON attendance_records(shift_id);
-CREATE INDEX idx_attendance_records_status ON attendance_records(status);
-CREATE INDEX idx_attendance_corrections_attendance_record_id ON attendance_corrections(attendance_record_id);
-CREATE INDEX idx_qr_codes_staff_id ON qr_codes(staff_id);
-CREATE INDEX idx_qr_attendance_logs_staff_id ON qr_attendance_logs(staff_id);
-CREATE INDEX idx_qr_attendance_logs_scanned_at ON qr_attendance_logs(scanned_at);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_staff_id ON attendance_records(staff_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_date ON attendance_records(attendance_date);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_date_status ON attendance_records(attendance_date, status);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_date_staff ON attendance_records(attendance_date, staff_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_shift ON attendance_records(shift_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_status ON attendance_records(status);
+CREATE INDEX IF NOT EXISTS idx_attendance_corrections_attendance_record_id ON attendance_corrections(attendance_record_id);
+CREATE INDEX IF NOT EXISTS idx_qr_codes_staff_id ON qr_codes(staff_id);
+CREATE INDEX IF NOT EXISTS idx_qr_attendance_logs_staff_id ON qr_attendance_logs(staff_id);
+CREATE INDEX IF NOT EXISTS idx_qr_attendance_logs_scanned_at ON qr_attendance_logs(scanned_at);
 
 -- 商品・在庫関連
-CREATE INDEX idx_products_name ON products(name);
-CREATE INDEX idx_products_stock_quantity ON products(stock_quantity);
-CREATE INDEX idx_products_is_active_category ON products(is_active, category);
-CREATE INDEX idx_products_low_stock ON products(stock_quantity, low_stock_threshold) WHERE is_active = true;
-CREATE INDEX idx_products_category_active ON products(category) WHERE is_active = true;
-CREATE INDEX idx_inventory_movements_product_date ON inventory_movements(product_id, created_at);
-CREATE INDEX idx_inventory_movements_type ON inventory_movements(movement_type);
+CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+CREATE INDEX IF NOT EXISTS idx_products_stock_quantity ON products(stock_quantity);
+CREATE INDEX IF NOT EXISTS idx_products_is_active_category ON products(is_active, category);
+CREATE INDEX IF NOT EXISTS idx_products_low_stock ON products(stock_quantity, low_stock_threshold) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_product_date ON inventory_movements(product_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_type ON inventory_movements(movement_type);
 
 -- 注文関連
-CREATE INDEX idx_order_items_visit_id ON order_items(visit_id);
-CREATE INDEX idx_order_items_visit_product ON order_items(visit_id, product_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_visit_id ON order_items(visit_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_visit_product ON order_items(visit_id, product_id);
 
 -- ボトルキープ関連
-CREATE INDEX idx_bottle_keeps_customer ON bottle_keeps(customer_id, status);
-CREATE INDEX idx_bottle_keeps_expiry ON bottle_keeps(expiry_date) WHERE status = 'active';
-CREATE INDEX idx_bottle_keep_usage_bottle_keep_id ON bottle_keep_usage(bottle_keep_id);
+CREATE INDEX IF NOT EXISTS idx_bottle_keeps_customer ON bottle_keeps(customer_id, status);
+CREATE INDEX IF NOT EXISTS idx_bottle_keeps_expiry ON bottle_keeps(expiry_date) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_bottle_keep_usage_bottle_keep_id ON bottle_keep_usage(bottle_keep_id);
 
 -- 支払い関連
-CREATE INDEX idx_payments_visit_method ON payments(visit_id, payment_method) WHERE status = 'completed';
+CREATE INDEX IF NOT EXISTS idx_payments_visit_method ON payments(visit_id, payment_method) WHERE status = 'completed';
 
 -- その他
-CREATE INDEX idx_daily_closings_date ON daily_closings(closing_date);
-CREATE INDEX idx_shifts_active ON shifts(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_daily_closings_date ON daily_closings(closing_date);
+CREATE INDEX IF NOT EXISTS idx_shifts_active ON shifts(is_active) WHERE is_active = true;
 
 -- ==========================================
 -- 4. トリガー関数の作成
