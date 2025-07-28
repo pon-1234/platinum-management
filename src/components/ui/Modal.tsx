@@ -24,11 +24,25 @@ export function Modal({
     xl: "max-w-4xl",
   };
 
+  const handleModalClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onKeyDown={handleKeyDown}
+    >
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
       <div
         className={`relative bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full mx-4 max-h-[90vh] overflow-hidden`}
+        onClick={handleModalClick}
       >
         {title && (
           <div className="px-6 py-4 border-b">

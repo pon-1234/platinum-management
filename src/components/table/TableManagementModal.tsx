@@ -54,6 +54,14 @@ export function TableManagementModal({
     },
   });
 
+  // Debug logging
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("TableManagementModal - isOpen:", isOpen);
+      console.log("TableManagementModal - form values:", form.getValues());
+    }
+  }, [isOpen, form]);
+
   // Reset form when opening/closing or when table changes
   useEffect(() => {
     if (isOpen) {
@@ -64,6 +72,16 @@ export function TableManagementModal({
         isVip: table?.isVip || false,
         isActive: table?.isActive ?? true,
       });
+
+      // Set focus to first input field after a short delay
+      setTimeout(() => {
+        const firstInput = document.querySelector<HTMLInputElement>(
+          'input[name="tableName"]'
+        );
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
     }
   }, [isOpen, table, form]);
 

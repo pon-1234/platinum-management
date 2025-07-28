@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS notification_logs (
   id SERIAL PRIMARY KEY,
   type VARCHAR(50) NOT NULL, -- email, sms, line
   recipient VARCHAR(255) NOT NULL,
-  recipient_id UUID REFERENCES staffs(id), -- Add reference to staffs
   subject VARCHAR(500),
   message TEXT NOT NULL,
   status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, sent, failed

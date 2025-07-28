@@ -49,7 +49,7 @@ export const updateProfile = createSafeAction(
     const { error: staffError } = await supabase
       .from("staffs")
       .update({
-        name: data.name,
+        full_name: data.name,
         email: data.email,
         phone: data.phone || null,
         updated_at: new Date().toISOString(),
@@ -103,7 +103,7 @@ export const getUserProfile = createSafeAction(
     // Get staff profile
     const { data: staff, error: staffError } = await supabase
       .from("staffs")
-      .select("name, email, phone, created_at")
+      .select("full_name, email, phone, created_at")
       .eq("user_id", userId)
       .single();
 
@@ -117,7 +117,7 @@ export const getUserProfile = createSafeAction(
     // Merge auth metadata and staff data
     const profile = {
       name:
-        staff?.name ||
+        staff?.full_name ||
         user.user_metadata?.name ||
         user.email?.split("@")[0] ||
         "",

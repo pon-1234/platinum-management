@@ -73,7 +73,9 @@
       "Bash(git diff:*)",
       "Bash(pnpm:*)",
       "Bash(npm ls:*)",
-      "Bash(supabase status:*)"
+      "Bash(supabase status:*)",
+      "Bash(supabase db diff:*)",
+      "Bash(supabase db reset:*)"
     ],
     "deny": []
   }

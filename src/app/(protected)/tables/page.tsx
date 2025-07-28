@@ -17,6 +17,13 @@ export default function TablesPage() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
+
+  // Debug: Log modal state
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("Management modal state:", isManagementModalOpen);
+    }
+  }, [isManagementModalOpen]);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -155,12 +162,14 @@ export default function TablesPage() {
         )}
 
         {/* Management Modal */}
-        <TableManagementModal
-          isOpen={isManagementModalOpen}
-          onClose={handleManagementModalClose}
-          onSuccess={handleManagementSuccess}
-          table={editingTable}
-        />
+        {isManagementModalOpen && (
+          <TableManagementModal
+            isOpen={isManagementModalOpen}
+            onClose={handleManagementModalClose}
+            onSuccess={handleManagementSuccess}
+            table={editingTable}
+          />
+        )}
       </div>
     </RoleGate>
   );

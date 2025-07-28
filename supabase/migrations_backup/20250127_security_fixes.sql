@@ -61,7 +61,7 @@ CREATE POLICY "Admin can manage bottle keep alerts"
 
 -- 3. Fix function search_path for current_user_is_admin
 -- Drop and recreate the function with immutable search_path
-DROP FUNCTION IF EXISTS public.current_user_is_admin() CASCADE;
+DROP FUNCTION IF EXISTS public.current_user_is_admin();
 
 CREATE OR REPLACE FUNCTION public.current_user_is_admin()
 RETURNS boolean
@@ -81,7 +81,7 @@ $$;
 
 -- Also check and fix other functions that might have mutable search_path
 -- Fix get_current_staff_id function
-DROP FUNCTION IF EXISTS public.get_current_staff_id() CASCADE;
+DROP FUNCTION IF EXISTS public.get_current_staff_id();
 
 CREATE OR REPLACE FUNCTION public.get_current_staff_id()
 RETURNS uuid
@@ -102,7 +102,7 @@ END;
 $$;
 
 -- Fix get_current_user_role function
-DROP FUNCTION IF EXISTS public.get_current_user_role() CASCADE;
+DROP FUNCTION IF EXISTS public.get_current_user_role();
 
 CREATE OR REPLACE FUNCTION public.get_current_user_role()
 RETURNS text
