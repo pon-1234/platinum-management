@@ -19,28 +19,28 @@ CREATE INDEX idx_daily_closings_date ON daily_closings(closing_date);
 ALTER TABLE daily_closings ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
--- Select policy: Allow authenticated users to read daily closings
-CREATE POLICY "daily_closings_select_policy" 
+-- Allow all authenticated users and anon to select
+CREATE POLICY "Enable read access for all users" 
 ON daily_closings 
 FOR SELECT 
-TO authenticated 
 USING (true);
 
--- Insert policy: Allow authenticated users to insert daily closings
-CREATE POLICY "daily_closings_insert_policy" 
+-- Allow authenticated users to insert
+CREATE POLICY "Enable insert for authenticated users only" 
 ON daily_closings 
 FOR INSERT 
-TO authenticated 
+TO authenticated
 WITH CHECK (true);
 
--- Update policy: Allow authenticated users to update daily closings
-CREATE POLICY "daily_closings_update_policy" 
+-- Allow authenticated users to update
+CREATE POLICY "Enable update for authenticated users only" 
 ON daily_closings 
 FOR UPDATE 
-TO authenticated 
+TO authenticated
 USING (true)
 WITH CHECK (true);
 
 -- Grant permissions
 GRANT ALL ON daily_closings TO authenticated;
 GRANT ALL ON daily_closings TO service_role;
+GRANT SELECT ON daily_closings TO anon;
