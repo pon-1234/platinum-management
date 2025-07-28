@@ -140,7 +140,7 @@ describe("CustomerService", () => {
         customerService.createCustomer({
           name: "田中太郎",
           phoneNumber: "090-1234-5678",
-          status: "normal",
+          status: "active",
         })
       ).rejects.toThrow("既に同じデータが存在します");
     });
@@ -156,7 +156,7 @@ describe("CustomerService", () => {
         line_id: null,
         birthday: null,
         memo: null,
-        status: "normal" as const,
+        status: "active" as const,
         created_by: "staff-123",
         updated_by: "staff-123",
         created_at: "2024-01-01T00:00:00Z",
@@ -178,7 +178,7 @@ describe("CustomerService", () => {
         lineId: null,
         birthday: null,
         memo: null,
-        status: "normal",
+        status: "active",
         createdBy: "staff-123",
         updatedBy: "staff-123",
         createdAt: "2024-01-01T00:00:00Z",
@@ -211,7 +211,7 @@ describe("CustomerService", () => {
           line_id: null,
           birthday: null,
           memo: null,
-          status: "normal" as const,
+          status: "active" as const,
           created_by: "staff-123",
           updated_by: "staff-123",
           created_at: "2024-01-01T00:00:00Z",

@@ -148,10 +148,9 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
 
   const statusOptions: { value: CustomerStatus | ""; label: string }[] = [
     { value: "", label: "すべて" },
-    { value: "normal", label: "通常" },
+    { value: "active", label: "通常" },
     { value: "vip", label: "VIP" },
-    { value: "caution", label: "要注意" },
-    { value: "blacklisted", label: "ブラックリスト" },
+    { value: "blocked", label: "ブロック" },
   ];
 
   if (showForm) {

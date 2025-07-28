@@ -127,12 +127,12 @@ describe("Customer Validation Schemas", () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.status).toBe("normal");
+        expect(result.data.status).toBe("active");
       }
     });
 
     it("should validate status enum", () => {
-      const validStatuses = ["normal", "vip", "caution", "blacklisted"];
+      const validStatuses = ["active", "vip", "blocked"];
 
       validStatuses.forEach((status) => {
         const result = createCustomerSchema.safeParse({

@@ -153,7 +153,7 @@ export interface Database {
           line_id: string | null;
           birthday: string | null;
           memo: string | null;
-          status: "normal" | "vip" | "caution" | "blacklisted";
+          status: "active" | "vip" | "blocked";
           created_by: string | null;
           updated_by: string | null;
           created_at: string;
