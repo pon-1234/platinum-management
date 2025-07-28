@@ -64,5 +64,11 @@ export function StatusBadge({
 export function CustomerStatusBadge({ status }: CustomerStatusBadgeProps) {
   const config = customerStatusConfig[status];
 
+  // デフォルト値を設定してエラーを防ぐ
+  if (!config) {
+    console.warn(`Unknown customer status: ${status}`);
+    return <StatusBadge variant="default">Unknown</StatusBadge>;
+  }
+
   return <StatusBadge variant={config.variant}>{config.label}</StatusBadge>;
 }
