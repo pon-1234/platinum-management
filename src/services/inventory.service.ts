@@ -793,7 +793,10 @@ export class InventoryService extends BaseService {
 
       if (error) {
         // RPC関数が存在しない場合は従来の方法にフォールバック
-        if (error.message.includes("function get_inventory_page_data")) {
+        if (
+          error.message.includes("function get_inventory_page_data") ||
+          error.code === "42883" // function does not exist
+        ) {
           if (process.env.NODE_ENV === "development") {
             console.warn(
               "RPC get_inventory_page_data not found, falling back to individual queries"
@@ -810,7 +813,12 @@ export class InventoryService extends BaseService {
         }
         const errorMessage = `在庫ページデータ取得に失敗しました: ${error.message}`;
         if (process.env.NODE_ENV === "development") {
-          console.error("getInventoryPageData RPC error:", error);
+          console.error("getInventoryPageData RPC error:", {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+          });
         }
         throw new Error(errorMessage);
       }
