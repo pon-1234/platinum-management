@@ -234,12 +234,7 @@ export class ReservationService {
           name,
           phone_number
         ),
-        table:tables(
-          id,
-          table_name,
-          capacity,
-          location
-        ),
+        table:tables(*),
         assigned_cast:staffs!assigned_cast_id(
           id,
           full_name,
@@ -475,7 +470,7 @@ export class ReservationService {
           assigned_cast:staffs!assigned_cast_id(
             id,
             full_name,
-            casts_profile!casts_profile_staff_id_fkey(stage_name)
+            casts_profile(stage_name)
           )
         `
         )

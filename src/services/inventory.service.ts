@@ -808,9 +808,11 @@ export class InventoryService extends BaseService {
           ]);
           return { products, stats, alerts, categories };
         }
-        throw new Error(
-          this.handleDatabaseError(error, "在庫ページデータ取得に失敗しました")
-        );
+        const errorMessage = `在庫ページデータ取得に失敗しました: ${error.message}`;
+        if (process.env.NODE_ENV === "development") {
+          console.error("getInventoryPageData RPC error:", error);
+        }
+        throw new Error(errorMessage);
       }
 
       // RPC結果をパース
