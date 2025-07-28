@@ -500,6 +500,71 @@ export class BillingService extends BaseService {
   // ============= REPORTS =============
 
   async generateDailyReport(date: string): Promise<DailyReport> {
+    try {
+      // Use optimized RPC functions to get all report data efficiently
+      const [billingReport, topProducts, topCasts] = await Promise.all([
+        // Get basic billing statistics
+        this.supabase.rpc("generate_daily_billing_report", {
+          report_date: date,
+        }),
+        // Get top products
+        this.supabase.rpc("get_top_products_with_details", {
+          report_date: date,
+          limit_count: 5,
+        }),
+        // Get top cast performance
+        this.supabase.rpc("get_top_cast_performance", {
+          report_date: date,
+          limit_count: 5,
+        }),
+      ]);
+
+      if (billingReport.error) {
+        // Fallback to old method if RPC doesn't exist
+        if (
+          billingReport.error.message.includes(
+            "function generate_daily_billing_report"
+          )
+        ) {
+          return this.generateDailyReportFallback(date);
+        }
+        throw billingReport.error;
+      }
+
+      const reportData = billingReport.data;
+
+      return {
+        date,
+        totalVisits: Number(reportData.total_visits) || 0,
+        totalSales: Number(reportData.total_sales) || 0,
+        totalCash: Number(reportData.cash_sales) || 0,
+        totalCard: Number(reportData.card_sales) || 0,
+        topProducts: (topProducts.data || []).map((p: any) => ({
+          productId: p.product_id,
+          productName: p.product_name,
+          quantity: Number(p.quantity_sold),
+          totalAmount: Number(p.revenue),
+        })),
+        topCasts: (topCasts.data || []).map((c: any) => ({
+          castId: c.cast_id,
+          castName: c.cast_name,
+          orderCount: Number(c.visits_attended),
+          totalAmount: Number(c.total_sales),
+        })),
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to generate daily report:", error);
+      }
+      // Fallback to old implementation
+      return this.generateDailyReportFallback(date);
+    }
+  }
+
+  // Fallback method for backward compatibility
+  private async generateDailyReportFallback(
+    date: string
+  ): Promise<DailyReport> {
     const startDate = `${date}T00:00:00.000Z`;
     const endDate = `${date}T23:59:59.999Z`;
 

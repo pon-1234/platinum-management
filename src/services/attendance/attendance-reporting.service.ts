@@ -18,6 +18,74 @@ export class AttendanceReportingService extends BaseService {
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const weekStartStr = weekStart.toISOString().split("T")[0];
 
+    try {
+      // Use optimized RPC function to get dashboard stats
+      const { data: stats, error: statsError } = await this.supabase.rpc(
+        "get_attendance_dashboard_stats",
+        { target_date: today }
+      );
+
+      if (statsError) {
+        // Fallback to old method if RPC doesn't exist
+        if (
+          statsError.message.includes("function get_attendance_dashboard_stats")
+        ) {
+          return this.getDashboardFallback();
+        }
+        throw statsError;
+      }
+
+      // Get weekly data in parallel
+      const [
+        weekAttendanceResult,
+        pendingShiftRequestsResult,
+        correctionsResult,
+      ] = await Promise.all([
+        attendanceTrackingService.search({
+          startDate: weekStartStr,
+          endDate: today,
+        }),
+        shiftRequestService.getPendingCount(),
+        attendanceTrackingService.getCorrectionRequestsCount(),
+      ]);
+
+      const { totalWorkHours, totalOvertimeHours } =
+        this.calculateWeeklyWorkHours(weekAttendanceResult);
+
+      const averageAttendance = Number(stats.attendance_rate) || 0;
+
+      return {
+        today: {
+          totalStaff: Number(stats.total_staff) || 0,
+          presentStaff: Number(stats.present_count) || 0,
+          lateStaff: Number(stats.late_count) || 0,
+          absentStaff: Number(stats.absent_count) || 0,
+        },
+        thisWeek: {
+          averageAttendance,
+          totalWorkHours,
+          totalOvertimeHours,
+        },
+        pendingRequests: {
+          shiftRequests: pendingShiftRequestsResult,
+          corrections: correctionsResult,
+        },
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to get attendance dashboard:", error);
+      }
+      return this.getDashboardFallback();
+    }
+  }
+
+  // Fallback method for backward compatibility
+  private async getDashboardFallback(): Promise<AttendanceDashboard> {
+    const today = new Date().toISOString().split("T")[0];
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+
     const todayAttendance = await attendanceTrackingService.search({
       startDate: today,
       endDate: today,
@@ -71,6 +139,78 @@ export class AttendanceReportingService extends BaseService {
   }
 
   async getMonthlyAttendanceSummary(
+    staffId: string,
+    month: string
+  ): Promise<MonthlyAttendanceSummary> {
+    try {
+      const [year, monthNum] = month.split("-").map(Number);
+
+      // Use optimized RPC function
+      const { data, error } = await this.supabase.rpc(
+        "get_monthly_attendance_summary",
+        {
+          target_year: year,
+          target_month: monthNum,
+          staff_id_filter: staffId,
+        }
+      );
+
+      if (error) {
+        // Fallback to old method if RPC doesn't exist
+        if (error.message.includes("function get_monthly_attendance_summary")) {
+          return this.getMonthlyAttendanceSummaryFallback(staffId, month);
+        }
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          totalWorkDays: 0,
+          totalWorkHours: 0,
+          totalOvertimeHours: 0,
+          presentDays: 0,
+          absentDays: 0,
+          lateDays: 0,
+        };
+      }
+
+      const summary = data[0];
+
+      // Convert interval to hours
+      const workingHours = this.intervalToHours(summary.total_working_hours);
+      const overtimeHours = this.intervalToHours(summary.total_overtime_hours);
+
+      return {
+        totalWorkDays: Number(summary.total_days) || 0,
+        totalWorkHours: workingHours,
+        totalOvertimeHours: overtimeHours,
+        presentDays: Number(summary.present_days) || 0,
+        absentDays: Number(summary.absent_days) || 0,
+        lateDays: Number(summary.late_days) || 0,
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to get monthly attendance summary:", error);
+      }
+      return this.getMonthlyAttendanceSummaryFallback(staffId, month);
+    }
+  }
+
+  // Helper function to convert PostgreSQL interval to hours
+  private intervalToHours(interval: string | null): number {
+    if (!interval) return 0;
+    // Parse PostgreSQL interval format (e.g., "125:30:00" or "PT125H30M")
+    const match = interval.match(/(\d+):(\d+):(\d+)/);
+    if (match) {
+      const hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      return hours + minutes / 60;
+    }
+    return 0;
+  }
+
+  // Fallback method
+  private async getMonthlyAttendanceSummaryFallback(
     staffId: string,
     month: string
   ): Promise<MonthlyAttendanceSummary> {

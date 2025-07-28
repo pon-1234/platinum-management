@@ -7,6 +7,51 @@ export async function getDashboardStats() {
     const supabase = await createClient();
     const today = new Date().toISOString().split("T")[0];
 
+    // Use optimized RPC function to get all dashboard stats in one query
+    const { data, error } = await supabase.rpc("get_dashboard_stats", {
+      report_date: today,
+    });
+
+    if (error) {
+      // Fallback to individual queries if RPC doesn't exist
+      if (error.message.includes("function get_dashboard_stats")) {
+        return getDashboardStatsFallback();
+      }
+      console.error("Dashboard stats RPC error:", error);
+      throw new Error("ダッシュボードデータの取得に失敗しました");
+    }
+
+    return {
+      success: true,
+      data: {
+        totalCustomers: Number(data.today_customers) || 0,
+        todayReservations: Number(data.pending_reservations) || 0,
+        todaySales: Number(data.today_sales) || 0,
+        todayVisits: Number(data.today_visits) || 0,
+        todayNewCustomers: Number(data.today_new_customers) || 0,
+        activeCastCount: Number(data.active_cast_count) || 0,
+        activeTableCount: Number(data.active_table_count) || 0,
+        lowStockCount: Number(data.low_stock_count) || 0,
+      },
+    };
+  } catch (error) {
+    console.error("Dashboard stats error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "ダッシュボードデータの取得に失敗しました",
+    };
+  }
+}
+
+// Fallback function for backward compatibility
+async function getDashboardStatsFallback() {
+  try {
+    const supabase = await createClient();
+    const today = new Date().toISOString().split("T")[0];
+
     // Get total customers count
     const { count: totalCustomers, error: customerError } = await supabase
       .from("customers")
@@ -72,13 +117,75 @@ export async function getDashboardStats() {
       },
     };
   } catch (error) {
-    console.error("Dashboard stats error:", error);
+    console.error("Dashboard stats fallback error:", error);
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
           : "ダッシュボードデータの取得に失敗しました",
+    };
+  }
+}
+
+// Get recent activities optimized
+export async function getRecentActivities() {
+  try {
+    const supabase = await createClient();
+
+    // Use optimized RPC function
+    const { data, error } = await supabase.rpc("get_recent_activities", {
+      activity_limit: 10,
+    });
+
+    if (error) {
+      console.error("Recent activities error:", error);
+      throw new Error("最近の活動データの取得に失敗しました");
+    }
+
+    return {
+      success: true,
+      data: data || [],
+    };
+  } catch (error) {
+    console.error("Recent activities error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "最近の活動データの取得に失敗しました",
+    };
+  }
+}
+
+// Get hourly sales data
+export async function getHourlySales() {
+  try {
+    const supabase = await createClient();
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data, error } = await supabase.rpc("get_hourly_sales", {
+      report_date: today,
+    });
+
+    if (error) {
+      console.error("Hourly sales error:", error);
+      throw new Error("時間帯別売上データの取得に失敗しました");
+    }
+
+    return {
+      success: true,
+      data: data || [],
+    };
+  } catch (error) {
+    console.error("Hourly sales error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "時間帯別売上データの取得に失敗しました",
     };
   }
 }
