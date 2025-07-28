@@ -382,14 +382,14 @@ CREATE INDEX idx_customers_phone_number ON customers(phone_number);
 CREATE INDEX idx_customers_status ON customers(status);
 CREATE INDEX idx_customers_created_at ON customers(created_at);
 CREATE UNIQUE INDEX idx_customers_phone_unique ON customers(phone_number) WHERE phone_number IS NOT NULL;
-CREATE INDEX idx_customers_created_date ON customers((created_at::date)) WHERE is_deleted = false;
+CREATE INDEX idx_customers_created_date ON customers(created_at) WHERE is_deleted = false;
 
 -- 来店関連
 CREATE INDEX idx_visits_customer_id ON visits(customer_id);
 CREATE INDEX idx_visits_status ON visits(status);
 CREATE INDEX idx_visits_check_in_at ON visits(check_in_at);
 CREATE INDEX idx_visits_created_at ON visits(created_at);
-CREATE INDEX idx_visits_check_in_date ON visits((check_in_at::date), status);
+CREATE INDEX idx_visits_check_in_date ON visits(check_in_at, status);
 CREATE INDEX idx_visits_total_amount ON visits(total_amount) WHERE status = 'completed';
 CREATE INDEX idx_visit_cast_assignments_cast_visit ON visit_cast_assignments(cast_id, visit_id);
 
