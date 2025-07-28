@@ -164,6 +164,8 @@ CREATE TABLE products (
     cost INTEGER NOT NULL DEFAULT 0,
     stock_quantity INTEGER NOT NULL DEFAULT 0,
     low_stock_threshold INTEGER NOT NULL DEFAULT 10,
+    max_stock INTEGER NOT NULL DEFAULT 100,
+    reorder_point INTEGER NOT NULL DEFAULT 15,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
