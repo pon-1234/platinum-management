@@ -22,7 +22,6 @@ const tableManagementSchema = z.object({
     .string()
     .max(50, "設置場所は50文字以内で入力してください")
     .optional(),
-  isVip: z.boolean(),
   isActive: z.boolean(),
 });
 
@@ -49,7 +48,6 @@ export function TableManagementModal({
       tableName: "",
       capacity: 2,
       location: "",
-      isVip: false,
       isActive: true,
     },
   });
@@ -69,7 +67,6 @@ export function TableManagementModal({
         tableName: table?.tableName || "",
         capacity: table?.capacity || 2,
         location: table?.location || "",
-        isVip: table?.isVip || false,
         isActive: table?.isActive ?? true,
       });
 
@@ -93,7 +90,6 @@ export function TableManagementModal({
           tableName: data.tableName,
           capacity: data.capacity,
           location: data.location || null,
-          isVip: data.isVip,
           isActive: data.isActive,
         });
       } else {
@@ -102,7 +98,6 @@ export function TableManagementModal({
           tableName: data.tableName,
           capacity: data.capacity,
           location: data.location || null,
-          isVip: data.isVip,
           isActive: data.isActive,
         });
       }
@@ -184,23 +179,6 @@ export function TableManagementModal({
           {form.formState.errors.location && (
             <ErrorMessage message={form.formState.errors.location.message!} />
           )}
-        </div>
-
-        {/* VIP Table */}
-        <div>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              {...form.register("isVip")}
-              className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-            />
-            <span className="text-sm font-medium text-gray-700">
-              VIPテーブル
-            </span>
-          </label>
-          <p className="text-sm text-gray-500 mt-1">
-            VIPテーブルとして特別扱いする場合にチェックしてください
-          </p>
         </div>
 
         {/* Active Status */}

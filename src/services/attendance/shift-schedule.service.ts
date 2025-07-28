@@ -386,7 +386,7 @@ export class ShiftScheduleService extends BaseService {
       startTime: data.start_time,
       endTime: data.end_time,
       daysOfWeek: data.days_of_week,
-      isActive: data.is_active,
+      isActive: data.is_available,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
       createdAt: data.created_at,

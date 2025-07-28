@@ -112,7 +112,6 @@ CREATE TABLE IF NOT EXISTS tables (
   table_name VARCHAR(50) NOT NULL UNIQUE,
   capacity INT NOT NULL CHECK (capacity > 0 AND capacity <= 50),
   location VARCHAR(100),
-  is_vip BOOLEAN DEFAULT false,
   is_active BOOLEAN DEFAULT true,
   current_status table_status DEFAULT 'available',
   current_visit_id UUID,

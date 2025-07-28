@@ -24,13 +24,13 @@ INSERT INTO casts_profile (id, stage_name, real_name, birth_date, hire_date, hou
   ('p2345678-9abc-def0-1234-56789abcdef0', 'れいな', '中村 麗奈', '1999-09-18', '2024-03-15', 2800, 'junior', ARRAY['ダンス', 'お酒'], null, '一緒に楽しい夜を過ごしましょう♪', true, '56789012-def0-1234-5678-9abcdef01234');
 
 -- Insert demo tables
-INSERT INTO tables (id, table_name, capacity, location, is_vip, is_active, current_status) VALUES
-  (1, 'テーブル1', 4, 'フロア1-A', false, true, 'available'),
-  (2, 'テーブル2', 6, 'フロア1-B', false, true, 'available'),
-  (3, 'VIPルーム1', 8, 'VIPフロア', true, true, 'available'),
-  (4, 'VIPルーム2', 10, 'VIPフロア', true, true, 'available'),
-  (5, 'カウンター1', 2, 'カウンター', false, true, 'available'),
-  (6, 'カウンター2', 2, 'カウンター', false, true, 'available');
+INSERT INTO tables (id, table_name, capacity, location, is_active, current_status) VALUES
+  (1, 'テーブル1', 4, 'フロア1-A', true, 'available'),
+  (2, 'テーブル2', 6, 'フロア1-B', true, 'available'),
+  (3, 'VIPルーム1', 8, 'VIPフロア', true, 'available'),
+  (4, 'VIPルーム2', 10, 'VIPフロア', true, 'available'),
+  (5, 'カウンター1', 2, 'カウンター', true, 'available'),
+  (6, 'カウンター2', 2, 'カウンター', true, 'available');
 
 -- Insert demo inventory products
 INSERT INTO inventory_products (id, name, category, price, cost, stock_quantity, low_stock_threshold, supplier_info, reorder_point, max_stock) VALUES

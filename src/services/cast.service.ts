@@ -281,7 +281,7 @@ export class CastService extends BaseService {
       hourlyRate: data.hourly_rate,
       backPercentage: data.back_percentage,
       memo: null,
-      isActive: data.is_active,
+      isActive: data.is_available,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };

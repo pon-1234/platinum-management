@@ -167,13 +167,6 @@ export function TableLayout({
                       <PencilIcon className="h-3 w-3 text-gray-600" />
                     </button>
                   )}
-                  {/* VIP Badge */}
-                  {table.isVip && (
-                    <div className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-                      VIP
-                    </div>
-                  )}
-
                   {/* Table Name */}
                   <div className="text-lg font-bold">{table.tableName}</div>
 

@@ -96,7 +96,7 @@ export const updatePassword = createSafeAction(
   }
 );
 
-export const getUserProfile = createSafeAction(z.object({}), async (_) => {
+export const getUserProfile = createSafeAction(z.object({}), async () => {
   const supabase = await createClient();
 
   const {

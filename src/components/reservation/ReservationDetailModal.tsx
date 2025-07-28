@@ -344,14 +344,7 @@ export function ReservationDetailModal({
                   <MapPin className="w-5 h-5 mr-3" />
                   <div>
                     <p className="text-sm text-gray-500">テーブル</p>
-                    <p className="font-medium">
-                      {reservation.table.tableName}
-                      {reservation.table.isVip && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                          VIP
-                        </span>
-                      )}
-                    </p>
+                    <p className="font-medium">{reservation.table.tableName}</p>
                   </div>
                 </div>
               )}
@@ -483,8 +476,7 @@ export function ReservationDetailModal({
               <option value="">テーブルを選択してください</option>
               {availableTables.map((table) => (
                 <option key={table.id} value={table.id}>
-                  {table.tableName} (定員: {table.capacity}名){" "}
-                  {table.isVip && "(VIP)"}
+                  {table.tableName} (定員: {table.capacity}名)
                 </option>
               ))}
             </select>

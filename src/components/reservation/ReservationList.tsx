@@ -159,11 +159,6 @@ export function ReservationList({
                   <div className="mt-2 text-sm">
                     <span className="font-medium">テーブル:</span>{" "}
                     {table.tableName}
-                    {table.isVip && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                        VIP
-                      </span>
-                    )}
                   </div>
                 )}
 

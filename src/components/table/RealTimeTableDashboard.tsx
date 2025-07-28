@@ -254,11 +254,6 @@ export default function RealTimeTableDashboard({
                 />
                 <h3 className="font-semibold text-lg">{table.tableName}</h3>
                 <p className="text-sm opacity-75">{table.capacity}席</p>
-                {table.isVip && (
-                  <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">
-                    VIP
-                  </span>
-                )}
                 <p className="text-xs mt-2 font-medium">{config.label}</p>
               </div>
 

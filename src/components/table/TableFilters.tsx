@@ -35,12 +35,10 @@ export function TableFilters({ onFilterChange, onSearch }: TableFiltersProps) {
   const [filters, setFilters] = useState<{
     status: string;
     capacity: string;
-    isVip: boolean | null;
     isActive: boolean;
   }>({
     status: "all",
     capacity: "all",
-    isVip: null,
     isActive: true,
   });
 
@@ -82,10 +80,6 @@ export function TableFilters({ onFilterChange, onSearch }: TableFiltersProps) {
       }
     }
 
-    if (newFilters.isVip !== null) {
-      apiFilters.isVip = newFilters.isVip;
-    }
-
     onFilterChange(apiFilters);
   };
 
@@ -93,7 +87,6 @@ export function TableFilters({ onFilterChange, onSearch }: TableFiltersProps) {
     const defaultFilters = {
       status: "all",
       capacity: "all",
-      isVip: null,
       isActive: true,
     };
     setFilters(defaultFilters);
@@ -105,7 +98,6 @@ export function TableFilters({ onFilterChange, onSearch }: TableFiltersProps) {
   const hasActiveFilters =
     filters.status !== "all" ||
     filters.capacity !== "all" ||
-    filters.isVip !== null ||
     !filters.isActive ||
     searchQuery !== "";
 
@@ -188,29 +180,6 @@ export function TableFilters({ onFilterChange, onSearch }: TableFiltersProps) {
                     {option.label}
                   </option>
                 ))}
-              </select>
-            </div>
-
-            {/* VIP Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                VIPテーブル
-              </label>
-              <select
-                value={
-                  filters.isVip === null ? "all" : filters.isVip.toString()
-                }
-                onChange={(e) =>
-                  handleFilterChange(
-                    "isVip",
-                    e.target.value === "all" ? null : e.target.value === "true"
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">全て</option>
-                <option value="true">VIPテーブルのみ</option>
-                <option value="false">通常テーブルのみ</option>
               </select>
             </div>
 

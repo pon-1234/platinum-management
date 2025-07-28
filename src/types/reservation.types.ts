@@ -32,7 +32,6 @@ export type Table = {
   tableName: string;
   capacity: number;
   location: string | null;
-  isVip: boolean;
   isActive: boolean;
   currentStatus: TableStatus;
   currentVisitId: string | null;
@@ -64,7 +63,6 @@ export type CreateTableData = {
   tableName: string;
   capacity: number;
   location?: string | null;
-  isVip?: boolean;
   isActive?: boolean;
 };
 
@@ -88,7 +86,6 @@ export type ReservationSearchParams = {
 export type TableSearchParams = {
   search?: string;
   status?: TableStatus;
-  isVip?: boolean;
   isActive?: boolean;
   minCapacity?: number;
   maxCapacity?: number;

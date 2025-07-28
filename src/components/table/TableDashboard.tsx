@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import {
   UserGroupIcon,
   ClockIcon,
-  SparklesIcon,
   EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 import type { Table } from "@/types/reservation.types";
@@ -20,7 +19,6 @@ interface TableStats {
   reserved: number;
   occupied: number;
   cleaning: number;
-  vipTables: number;
   totalCapacity: number;
   utilizationRate: number;
   inactiveTables: number;
@@ -38,7 +36,6 @@ export function TableDashboard({
         reserved: 0,
         occupied: 0,
         cleaning: 0,
-        vipTables: 0,
         totalCapacity: 0,
         utilizationRate: 0,
         inactiveTables: 0,
@@ -56,7 +53,6 @@ export function TableDashboard({
       { available: 0, reserved: 0, occupied: 0, cleaning: 0 }
     );
 
-    const vipTables = activeTables.filter((table) => table.isVip).length;
     const totalCapacity = activeTables.reduce(
       (sum, table) => sum + table.capacity,
       0
@@ -70,7 +66,6 @@ export function TableDashboard({
     return {
       total: activeTables.length,
       ...statusCounts,
-      vipTables,
       totalCapacity,
       utilizationRate,
       inactiveTables: inactiveTables.length,
@@ -107,14 +102,6 @@ export function TableDashboard({
       icon: ClockIcon,
       color: "text-green-600",
       bgColor: "bg-green-50",
-    },
-    {
-      title: "VIPテーブル",
-      value: stats.vipTables,
-      description: `全体の${Math.round((stats.vipTables / Math.max(stats.total, 1)) * 100)}%`,
-      icon: SparklesIcon,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
     },
     {
       title: "非表示テーブル",

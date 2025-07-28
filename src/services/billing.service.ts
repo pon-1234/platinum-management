@@ -539,18 +539,32 @@ export class BillingService extends BaseService {
         totalSales: Number(reportData.total_sales) || 0,
         totalCash: Number(reportData.cash_sales) || 0,
         totalCard: Number(reportData.card_sales) || 0,
-        topProducts: (topProducts.data || []).map((p: any) => ({
-          productId: p.product_id,
-          productName: p.product_name,
-          quantity: Number(p.quantity_sold),
-          totalAmount: Number(p.revenue),
-        })),
-        topCasts: (topCasts.data || []).map((c: any) => ({
-          castId: c.cast_id,
-          castName: c.cast_name,
-          orderCount: Number(c.visits_attended),
-          totalAmount: Number(c.total_sales),
-        })),
+        topProducts: (topProducts.data || []).map(
+          (p: {
+            product_id: string;
+            product_name: string;
+            quantity_sold: number;
+            revenue: number;
+          }) => ({
+            productId: p.product_id,
+            productName: p.product_name,
+            quantity: Number(p.quantity_sold),
+            totalAmount: Number(p.revenue),
+          })
+        ),
+        topCasts: (topCasts.data || []).map(
+          (c: {
+            cast_id: string;
+            staff_name: string;
+            total_sales: number;
+            visits_attended?: number;
+          }) => ({
+            castId: c.cast_id,
+            castName: c.staff_name,
+            orderCount: Number(c.visits_attended || 0),
+            totalAmount: Number(c.total_sales),
+          })
+        ),
       };
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
@@ -707,7 +721,7 @@ export class BillingService extends BaseService {
       cost: data.cost,
       stockQuantity: data.stock_quantity,
       lowStockThreshold: data.low_stock_threshold,
-      isActive: data.is_active,
+      isActive: data.is_available,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
       createdAt: data.created_at,

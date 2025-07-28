@@ -521,19 +521,31 @@ export class InventoryService extends BaseService {
       }
 
       // RPCからのデータを適切な型に変換
-      return (data || []).map((alert: any) => ({
-        id: alert.id,
-        productId: alert.product_id,
-        productName: alert.product_name,
-        currentStock: alert.current_stock,
-        threshold: alert.threshold,
-        alertType: alert.alert_type as
-          | "out_of_stock"
-          | "low_stock"
-          | "overstock",
-        severity: alert.severity as "critical" | "warning",
-        createdAt: new Date().toISOString(),
-      }));
+      return (data || []).map(
+        (alert: {
+          id: string;
+          product_id: string;
+          product_name: string;
+          current_stock: number;
+          threshold: number;
+          status: string;
+          category_name: string;
+          alert_type?: string;
+          severity?: string;
+        }) => ({
+          id: alert.id,
+          productId: alert.product_id,
+          productName: alert.product_name,
+          currentStock: alert.current_stock,
+          threshold: alert.threshold,
+          alertType: (alert.alert_type || alert.status) as
+            | "out_of_stock"
+            | "low_stock"
+            | "overstock",
+          severity: (alert.severity || "warning") as "critical" | "warning",
+          createdAt: new Date().toISOString(),
+        })
+      );
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("getInventoryAlerts failed:", error);
@@ -741,7 +753,7 @@ export class InventoryService extends BaseService {
         );
       }
 
-      return (data || []).map((row: any) => row.category);
+      return (data || []).map((row: { category: string }) => row.category);
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("getCategories failed:", error);
@@ -811,16 +823,31 @@ export class InventoryService extends BaseService {
           outOfStockItems: 0,
           totalValue: 0,
         },
-        alerts: (result.alerts || []).map((alert: any) => ({
-          id: alert.id,
-          productId: alert.product_id,
-          productName: alert.product_name,
-          currentStock: alert.current_stock,
-          threshold: alert.threshold,
-          alertType: alert.alert_type,
-          severity: alert.severity,
-          createdAt: new Date().toISOString(),
-        })),
+        alerts: (result.alerts || []).map(
+          (alert: {
+            id: string;
+            product_id: string;
+            product_name: string;
+            current_stock: number;
+            threshold: number;
+            status: string;
+            category_name: string;
+            alert_type?: string;
+            severity?: string;
+          }) => ({
+            id: alert.id,
+            productId: alert.product_id,
+            productName: alert.product_name,
+            currentStock: alert.current_stock,
+            threshold: alert.threshold,
+            alertType: (alert.alert_type || alert.status) as
+              | "out_of_stock"
+              | "low_stock"
+              | "overstock",
+            severity: (alert.severity || "warning") as "critical" | "warning",
+            createdAt: new Date().toISOString(),
+          })
+        ),
         categories: result.categories || [],
       };
     } catch (error) {

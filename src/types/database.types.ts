@@ -16,7 +16,7 @@ export interface Database {
           full_name: string;
           role: "admin" | "manager" | "hall" | "cashier" | "cast";
           hire_date: string;
-          is_active: boolean;
+          is_available: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -26,7 +26,7 @@ export interface Database {
           full_name: string;
           role: "admin" | "manager" | "hall" | "cashier" | "cast";
           hire_date?: string;
-          is_active?: boolean;
+          is_available?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -36,7 +36,7 @@ export interface Database {
           full_name?: string;
           role?: "admin" | "manager" | "hall" | "cashier" | "cast";
           hire_date?: string;
-          is_active?: boolean;
+          is_available?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -56,7 +56,7 @@ export interface Database {
           profile_image_url: string | null;
           hourly_rate: number;
           back_percentage: number;
-          is_active: boolean;
+          is_available: boolean;
           created_by: string | null;
           updated_by: string | null;
           created_at: string;
@@ -76,7 +76,7 @@ export interface Database {
           profile_image_url?: string | null;
           hourly_rate?: number;
           back_percentage?: number;
-          is_active?: boolean;
+          is_available?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -96,7 +96,7 @@ export interface Database {
           profile_image_url?: string | null;
           hourly_rate?: number;
           back_percentage?: number;
-          is_active?: boolean;
+          is_available?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -253,11 +253,10 @@ export interface Database {
       tables: {
         Row: {
           id: string;
-          table_name: string;
+          table_number: string;
           capacity: number;
           location: string | null;
-          is_vip: boolean;
-          is_active: boolean;
+          is_available: boolean;
           current_status: Database["public"]["Enums"]["table_status"];
           current_visit_id: string | null;
           created_at: string;
@@ -265,11 +264,10 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          table_name: string;
+          table_number: string;
           capacity: number;
           location?: string | null;
-          is_vip?: boolean;
-          is_active?: boolean;
+          is_available?: boolean;
           current_status?: Database["public"]["Enums"]["table_status"];
           current_visit_id?: string | null;
           created_at?: string;
@@ -280,8 +278,7 @@ export interface Database {
           table_name?: string;
           capacity?: number;
           location?: string | null;
-          is_vip?: boolean;
-          is_active?: boolean;
+          is_available?: boolean;
           current_status?: Database["public"]["Enums"]["table_status"];
           current_visit_id?: string | null;
           created_at?: string;
@@ -356,7 +353,7 @@ export interface Database {
           supplier_info: Json | null;
           reorder_point: number;
           max_stock: number;
-          is_active: boolean;
+          is_available: boolean;
           created_by: string | null;
           updated_by: string | null;
           created_at: string;
@@ -373,7 +370,7 @@ export interface Database {
           supplier_info?: Json | null;
           reorder_point?: number;
           max_stock?: number;
-          is_active?: boolean;
+          is_available?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -390,7 +387,7 @@ export interface Database {
           supplier_info?: Json | null;
           reorder_point?: number;
           max_stock?: number;
-          is_active?: boolean;
+          is_available?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -440,7 +437,7 @@ export interface Database {
           start_time: string;
           end_time: string;
           days_of_week: number[];
-          is_active: boolean;
+          is_available: boolean;
           created_by: string | null;
           updated_by: string | null;
           created_at: string;
@@ -452,7 +449,7 @@ export interface Database {
           start_time: string;
           end_time: string;
           days_of_week: number[];
-          is_active?: boolean;
+          is_available?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -464,7 +461,7 @@ export interface Database {
           start_time?: string;
           end_time?: string;
           days_of_week?: number[];
-          is_active?: boolean;
+          is_available?: boolean;
           created_by?: string | null;
           updated_by?: string | null;
           created_at?: string;
@@ -824,7 +821,7 @@ export interface Database {
           qr_data: string;
           signature: string;
           expires_at: string;
-          is_active: boolean;
+          is_available: boolean;
           created_at: string;
         };
         Insert: {
@@ -833,7 +830,7 @@ export interface Database {
           qr_data: string;
           signature: string;
           expires_at: string;
-          is_active?: boolean;
+          is_available?: boolean;
           created_at?: string;
         };
         Update: {
@@ -842,7 +839,7 @@ export interface Database {
           qr_data?: string;
           signature?: string;
           expires_at?: string;
-          is_active?: boolean;
+          is_available?: boolean;
           created_at?: string;
         };
       };

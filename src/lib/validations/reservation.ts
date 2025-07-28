@@ -99,7 +99,6 @@ export const createTableSchema = z.object({
     .max(100, "場所は100文字以内で入力してください")
     .optional()
     .nullable(),
-  isVip: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
 
@@ -137,7 +136,6 @@ export const reservationSearchSchema = z.object({
 export const tableSearchSchema = z.object({
   search: z.string().optional(),
   status: tableStatusSchema.optional(),
-  isVip: z.boolean().optional(),
   isActive: z.boolean().optional(),
   minCapacity: z.number().int().positive().optional(),
   maxCapacity: z.number().int().positive().optional(),

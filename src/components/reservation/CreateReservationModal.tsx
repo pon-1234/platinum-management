@@ -234,8 +234,7 @@ export function CreateReservationModal({
             <option value="">テーブルを選択してください（後で指定可能）</option>
             {availableTables.map((table) => (
               <option key={table.id} value={table.id}>
-                {table.tableName} (定員: {table.capacity}名){" "}
-                {table.isVip && "(VIP)"}
+                {table.tableName} (定員: {table.capacity}名)
               </option>
             ))}
           </select>

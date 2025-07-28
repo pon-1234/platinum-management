@@ -122,11 +122,6 @@ export function TableStatusModal({
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   テーブル:{" "}
                   <span className="font-medium">{table.tableName}</span>
-                  {table.isVip && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                      VIP
-                    </span>
-                  )}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   定員: {table.capacity}名

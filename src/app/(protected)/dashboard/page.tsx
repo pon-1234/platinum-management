@@ -29,7 +29,11 @@ export default function DashboardPage() {
         if (result.success && result.data) {
           setStats(result.data);
         } else {
-          setError(result.error || "ダッシュボードデータの取得に失敗しました");
+          setError(
+            "error" in result && result.error
+              ? result.error
+              : "ダッシュボードデータの取得に失敗しました"
+          );
         }
       } catch (err) {
         setError("ダッシュボードデータの取得に失敗しました");
