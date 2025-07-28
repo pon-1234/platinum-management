@@ -800,11 +800,29 @@ CREATE POLICY "Enable delete for admin" ON staffs
 CREATE POLICY "Enable write access for authenticated users" ON casts_profile
   FOR ALL TO authenticated USING (true);
 
-CREATE POLICY "Enable write access for authenticated users" ON customers
-  FOR ALL TO authenticated USING (true);
+-- customersテーブルのポリシー
+-- 認証済みユーザーは全てのcustomersを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read customers" ON customers
+  FOR SELECT TO authenticated
+  USING (true);
 
-CREATE POLICY "Enable write access for authenticated users" ON visits
-  FOR ALL TO authenticated USING (true);
+-- adminとmanagerロールのみがcustomersを編集可能にする
+CREATE POLICY "Allow admin and managers to modify customers" ON customers
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
+
+-- visitsテーブルのポリシー
+-- 認証済みユーザーは全てのvisitsを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read visits" ON visits
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- adminとmanagerロールのみがvisitsを編集可能にする
+CREATE POLICY "Allow admin and managers to modify visits" ON visits
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
 -- tablesテーブルのポリシー
 -- 認証済みユーザーは全てのtablesを閲覧可能にする
@@ -818,8 +836,17 @@ CREATE POLICY "Allow admin and managers to modify tables" ON tables
   USING (get_current_user_staff_role() IN ('admin', 'manager'))
   WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
-CREATE POLICY "Enable write access for authenticated users" ON reservations
-  FOR ALL TO authenticated USING (true);
+-- reservationsテーブルのポリシー
+-- 認証済みユーザーは全てのreservationsを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read reservations" ON reservations
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- adminとmanagerロールのみがreservationsを編集可能にする
+CREATE POLICY "Allow admin and managers to modify reservations" ON reservations
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
 -- productsテーブルのポリシー
 -- 認証済みユーザーは全てのproductsを閲覧可能にする
@@ -833,8 +860,17 @@ CREATE POLICY "Allow admin and managers to modify products" ON products
   USING (get_current_user_staff_role() IN ('admin', 'manager'))
   WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
-CREATE POLICY "Enable write access for authenticated users" ON order_items
-  FOR ALL TO authenticated USING (true);
+-- order_itemsテーブルのポリシー
+-- 認証済みユーザーは全てのorder_itemsを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read order_items" ON order_items
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- adminとmanagerロールのみがorder_itemsを編集可能にする
+CREATE POLICY "Allow admin and managers to modify order_items" ON order_items
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
 CREATE POLICY "Enable write access for authenticated users" ON attendance_records
   FOR ALL TO authenticated USING (true);
@@ -857,8 +893,17 @@ CREATE POLICY "Enable write access for authenticated users" ON notification_logs
 CREATE POLICY "Enable write access for authenticated users" ON cast_performances
   FOR ALL TO authenticated USING (true);
 
-CREATE POLICY "Enable write access for authenticated users" ON inventory_movements
-  FOR ALL TO authenticated USING (true);
+-- inventory_movementsテーブルのポリシー
+-- 認証済みユーザーは全てのinventory_movementsを閲覧可能にする
+CREATE POLICY "Allow authenticated users to read inventory_movements" ON inventory_movements
+  FOR SELECT TO authenticated
+  USING (true);
+
+-- adminとmanagerロールのみがinventory_movementsを編集可能にする
+CREATE POLICY "Allow admin and managers to modify inventory_movements" ON inventory_movements
+  FOR ALL TO authenticated
+  USING (get_current_user_staff_role() IN ('admin', 'manager'))
+  WITH CHECK (get_current_user_staff_role() IN ('admin', 'manager'));
 
 CREATE POLICY "Enable write access for authenticated users" ON qr_codes
   FOR ALL TO authenticated USING (true);
