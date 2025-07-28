@@ -105,13 +105,13 @@ export const getUserProfile = createSafeAction(
       .from("staffs")
       .select("full_name, email, phone, created_at")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to avoid error when no rows
 
-    if (staffError && staffError.code !== "PGRST116") {
-      // PGRST116 = no rows returned
+    if (staffError) {
       if (process.env.NODE_ENV === "development") {
         console.error("Failed to get staff profile:", staffError);
       }
+      // Continue even if staff profile doesn't exist
     }
 
     // Merge auth metadata and staff data
