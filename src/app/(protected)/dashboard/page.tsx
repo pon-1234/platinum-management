@@ -6,7 +6,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      initialStats={result.success ? result.data : null}
+      initialStats={result.success && result.data ? result.data : null}
       error={
         result.success
           ? null
