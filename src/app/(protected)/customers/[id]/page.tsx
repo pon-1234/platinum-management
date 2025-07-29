@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import { CustomerForm } from "@/components/customers/CustomerForm";
 import { VisitHistory } from "@/components/customers/VisitHistory";
@@ -53,7 +54,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setIsLoading(true);
       setError(null);
 
-      const customerData = await customerService.getCustomerById(customerId);
+      const supabase = createClient();
+      const customerData = await customerService.getCustomerById(
+        supabase,
+        customerId
+      );
       if (!customerData) {
         setError("顧客が見つかりません");
         return;
@@ -61,7 +66,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
       setCustomer(customerData);
 
-      const visitsData = await customerService.getCustomerVisits(customerId);
+      const visitsData = await customerService.getCustomerVisits(
+        supabase,
+        customerId
+      );
       setVisits(visitsData);
     } catch (err) {
       setError("データの取得に失敗しました");
@@ -86,8 +94,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
       setIsSubmitting(true);
       setError(null);
 
+      const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await customerService.updateCustomer(customerId, data as any);
+      await customerService.updateCustomer(supabase, customerId, data as any);
       await loadCustomerData();
       setIsEditing(false);
     } catch (err) {
