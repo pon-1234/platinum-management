@@ -34,19 +34,15 @@ export class CustomerService extends BaseService {
     // Get current user's staff ID
     const staffId = await this.getCurrentStaffId(supabase);
 
+    const insertData = {
+      ...this.toSnakeCase(validatedData),
+      created_by: staffId,
+      updated_by: staffId,
+    };
+
     const { data: customer, error } = await supabase
       .from("customers")
-      .insert({
-        name: validatedData.name,
-        name_kana: validatedData.nameKana || null,
-        phone_number: validatedData.phoneNumber || null,
-        line_id: validatedData.lineId || null,
-        birthday: validatedData.birthday || null,
-        memo: validatedData.memo || null,
-        status: validatedData.status,
-        created_by: staffId,
-        updated_by: staffId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
