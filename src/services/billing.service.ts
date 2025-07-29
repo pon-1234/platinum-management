@@ -1,4 +1,6 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
   Product,
@@ -20,14 +22,17 @@ import type {
 } from "@/types/billing.types";
 
 export class BillingService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // ============= PRODUCT MANAGEMENT =============
 
   async createProduct(data: CreateProductData): Promise<Product> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const { data: product, error } = await this.supabase
       .from("products")
@@ -112,7 +117,7 @@ export class BillingService extends BaseService {
   }
 
   async updateProduct(id: number, data: UpdateProductData): Promise<Product> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const updateData: Record<string, unknown> = {
       updated_by: staffId,
@@ -156,7 +161,7 @@ export class BillingService extends BaseService {
   // ============= VISIT MANAGEMENT =============
 
   async createVisit(data: CreateVisitData): Promise<Visit> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const { data: visit, error } = await this.supabase
       .from("visits")
@@ -274,7 +279,7 @@ export class BillingService extends BaseService {
   }
 
   async updateVisit(id: string, data: UpdateVisitData): Promise<Visit> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const updateData: Record<string, unknown> = {
       updated_by: staffId,
@@ -314,7 +319,7 @@ export class BillingService extends BaseService {
   // ============= ORDER ITEM MANAGEMENT =============
 
   async addOrderItem(data: CreateOrderItemData): Promise<OrderItem> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     // Get product price if unit price not provided
     let unitPrice = data.unitPrice;
@@ -854,7 +859,7 @@ export class BillingService extends BaseService {
   }
 
   private async finalizeVisit(visitId: string): Promise<void> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const { error } = await this.supabase
       .from("visits")
@@ -878,7 +883,7 @@ export class BillingService extends BaseService {
     date: string,
     report: DailyReport
   ): Promise<void> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     // Create a record in a daily_closings table (if it exists)
     // This is optional and depends on your database schema

@@ -1,4 +1,7 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import type {
   Report,
   ReportType,
@@ -16,12 +19,15 @@ import type {
 import { billingService } from "./billing.service";
 
 export class ReportService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   async createReport(data: CreateReportData): Promise<Report> {
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const { data: report, error } = await this.supabase
       .from("reports")

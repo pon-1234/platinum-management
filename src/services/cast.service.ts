@@ -1,5 +1,7 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
 import { camelToSnake, removeUndefined } from "@/lib/utils/transform";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
   Cast,
@@ -21,8 +23,11 @@ import {
  * @known_issues None currently known
  */
 export class CastService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // Cast CRUD operations
@@ -40,7 +45,7 @@ export class CastService extends BaseService {
     const validatedData = createCastSchema.parse(data);
 
     // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const { data: cast, error } = await this.supabase
       .from("casts_profile")
@@ -116,7 +121,7 @@ export class CastService extends BaseService {
     const validatedData = updateCastSchema.parse(data);
 
     // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
 
     const transformedData = removeUndefined(camelToSnake(validatedData));
     const updateData: Record<string, unknown> = {
