@@ -149,9 +149,16 @@ export class InventoryService extends BaseService {
 
   async createProduct(data: CreateProductData): Promise<Product> {
     try {
+      const staffId = await this.getCurrentStaffId(this.supabase);
+      const insertData = {
+        ...this.toSnakeCase(data),
+        created_by: staffId,
+        updated_by: staffId,
+      };
+
       const { data: product, error } = await this.supabase
         .from("products")
-        .insert(data)
+        .insert(insertData)
         .select()
         .single();
 
@@ -172,9 +179,15 @@ export class InventoryService extends BaseService {
 
   async updateProduct(id: number, data: UpdateProductData): Promise<Product> {
     try {
+      const staffId = await this.getCurrentStaffId(this.supabase);
+      const updateData = {
+        ...this.toSnakeCase(data),
+        updated_by: staffId,
+      };
+
       const { data: product, error } = await this.supabase
         .from("products")
-        .update({ ...data })
+        .update(updateData)
         .eq("id", id)
         .select()
         .single();
