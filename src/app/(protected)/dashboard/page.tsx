@@ -8,9 +8,9 @@ export default async function DashboardPage() {
     <DashboardClient
       initialStats={result.success && result.data ? result.data : null}
       error={
-        result.success
-          ? null
-          : result.error || "ダッシュボードデータの取得に失敗しました"
+        !result.success && "error" in result
+          ? result.error || "ダッシュボードデータの取得に失敗しました"
+          : null
       }
     />
   );
