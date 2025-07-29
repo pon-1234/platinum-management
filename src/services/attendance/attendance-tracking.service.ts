@@ -1,4 +1,6 @@
 import { BaseService } from "../base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AttendanceRecord,
   CreateAttendanceRecordData,
@@ -8,8 +10,11 @@ import type {
 import type { Database } from "@/types/database.types";
 
 export class AttendanceTrackingService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   async createRecord(

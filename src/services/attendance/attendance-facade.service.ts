@@ -3,6 +3,9 @@ import { shiftRequestService } from "./shift-request.service";
 import { shiftScheduleService } from "./shift-schedule.service";
 import { attendanceTrackingService } from "./attendance-tracking.service";
 import { attendanceReportingService } from "./attendance-reporting.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 import type {
   ShiftTemplate,
@@ -25,8 +28,11 @@ import type {
 } from "@/types/attendance.types";
 
 export class AttendanceFacadeService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // ============= SHIFT TEMPLATE MANAGEMENT =============

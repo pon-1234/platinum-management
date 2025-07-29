@@ -1,4 +1,6 @@
 import { BaseService } from "../base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ShiftTemplate,
   ConfirmedShift,
@@ -14,15 +16,18 @@ import type {
 import type { Database } from "@/types/database.types";
 
 export class ShiftScheduleService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // ============= SHIFT TEMPLATE MANAGEMENT =============
 
   async createTemplate(data: CreateShiftTemplateData): Promise<ShiftTemplate> {
     try {
-      const staffId = await this.getCurrentStaffId();
+      const staffId = await this.getCurrentStaffId(this.supabase);
 
       const { data: template, error } = await this.supabase
         .from("shift_templates")
@@ -117,7 +122,7 @@ export class ShiftScheduleService extends BaseService {
     data: UpdateShiftTemplateData
   ): Promise<ShiftTemplate> {
     try {
-      const staffId = await this.getCurrentStaffId();
+      const staffId = await this.getCurrentStaffId(this.supabase);
 
       const updateData = this.toSnakeCase({
         updatedBy: staffId,
@@ -178,7 +183,7 @@ export class ShiftScheduleService extends BaseService {
     data: CreateConfirmedShiftData
   ): Promise<ConfirmedShift> {
     try {
-      const staffId = await this.getCurrentStaffId();
+      const staffId = await this.getCurrentStaffId(this.supabase);
 
       const { data: shift, error } = await this.supabase
         .from("confirmed_shifts")

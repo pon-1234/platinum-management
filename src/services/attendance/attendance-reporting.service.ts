@@ -1,6 +1,9 @@
 import { BaseService } from "../base.service";
 import { attendanceTrackingService } from "./attendance-tracking.service";
 import { shiftRequestService } from "./shift-request.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import type {
   AttendanceRecord,
   AttendanceDashboard,
@@ -8,8 +11,11 @@ import type {
 } from "@/types/attendance.types";
 
 export class AttendanceReportingService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   async getDashboard(): Promise<AttendanceDashboard> {

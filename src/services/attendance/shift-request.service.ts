@@ -1,4 +1,6 @@
 import { BaseService } from "../base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ShiftRequest,
   CreateShiftRequestData,
@@ -8,8 +10,11 @@ import type {
 import type { Database } from "@/types/database.types";
 
 export class ShiftRequestService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   async create(data: CreateShiftRequestData): Promise<ShiftRequest> {
@@ -18,7 +23,7 @@ export class ShiftRequestService extends BaseService {
         .from("shift_requests")
         .insert(
           this.toSnakeCase({
-            staffId: await this.getCurrentStaffId(),
+            staffId: await this.getCurrentStaffId(this.supabase),
             requestedDate: data.requestedDate,
             startTime: data.startTime,
             endTime: data.endTime,
@@ -99,7 +104,7 @@ export class ShiftRequestService extends BaseService {
     data: ApproveShiftRequestData
   ): Promise<ShiftRequest> {
     try {
-      const staffId = await this.getCurrentStaffId();
+      const staffId = await this.getCurrentStaffId(this.supabase);
 
       const updateData: Record<string, unknown> = {
         status: data.approved ? "approved" : "rejected",
