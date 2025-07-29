@@ -1,5 +1,6 @@
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
 import { customerService } from "@/services/customer.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
@@ -14,7 +15,8 @@ const searchCustomersSchema = z.object({
 export const searchCustomers = createSafeAction(
   searchCustomersSchema,
   async (params) => {
-    const customers = await customerService.searchCustomers(params);
+    const supabase = await createClient();
+    const customers = await customerService.searchCustomers(supabase, params);
     return customers;
   }
 );

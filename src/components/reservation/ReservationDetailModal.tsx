@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { reservationService } from "@/services/reservation.service";
@@ -100,8 +101,9 @@ export function ReservationDetailModal({
   const loadEditingData = async () => {
     setIsLoadingData(true);
     try {
+      const supabase = createClient();
       const [customersData, castsData] = await Promise.all([
-        customerService.searchCustomers({ limit: 100, offset: 0 }),
+        customerService.searchCustomers(supabase, { limit: 100, offset: 0 }),
         castService.searchCasts({ isActive: true, limit: 50 }),
       ]);
 

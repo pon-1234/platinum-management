@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { billingService } from "@/services/billing.service";
 import { customerService } from "@/services/customer.service";
 import { tableService } from "@/services/table.service";
@@ -65,9 +66,10 @@ export default function OrderTicketManagement({
   const loadData = async () => {
     try {
       setIsLoading(true);
+      const supabase = createClient();
       const [visitsData, customersData, tablesData] = await Promise.all([
         billingService.searchVisits({ status: "active" }),
-        customerService.searchCustomers({ limit: 100, offset: 0 }),
+        customerService.searchCustomers(supabase, { limit: 100, offset: 0 }),
         tableService.searchTables(),
       ]);
 

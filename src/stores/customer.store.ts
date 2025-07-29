@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import type { Customer, CustomerStatus, Visit } from "@/types/customer.types";
 
@@ -59,7 +60,8 @@ export const useCustomerStore = create<CustomerState>()(
       fetchCustomers: async () => {
         set({ isLoading: true, error: null });
         try {
-          const customers = await customerService.searchCustomers({
+          const supabase = createClient();
+          const customers = await customerService.searchCustomers(supabase, {
             limit: 100,
             offset: 0,
           });
@@ -74,7 +76,8 @@ export const useCustomerStore = create<CustomerState>()(
       searchCustomers: async (params) => {
         set({ isLoading: true, error: null });
         try {
-          const customers = await customerService.searchCustomers({
+          const supabase = createClient();
+          const customers = await customerService.searchCustomers(supabase, {
             ...params,
             limit: params.limit || 100,
             offset: params.offset || 0,
@@ -89,7 +92,8 @@ export const useCustomerStore = create<CustomerState>()(
 
       getCustomerById: async (id: string) => {
         try {
-          const customer = await customerService.getCustomerById(id);
+          const supabase = createClient();
+          const customer = await customerService.getCustomerById(supabase, id);
           return customer;
         } catch (error) {
           const errorMessage =
@@ -106,7 +110,11 @@ export const useCustomerStore = create<CustomerState>()(
       fetchCustomerVisits: async (customerId: string) => {
         set({ visitsLoading: true, error: null });
         try {
-          const visits = await customerService.getCustomerVisits(customerId);
+          const supabase = createClient();
+          const visits = await customerService.getCustomerVisits(
+            supabase,
+            customerId
+          );
           set((state) => ({
             customerVisits: {
               ...state.customerVisits,
