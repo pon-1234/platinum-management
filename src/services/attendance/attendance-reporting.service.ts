@@ -32,10 +32,16 @@ export class AttendanceReportingService extends BaseService {
       );
 
       if (statsError) {
-        // Fallback to old method if RPC doesn't exist
+        // RPCが存在しない場合(code: '42883')、またはメッセージに含まれる場合にフォールバック
         if (
+          statsError.code === "42883" ||
           statsError.message.includes("function get_attendance_dashboard_stats")
         ) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "RPC get_attendance_dashboard_stats not found, falling back to client-side calculation"
+            );
+          }
           return this.getDashboardFallback();
         }
         throw statsError;
@@ -162,8 +168,16 @@ export class AttendanceReportingService extends BaseService {
       );
 
       if (error) {
-        // Fallback to old method if RPC doesn't exist
-        if (error.message.includes("function get_monthly_attendance_summary")) {
+        // RPCが存在しない場合(code: '42883')、またはメッセージに含まれる場合にフォールバック
+        if (
+          error.code === "42883" ||
+          error.message.includes("function get_monthly_attendance_summary")
+        ) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "RPC get_monthly_attendance_summary not found, falling back to client-side calculation"
+            );
+          }
           return this.getMonthlyAttendanceSummaryFallback(staffId, month);
         }
         throw error;
