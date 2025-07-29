@@ -43,8 +43,10 @@ export class AttendanceReportingService extends BaseService {
             );
           }
           return this.getDashboardFallback();
+        } else {
+          // その他のRPCエラーの場合はエラーをスローする
+          throw statsError;
         }
-        throw statsError;
       }
 
       const stats = statsData?.[0];

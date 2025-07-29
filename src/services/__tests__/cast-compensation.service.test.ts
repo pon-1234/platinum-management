@@ -51,6 +51,7 @@ describe("CastCompensationService", () => {
   let compensationService: CastCompensationService;
   let mockCastService: {
     getCastById: ReturnType<typeof vi.fn>;
+    mapToCast: ReturnType<typeof vi.fn>;
   };
   let mockPerformanceService: {
     getCastPerformances: ReturnType<typeof vi.fn>;
@@ -121,6 +122,7 @@ describe("CastCompensationService", () => {
 
     mockCastService = {
       getCastById: vi.fn(),
+      mapToCast: vi.fn(),
     };
     mockPerformanceService = {
       getCastPerformances: vi.fn(),
@@ -189,9 +191,30 @@ describe("CastCompensationService", () => {
 
       // Mock casts data
       const mockCastsData = [
-        { ...mockCast, id: "cast-1", stage_name: "Alice" },
-        { ...mockCast, id: "cast-2", stage_name: "Bob" },
+        {
+          ...mockCast,
+          id: "cast-1",
+          stage_name: "Alice",
+          hourly_rate: 3000,
+          back_percentage: 50,
+        },
+        {
+          ...mockCast,
+          id: "cast-2",
+          stage_name: "Bob",
+          hourly_rate: 3000,
+          back_percentage: 50,
+        },
       ];
+
+      // Mock mapToCast to return proper Cast objects
+      mockCastService.mapToCast.mockImplementation((data) => ({
+        ...mockCast,
+        id: data.id,
+        stageName: data.stage_name,
+        hourlyRate: data.hourly_rate,
+        backPercentage: data.back_percentage,
+      }));
 
       // First in() call returns casts data
       mockSupabaseInstance.in.mockReturnValueOnce({

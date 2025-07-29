@@ -415,60 +415,80 @@ describe("InventoryService", () => {
           { stock_quantity: 50, cost: 300 },
         ];
 
-        let callCount = 0;
-        mockSupabase.from.mockImplementation(() => {
-          const query = {
-            select: vi.fn().mockImplementation(
-              (
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                fields: string,
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                options?: { count?: string; head?: boolean }
-              ) => {
-                callCount++;
-                if (callCount === 1) {
-                  // First call: total product count
-                  return {
-                    eq: vi.fn().mockResolvedValue({
-                      count: 100,
-                      error: null,
-                    }),
-                  };
-                } else if (callCount === 2) {
-                  // Second call: out of stock count
-                  return {
-                    eq: vi.fn().mockReturnValue({
-                      eq: vi.fn().mockResolvedValue({
-                        count: 5,
-                        error: null,
-                      }),
-                    }),
-                  };
-                } else {
-                  // Third call: product data for value calculation
-                  return {
-                    eq: vi.fn().mockResolvedValue({
-                      data: productsData,
-                      error: null,
-                    }),
-                  };
-                }
-              }
-            ),
-          };
-          return query;
-        });
+        // Mock first call - count total products
+        const countMock = {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({
+              count: 100,
+              error: null,
+            }),
+          }),
+        };
 
-        mockSupabase.rpc.mockResolvedValue({
-          data: 10,
-          error: null,
+        // Mock second call - count out of stock
+        const outOfStockMock = {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                count: 5,
+                error: null,
+              }),
+            }),
+          }),
+        };
+
+        // Mock third call - products for low stock calculation
+        const lowStockProductsMock = {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({
+              data: [
+                { stock_quantity: 10, low_stock_threshold: 20 },
+                { stock_quantity: 5, low_stock_threshold: 10 },
+                { stock_quantity: 15, low_stock_threshold: 20 },
+              ],
+              error: null,
+            }),
+          }),
+        };
+
+        // Mock fourth call - products for value calculation
+        const valueMock = {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({
+              data: productsData,
+              error: null,
+            }),
+          }),
+        };
+
+        mockSupabase.from
+          .mockReturnValueOnce(countMock)
+          .mockReturnValueOnce(outOfStockMock)
+          .mockReturnValueOnce(lowStockProductsMock)
+          .mockReturnValueOnce(valueMock);
+
+        // Mock RPC calls
+        mockSupabase.rpc.mockImplementation((functionName) => {
+          if (functionName === "get_inventory_stats") {
+            return Promise.resolve({
+              data: null,
+              error: { message: "function get_inventory_stats does not exist" },
+            });
+          } else if (functionName === "count_low_stock_products") {
+            return Promise.resolve({
+              data: null,
+              error: {
+                message: "function count_low_stock_products does not exist",
+              },
+            });
+          }
         });
 
         const result = await service.getInventoryStats();
 
         expect(result).toEqual({
           totalProducts: 100,
-          lowStockItems: 10,
+          lowStockItems: 3, // 3 products are below their threshold
           outOfStockItems: 5,
           totalValue: 35000, // (100 * 200) + (50 * 300)
         });
@@ -513,6 +533,12 @@ describe("InventoryService", () => {
             updated_by: "user1",
           },
         ];
+
+        // Mock RPC to fail and trigger fallback
+        mockSupabase.rpc.mockResolvedValue({
+          data: undefined,
+          error: { message: "function get_inventory_alerts does not exist" },
+        });
 
         vi.spyOn(service, "getProducts").mockResolvedValue(mockProducts);
 

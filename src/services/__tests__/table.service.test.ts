@@ -51,10 +51,11 @@ describe("TableService", () => {
 
       const mockTable = {
         id: "123e4567-e89b-12d3-a456-426614174000",
-        table_name: "A-1",
+        table_number: "A-1",
         capacity: 4,
         location: "1階窓際",
         is_active: true,
+        is_available: true,
         current_status: "available",
         current_visit_id: null,
         created_at: "2024-01-01T00:00:00Z",
@@ -72,6 +73,7 @@ describe("TableService", () => {
         tableName: "A-1",
         capacity: 4,
         location: "1階窓際",
+        isAvailable: true,
         isActive: true,
         currentStatus: "available",
         currentVisitId: null,
@@ -105,10 +107,11 @@ describe("TableService", () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: {
           id: tableId,
-          table_name: "A-1",
+          table_number: "A-1",
           capacity: 4,
           location: "1階窓際",
           is_active: true,
+          is_available: false,
           current_status: "occupied",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -157,10 +160,11 @@ describe("TableService", () => {
       mockSupabase.single.mockResolvedValue({
         data: {
           id: tableId,
-          table_name: "A-1",
+          table_number: "A-1",
           capacity: 4,
           location: "1階窓際",
           is_active: true,
+          is_available: true,
           current_status: "available",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -183,10 +187,11 @@ describe("TableService", () => {
       mockSupabase.single.mockResolvedValue({
         data: {
           id: tableId,
-          table_name: "A-1",
+          table_number: "A-1",
           capacity: 4,
           location: "1階窓際",
           is_active: true,
+          is_available: false,
           current_status: "cleaning",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -207,10 +212,11 @@ describe("TableService", () => {
       const mockTables = [
         {
           id: "123e4567-e89b-12d3-a456-426614174000",
-          table_name: "A-1",
+          table_number: "A-1",
           capacity: 4,
           location: "1階窓際",
           is_active: true,
+          is_available: true,
           current_status: "available",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -218,10 +224,11 @@ describe("TableService", () => {
         },
         {
           id: "223e4567-e89b-12d3-a456-426614174001",
-          table_name: "B-1",
+          table_number: "B-1",
           capacity: 6,
           location: "2階",
           is_active: true,
+          is_available: true,
           current_status: "available",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -249,10 +256,11 @@ describe("TableService", () => {
       const mockTables = [
         {
           id: "123e4567-e89b-12d3-a456-426614174000",
-          table_name: "A-1",
+          table_number: "A-1",
           capacity: 4,
           location: "1階窓際",
           is_active: true,
+          is_available: true,
           current_status: "available",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -318,10 +326,11 @@ describe("TableService", () => {
       const mockPayload = {
         new: {
           id: "123e4567-e89b-12d3-a456-426614174000",
-          table_name: "A-1",
+          table_number: "A-1",
           capacity: 4,
           location: "1階窓際",
           is_active: true,
+          is_available: true,
           current_status: "available",
           current_visit_id: null,
           created_at: "2024-01-01T00:00:00Z",
@@ -338,6 +347,7 @@ describe("TableService", () => {
         tableName: "A-1",
         capacity: 4,
         location: "1階窓際",
+        isAvailable: true,
         isActive: true,
         currentStatus: "available",
         currentVisitId: null,
