@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { customerService } from "@/services/customer.service";
 import { CustomerDetailClient } from "./_components/CustomerDetailClient";
+import type { Customer, Visit } from "@/types/customer.types";
 
 interface PageProps {
   params: Promise<{
@@ -12,9 +13,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const customerId = resolvedParams.id;
 
-  let customer = null;
-  let visits = [];
-  let error = null;
+  let customer: Customer | null = null;
+  let visits: Visit[] = [];
+  let error: string | null = null;
 
   try {
     const supabase = await createClient();
