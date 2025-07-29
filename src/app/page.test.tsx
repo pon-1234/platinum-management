@@ -14,7 +14,7 @@ describe("Home", () => {
     render(<Home />);
 
     const subtitle = screen.getByText(
-      "キャバクラ運営を効率化する統合管理プラットフォーム"
+      "ラウンジ運営を効率化する統合管理プラットフォーム"
     );
     expect(subtitle).toBeInTheDocument();
   });

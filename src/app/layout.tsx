@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Platinum Management",
-  description: "キャバクラ運営管理システム",
+  description: "ラウンジ運営管理システム",
 };
 
 export default function RootLayout({

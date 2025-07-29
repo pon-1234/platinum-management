@@ -9,7 +9,7 @@ export default function Home() {
             プラチナ管理システム
           </h1>
           <p className="mt-4 text-xl text-indigo-100">
-            キャバクラ運営を効率化する統合管理プラットフォーム
+            ラウンジ運営を効率化する統合管理プラットフォーム
           </p>
           <div className="mt-10 flex justify-center gap-4">
             <Link
