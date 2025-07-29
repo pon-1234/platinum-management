@@ -89,7 +89,7 @@ export class AttendanceTrackingService extends BaseService {
       this.handleError(error, "出勤記録の検索に失敗しました");
     }
 
-    return data.map(this.mapToAttendanceRecord);
+    return (data || []).map(this.mapToAttendanceRecord);
   }
 
   async clockAction(

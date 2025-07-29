@@ -174,7 +174,7 @@ export class ShiftRequestService extends BaseService {
         );
       }
 
-      return data.length;
+      return data?.length || 0;
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("getPendingCount failed:", error);
