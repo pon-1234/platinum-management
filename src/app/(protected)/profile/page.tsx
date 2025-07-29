@@ -65,6 +65,8 @@ export default function ProfilePage() {
     },
   });
 
+  const { reset: resetProfileForm } = profileForm;
+
   // Load user profile on mount
   useEffect(() => {
     const loadProfile = async () => {
@@ -72,7 +74,7 @@ export default function ProfilePage() {
       try {
         const result = await getUserProfile({});
         if (result.success && result.data) {
-          profileForm.reset({
+          resetProfileForm({
             name: result.data.name,
             email: result.data.email,
             phone: result.data.phone || "",
@@ -99,7 +101,7 @@ export default function ProfilePage() {
     } else {
       setIsLoadingProfile(false);
     }
-  }, [user, profileForm]);
+  }, [user, resetProfileForm]);
 
   // Password form
   const passwordForm = useFormValidation<PasswordFormData>({
