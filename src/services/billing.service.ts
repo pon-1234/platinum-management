@@ -334,6 +334,9 @@ export class BillingService extends BaseService {
       unitPrice = product.price;
     }
 
+    // Calculate total price
+    const totalPrice = unitPrice * data.quantity;
+
     const { data: orderItem, error } = await this.supabase
       .from("order_items")
       .insert({
@@ -342,6 +345,7 @@ export class BillingService extends BaseService {
         cast_id: data.castId || null,
         quantity: data.quantity,
         unit_price: unitPrice,
+        total_price: totalPrice,
         notes: data.notes || null,
         created_by: staffId,
       })
