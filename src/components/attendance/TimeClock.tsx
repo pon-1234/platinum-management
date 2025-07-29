@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { createClient } from "@/lib/supabase/client";
 import { attendanceService } from "@/services/attendance.service";
 import { staffService } from "@/services/staff.service";
 import type {
@@ -44,9 +45,10 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
     const loadStaffData = async () => {
       try {
         // Get current user's staff record
+        const supabase = createClient();
         const {
           data: { user },
-        } = await attendanceService["supabase"].auth.getUser();
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         const staff = await staffService.getStaffByUserId(user.id);
