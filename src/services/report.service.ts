@@ -458,8 +458,8 @@ export class ReportService extends BaseService {
   async getMonthlySalesTrend(
     months: number = 6
   ): Promise<Array<{ month: string; sales: number }>> {
-    const trends: Array<{ month: string; sales: number }> = [];
     const currentDate = new Date();
+    const promises: Array<Promise<{ month: string; sales: number }>> = [];
 
     for (let i = months - 1; i >= 0; i--) {
       const targetDate = new Date(
@@ -470,30 +470,32 @@ export class ReportService extends BaseService {
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth() + 1;
 
-      try {
-        const report = await this.generateMonthlySalesReport(year, month);
-        trends.push({
+      const promise = this.generateMonthlySalesReport(year, month)
+        .then((report) => ({
           month: targetDate.toLocaleDateString("ja-JP", {
             year: "numeric",
             month: "short",
           }),
           sales: report.totalSales || 0,
+        }))
+        .catch((error) => {
+          if (process.env.NODE_ENV === "development") {
+            console.error(`Failed to get sales for ${year}-${month}:`, error);
+          }
+          return {
+            month: targetDate.toLocaleDateString("ja-JP", {
+              year: "numeric",
+              month: "short",
+            }),
+            sales: 0,
+          };
         });
-      } catch (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.error(`Failed to get sales for ${year}-${month}:`, error);
-        }
-        trends.push({
-          month: targetDate.toLocaleDateString("ja-JP", {
-            year: "numeric",
-            month: "short",
-          }),
-          sales: 0,
-        });
-      }
+
+      promises.push(promise);
     }
 
-    return trends;
+    const results = await Promise.all(promises);
+    return results.reverse();
   }
 
   private mapToReport(data: {
