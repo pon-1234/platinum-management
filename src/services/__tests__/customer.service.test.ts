@@ -101,15 +101,18 @@ describe("CustomerService", () => {
         error: null,
       });
 
-      const result = await customerService.createCustomer({
-        name: "田中太郎",
-        nameKana: "タナカタロウ",
-        phoneNumber: "090-1234-5678",
-        lineId: "tanaka123",
-        birthday: "1990-01-01",
-        memo: "VIP顧客",
-        status: "vip",
-      });
+      const result = await customerService.createCustomer(
+        mockSupabaseClient as any,
+        {
+          name: "田中太郎",
+          nameKana: "タナカタロウ",
+          phoneNumber: "090-1234-5678",
+          lineId: "tanaka123",
+          birthday: "1990-01-01",
+          memo: "VIP顧客",
+          status: "vip",
+        }
+      );
 
       expect(result).toEqual({
         id: "customer-1",
@@ -137,7 +140,7 @@ describe("CustomerService", () => {
       });
 
       await expect(
-        customerService.createCustomer({
+        customerService.createCustomer(mockSupabaseClient as any, {
           name: "田中太郎",
           phoneNumber: "090-1234-5678",
           status: "active",
@@ -168,7 +171,10 @@ describe("CustomerService", () => {
         error: null,
       });
 
-      const result = await customerService.getCustomerById("customer-1");
+      const result = await customerService.getCustomerById(
+        mockSupabaseClient as any,
+        "customer-1"
+      );
 
       expect(result).toEqual({
         id: "customer-1",
@@ -194,7 +200,10 @@ describe("CustomerService", () => {
         error: { code: "PGRST116", message: "Not found" },
       });
 
-      const result = await customerService.getCustomerById("non-existent");
+      const result = await customerService.getCustomerById(
+        mockSupabaseClient as any,
+        "non-existent"
+      );
 
       expect(result).toBeNull();
     });
@@ -224,11 +233,14 @@ describe("CustomerService", () => {
         error: null,
       });
 
-      const result = await customerService.searchCustomers({
-        query: "田中",
-        limit: 20,
-        offset: 0,
-      });
+      const result = await customerService.searchCustomers(
+        mockSupabaseClient as any,
+        {
+          query: "田中",
+          limit: 20,
+          offset: 0,
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("田中太郎");
@@ -258,11 +270,14 @@ describe("CustomerService", () => {
         error: null,
       });
 
-      const result = await customerService.searchCustomers({
-        status: "vip",
-        limit: 20,
-        offset: 0,
-      });
+      const result = await customerService.searchCustomers(
+        mockSupabaseClient as any,
+        {
+          status: "vip",
+          limit: 20,
+          offset: 0,
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].status).toBe("vip");
@@ -290,11 +305,14 @@ describe("CustomerService", () => {
 
         mockDbMethods.single.mockResolvedValue({ data: newVisit, error: null });
 
-        const result = await customerService.createVisit({
-          customerId: "customer-1",
-          tableId: 5,
-          numGuests: 3,
-        });
+        const result = await customerService.createVisit(
+          mockSupabaseClient as any,
+          {
+            customerId: "customer-1",
+            tableId: 5,
+            numGuests: 3,
+          }
+        );
 
         expect(result).toEqual({
           id: "visit-1",
@@ -339,7 +357,10 @@ describe("CustomerService", () => {
           error: null,
         });
 
-        const result = await customerService.getCustomerVisits("customer-1");
+        const result = await customerService.getCustomerVisits(
+          mockSupabaseClient as any,
+          "customer-1"
+        );
 
         expect(result).toHaveLength(1);
         expect(result[0].totalAmount).toBe(50000);
@@ -374,7 +395,9 @@ describe("CustomerService", () => {
           error: null,
         });
 
-        const result = await customerService.getActiveVisits();
+        const result = await customerService.getActiveVisits(
+          mockSupabaseClient as any
+        );
 
         expect(result).toHaveLength(1);
         expect(result[0].status).toBe("active");
