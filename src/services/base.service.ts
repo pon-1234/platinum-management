@@ -1,10 +1,8 @@
-import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
 
 export abstract class BaseService {
-  protected supabase: SupabaseClient<Database>;
   private _cachedStaffId: string | null = null;
   private _cacheExpiry: number = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分間キャッシュ
@@ -29,7 +27,6 @@ export abstract class BaseService {
   }
 
   constructor() {
-    this.supabase = createClient();
     BaseService.instances.push(this);
   }
 
@@ -38,7 +35,9 @@ export abstract class BaseService {
    * ストアからキャッシュされたスタッフIDを取得、ない場合はデータベースから取得
    * @returns The staff ID or null if not authenticated
    */
-  protected async getCurrentStaffId(): Promise<string | null> {
+  protected async getCurrentStaffId(
+    supabase: SupabaseClient<Database>
+  ): Promise<string | null> {
     // Note: Store access removed to avoid circular dependency
     // Staff ID is cached at instance level instead
 
@@ -51,7 +50,7 @@ export abstract class BaseService {
     // キャッシュが無いか期限切れの場合、データベースから取得
     const {
       data: { user },
-    } = await this.supabase.auth.getUser();
+    } = await supabase.auth.getUser();
 
     if (!user) {
       this._cachedStaffId = null;
@@ -59,7 +58,7 @@ export abstract class BaseService {
       return null;
     }
 
-    const { data: staff, error } = await this.supabase
+    const { data: staff, error } = await supabase
       .from("staffs")
       .select("id")
       .eq("user_id", user.id)
@@ -113,11 +112,12 @@ export abstract class BaseService {
    * @returns Whether the user has permission
    */
   protected async hasPermission(
+    supabase: SupabaseClient<Database>,
     resource: string,
     action: string
   ): Promise<boolean> {
     try {
-      const user = (await this.supabase.auth.getUser()).data.user;
+      const user = (await supabase.auth.getUser()).data.user;
       if (!user) {
         return false;
       }
@@ -133,7 +133,7 @@ export abstract class BaseService {
       }
 
       // Fetch from database
-      const { data } = await this.supabase.rpc("has_permission", {
+      const { data } = await supabase.rpc("has_permission", {
         user_id: user.id,
         resource,
         action,
@@ -186,8 +186,10 @@ export abstract class BaseService {
   /**
    * Get current staff ID - alias for backward compatibility
    */
-  protected async getStaffId(): Promise<string | null> {
-    return this.getCurrentStaffId();
+  protected async getStaffId(
+    supabase: SupabaseClient<Database>
+  ): Promise<string | null> {
+    return this.getCurrentStaffId(supabase);
   }
 
   /**

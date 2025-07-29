@@ -1,6 +1,7 @@
 import { BaseService } from "./base.service";
 import { camelToSnake, removeUndefined } from "@/lib/utils/transform";
 import type { Database } from "@/types/database.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Customer,
   Visit,
@@ -23,14 +24,17 @@ export class CustomerService extends BaseService {
     super();
   }
 
-  async createCustomer(data: CreateCustomerData): Promise<Customer> {
+  async createCustomer(
+    supabase: SupabaseClient<Database>,
+    data: CreateCustomerData
+  ): Promise<Customer> {
     // Validate input
     const validatedData = createCustomerSchema.parse(data);
 
     // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(supabase);
 
-    const { data: customer, error } = await this.supabase
+    const { data: customer, error } = await supabase
       .from("customers")
       .insert({
         name: validatedData.name,
@@ -55,8 +59,11 @@ export class CustomerService extends BaseService {
     return this.mapToCustomer(customer);
   }
 
-  async getCustomerById(id: string): Promise<Customer | null> {
-    const { data, error } = await this.supabase
+  async getCustomerById(
+    supabase: SupabaseClient<Database>,
+    id: string
+  ): Promise<Customer | null> {
+    const { data, error } = await supabase
       .from("customers")
       .select("*")
       .eq("id", id)
@@ -75,6 +82,7 @@ export class CustomerService extends BaseService {
   }
 
   async updateCustomer(
+    supabase: SupabaseClient<Database>,
     id: string,
     data: UpdateCustomerData
   ): Promise<Customer> {
@@ -82,10 +90,10 @@ export class CustomerService extends BaseService {
     const validatedData = updateCustomerSchema.parse(data);
 
     // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(supabase);
 
     const transformedData = removeUndefined(camelToSnake(validatedData));
-    const { data: customer, error } = await this.supabase
+    const { data: customer, error } = await supabase
       .from("customers")
       .update({
         ...transformedData,
@@ -104,11 +112,11 @@ export class CustomerService extends BaseService {
     return this.mapToCustomer(customer);
   }
 
-  async deleteCustomer(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .from("customers")
-      .delete()
-      .eq("id", id);
+  async deleteCustomer(
+    supabase: SupabaseClient<Database>,
+    id: string
+  ): Promise<void> {
+    const { error } = await supabase.from("customers").delete().eq("id", id);
 
     if (error) {
       throw new Error(
@@ -118,12 +126,13 @@ export class CustomerService extends BaseService {
   }
 
   async searchCustomers(
+    supabase: SupabaseClient<Database>,
     params: CustomerSearchParams = {}
   ): Promise<Customer[]> {
     // Validate search parameters
     const validatedParams = customerSearchSchema.parse(params);
 
-    let query = this.supabase
+    let query = supabase
       .from("customers")
       .select("*")
       .order("created_at", { ascending: false });
@@ -160,8 +169,11 @@ export class CustomerService extends BaseService {
     return data.map((item) => this.mapToCustomer(item));
   }
 
-  async getCustomerVisits(customerId: string): Promise<Visit[]> {
-    const { data, error } = await this.supabase
+  async getCustomerVisits(
+    supabase: SupabaseClient<Database>,
+    customerId: string
+  ): Promise<Visit[]> {
+    const { data, error } = await supabase
       .from("visits")
       .select("*")
       .eq("customer_id", customerId)
@@ -176,14 +188,17 @@ export class CustomerService extends BaseService {
     return data.map((item) => this.mapToVisit(item));
   }
 
-  async createVisit(data: CreateVisitData): Promise<Visit> {
+  async createVisit(
+    supabase: SupabaseClient<Database>,
+    data: CreateVisitData
+  ): Promise<Visit> {
     // Validate input
     const validatedData = createVisitSchema.parse(data);
 
     // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(supabase);
 
-    const { data: visit, error } = await this.supabase
+    const { data: visit, error } = await supabase
       .from("visits")
       .insert({
         customer_id: validatedData.customerId,
@@ -205,14 +220,18 @@ export class CustomerService extends BaseService {
     return this.mapToVisit(visit);
   }
 
-  async updateVisit(id: string, data: UpdateVisitData): Promise<Visit> {
+  async updateVisit(
+    supabase: SupabaseClient<Database>,
+    id: string,
+    data: UpdateVisitData
+  ): Promise<Visit> {
     // Validate input
     const validatedData = updateVisitSchema.parse(data);
 
     // Get current user's staff ID
-    const staffId = await this.getCurrentStaffId();
+    const staffId = await this.getCurrentStaffId(supabase);
 
-    const { data: visit, error } = await this.supabase
+    const { data: visit, error } = await supabase
       .from("visits")
       .update({
         ...validatedData,
@@ -235,8 +254,8 @@ export class CustomerService extends BaseService {
     return this.mapToVisit(visit);
   }
 
-  async getActiveVisits(): Promise<Visit[]> {
-    const { data, error } = await this.supabase
+  async getActiveVisits(supabase: SupabaseClient<Database>): Promise<Visit[]> {
+    const { data, error } = await supabase
       .from("visits")
       .select("*")
       .eq("status", "active")

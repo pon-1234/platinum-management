@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import { CustomerList } from "@/components/customers/CustomerList";
 import { CustomerForm } from "@/components/customers/CustomerForm";
@@ -45,7 +46,8 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
         setError(null);
         setSearchFeedback(null);
 
-        const data = await customerService.searchCustomers({
+        const supabase = createClient();
+        const data = await customerService.searchCustomers(supabase, {
           query: query ?? searchQuery,
           status: (filter ?? statusFilter) || undefined,
           limit: 50,
@@ -124,13 +126,18 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
       setIsSubmitting(true);
       setError(null);
 
+      const supabase = createClient();
       if (editingCustomer) {
         await customerService.updateCustomer(
+          supabase,
           editingCustomer.id,
           data as UpdateCustomerInput
         );
       } else {
-        await customerService.createCustomer(data as CreateCustomerInput);
+        await customerService.createCustomer(
+          supabase,
+          data as CreateCustomerInput
+        );
       }
 
       await loadCustomers();

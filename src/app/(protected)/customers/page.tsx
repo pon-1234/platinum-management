@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import { customerService } from "@/services/customer.service";
 import { CustomersPageClient } from "@/components/customers/CustomersPageClient";
 import type { Customer } from "@/types/customer.types";
@@ -9,7 +10,8 @@ interface InitialData {
 
 async function getInitialCustomers(): Promise<InitialData> {
   try {
-    const customers = await customerService.searchCustomers({
+    const supabase = await createClient();
+    const customers = await customerService.searchCustomers(supabase, {
       limit: 50,
       offset: 0,
     });
