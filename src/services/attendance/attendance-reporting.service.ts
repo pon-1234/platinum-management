@@ -26,7 +26,7 @@ export class AttendanceReportingService extends BaseService {
 
     try {
       // Use optimized RPC function to get dashboard stats
-      const { data: stats, error: statsError } = await this.supabase.rpc(
+      const { data: statsData, error: statsError } = await this.supabase.rpc(
         "get_attendance_dashboard_stats",
         { target_date: today }
       );
@@ -45,6 +45,17 @@ export class AttendanceReportingService extends BaseService {
           return this.getDashboardFallback();
         }
         throw statsError;
+      }
+
+      const stats = statsData?.[0];
+
+      if (!stats) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "RPC get_attendance_dashboard_stats returned no data, falling back."
+          );
+        }
+        return this.getDashboardFallback();
       }
 
       // Get weekly data in parallel

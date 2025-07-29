@@ -612,7 +612,7 @@ BEGIN
     END AS attendance_rate
   FROM staff_attendance;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- キャストパフォーマンス取得関数
 CREATE OR REPLACE FUNCTION get_cast_performance(
