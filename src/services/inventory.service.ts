@@ -1,4 +1,7 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import type {
   Product,
   CreateProductData,
@@ -15,8 +18,10 @@ import type {
 } from "@/types/inventory.types";
 
 export class InventoryService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // 商品管理

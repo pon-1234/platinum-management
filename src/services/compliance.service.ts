@@ -1,5 +1,7 @@
 import { BaseService } from "./base.service";
-import { Database } from "@/types/database.types";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 type IdVerification = Database["public"]["Tables"]["id_verifications"]["Row"];
 type IdVerificationInsert =
@@ -33,13 +35,15 @@ export interface ComplianceReportWithStaff extends ComplianceReport {
 }
 
 export class ComplianceService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // ID検証関連メソッド
   async createIdVerification(data: Omit<IdVerificationInsert, "verified_by">) {
-    const staffId = await this.getStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
     if (!staffId) throw new Error("スタッフIDが取得できません");
 
     const { data: verification, error } = await this.supabase
@@ -159,7 +163,7 @@ export class ComplianceService extends BaseService {
   async createComplianceReport(
     data: Omit<ComplianceReportInsert, "generated_by">
   ) {
-    const staffId = await this.getStaffId();
+    const staffId = await this.getCurrentStaffId(this.supabase);
     if (!staffId) throw new Error("スタッフIDが取得できません");
 
     const { data: report, error } = await this.supabase

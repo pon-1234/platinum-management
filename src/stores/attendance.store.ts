@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { attendanceService } from "@/services/attendance.service";
+import { createClient } from "@/lib/supabase/client";
 import type {
   AttendanceDashboard,
   WeeklySchedule,
@@ -132,8 +133,20 @@ export const useAttendanceStore = create<AttendanceState>()(
       clockIn: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current staff ID through the service
-          const staffId = await attendanceService["getCurrentStaffId"]();
+          // Get current staff ID
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) throw new Error("ユーザーが見つかりません");
+
+          const { data: staff } = await supabase
+            .from("staffs")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          const staffId = staff?.id;
           if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.clockAction(staffId, {
@@ -155,8 +168,20 @@ export const useAttendanceStore = create<AttendanceState>()(
       clockOut: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current staff ID through the service
-          const staffId = await attendanceService["getCurrentStaffId"]();
+          // Get current staff ID
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) throw new Error("ユーザーが見つかりません");
+
+          const { data: staff } = await supabase
+            .from("staffs")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          const staffId = staff?.id;
           if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.clockAction(staffId, {
@@ -177,8 +202,20 @@ export const useAttendanceStore = create<AttendanceState>()(
       startBreak: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current staff ID through the service
-          const staffId = await attendanceService["getCurrentStaffId"]();
+          // Get current staff ID
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) throw new Error("ユーザーが見つかりません");
+
+          const { data: staff } = await supabase
+            .from("staffs")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          const staffId = staff?.id;
           if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.clockAction(staffId, {
@@ -199,8 +236,20 @@ export const useAttendanceStore = create<AttendanceState>()(
       endBreak: async (notes) => {
         set({ recordLoading: true, error: null });
         try {
-          // Get current staff ID through the service
-          const staffId = await attendanceService["getCurrentStaffId"]();
+          // Get current staff ID
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) throw new Error("ユーザーが見つかりません");
+
+          const { data: staff } = await supabase
+            .from("staffs")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          const staffId = staff?.id;
           if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.clockAction(staffId, {
@@ -221,8 +270,20 @@ export const useAttendanceStore = create<AttendanceState>()(
       createShiftRequest: async (data) => {
         set({ requestsLoading: true, error: null });
         try {
-          // Get current staff ID through the service
-          const staffId = await attendanceService["getCurrentStaffId"]();
+          // Get current staff ID
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) throw new Error("ユーザーが見つかりません");
+
+          const { data: staff } = await supabase
+            .from("staffs")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          const staffId = staff?.id;
           if (!staffId) throw new Error("スタッフIDが見つかりません");
 
           await attendanceService.createShiftRequest({

@@ -1,4 +1,7 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import type {
   QRCode,
   // QRAttendanceLog,
@@ -17,10 +20,12 @@ import type {
 } from "@/types/qr-code.types";
 
 export class QRCodeService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   private secretKey: string | null = null;
 
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   private getSecretKey(): string {

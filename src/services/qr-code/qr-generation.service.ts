@@ -1,4 +1,7 @@
 import { BaseService } from "../base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { createHmac } from "crypto";
 import type {
   GenerateQRCodeRequest,
@@ -10,6 +13,7 @@ import type {
  * 責任: QRコードの生成、署名、検証
  */
 export class QRGenerationService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   private readonly secretKey =
     process.env.QR_CODE_SECRET_KEY ||
     (() => {
@@ -20,6 +24,7 @@ export class QRGenerationService extends BaseService {
 
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   /**

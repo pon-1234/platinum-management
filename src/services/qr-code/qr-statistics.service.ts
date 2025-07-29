@@ -1,4 +1,7 @@
 import { BaseService } from "../base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import type { QRCodeStats } from "@/types/qr-code.types";
 
 /**
@@ -6,8 +9,10 @@ import type { QRCodeStats } from "@/types/qr-code.types";
  * 責任: QRコード使用統計、分析、レポート生成
  */
 export class QRStatisticsService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   /**

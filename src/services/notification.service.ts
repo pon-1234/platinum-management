@@ -1,4 +1,7 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 export interface NotificationChannel {
   type: "email" | "sms" | "line";
@@ -31,8 +34,10 @@ export interface AlertNotificationData {
  * メール、SMS、LINE通知を管理する
  */
 export class NotificationService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   /**

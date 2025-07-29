@@ -1,5 +1,6 @@
 import { BaseService } from "./base.service";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
   Table,
@@ -17,10 +18,12 @@ import {
 } from "@/lib/validations/reservation";
 
 export class TableService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   private realtimeChannel: RealtimeChannel | null = null;
 
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // Table CRUD operations

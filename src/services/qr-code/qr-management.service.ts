@@ -1,4 +1,7 @@
 import { BaseService } from "../base.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { qrGenerationService } from "./qr-generation.service";
 import { qrStatisticsService } from "./qr-statistics.service";
 import type {
@@ -13,8 +16,10 @@ import type {
  * 責任: QRコード管理、設定管理、スタッフQR情報
  */
 export class QRManagementService extends BaseService {
+  private supabase: SupabaseClient<Database>;
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   /**

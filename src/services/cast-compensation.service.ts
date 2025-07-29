@@ -1,10 +1,13 @@
 import { BaseService } from "./base.service";
+import { createClient } from "@/lib/supabase/client";
 import { CastService } from "./cast.service";
 import {
   CastPerformanceService,
   castPerformanceService,
 } from "./cast-performance.service";
 import { castService } from "./cast.service";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import type { CastCompensation, CastPerformance } from "@/types/cast.types";
 
 /**
@@ -13,11 +16,14 @@ import type { CastCompensation, CastPerformance } from "@/types/cast.types";
  * @known_issues Work hours calculation is estimated based on performance days
  */
 export class CastCompensationService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor(
     private castServiceInstance: CastService = castService,
     private performanceService: CastPerformanceService = castPerformanceService
   ) {
     super();
+    this.supabase = createClient();
   }
 
   async calculateCastCompensation(
