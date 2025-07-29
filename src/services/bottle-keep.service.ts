@@ -17,10 +17,16 @@ import {
   notificationService,
   type AlertNotificationData,
 } from "./notification.service";
+import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 export class BottleKeepService extends BaseService {
+  private supabase: SupabaseClient<Database>;
+
   constructor() {
     super();
+    this.supabase = createClient();
   }
 
   // ボトルキープ一覧取得
