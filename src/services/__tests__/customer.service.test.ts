@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { CustomerService } from "../customer.service";
 import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -102,7 +104,7 @@ describe("CustomerService", () => {
       });
 
       const result = await customerService.createCustomer(
-        mockSupabaseClient as any,
+        mockSupabaseClient as unknown as SupabaseClient<Database>,
         {
           name: "田中太郎",
           nameKana: "タナカタロウ",
@@ -140,11 +142,14 @@ describe("CustomerService", () => {
       });
 
       await expect(
-        customerService.createCustomer(mockSupabaseClient as any, {
-          name: "田中太郎",
-          phoneNumber: "090-1234-5678",
-          status: "active",
-        })
+        customerService.createCustomer(
+          mockSupabaseClient as unknown as SupabaseClient<Database>,
+          {
+            name: "田中太郎",
+            phoneNumber: "090-1234-5678",
+            status: "active",
+          }
+        )
       ).rejects.toThrow("既に同じデータが存在します");
     });
   });
@@ -172,7 +177,7 @@ describe("CustomerService", () => {
       });
 
       const result = await customerService.getCustomerById(
-        mockSupabaseClient as any,
+        mockSupabaseClient as unknown as SupabaseClient<Database>,
         "customer-1"
       );
 
@@ -201,7 +206,7 @@ describe("CustomerService", () => {
       });
 
       const result = await customerService.getCustomerById(
-        mockSupabaseClient as any,
+        mockSupabaseClient as unknown as SupabaseClient<Database>,
         "non-existent"
       );
 
@@ -234,7 +239,7 @@ describe("CustomerService", () => {
       });
 
       const result = await customerService.searchCustomers(
-        mockSupabaseClient as any,
+        mockSupabaseClient as unknown as SupabaseClient<Database>,
         {
           query: "田中",
           limit: 20,
@@ -271,7 +276,7 @@ describe("CustomerService", () => {
       });
 
       const result = await customerService.searchCustomers(
-        mockSupabaseClient as any,
+        mockSupabaseClient as unknown as SupabaseClient<Database>,
         {
           status: "vip",
           limit: 20,
@@ -306,7 +311,7 @@ describe("CustomerService", () => {
         mockDbMethods.single.mockResolvedValue({ data: newVisit, error: null });
 
         const result = await customerService.createVisit(
-          mockSupabaseClient as any,
+          mockSupabaseClient as unknown as SupabaseClient<Database>,
           {
             customerId: "customer-1",
             tableId: 5,
@@ -358,7 +363,7 @@ describe("CustomerService", () => {
         });
 
         const result = await customerService.getCustomerVisits(
-          mockSupabaseClient as any,
+          mockSupabaseClient as unknown as SupabaseClient<Database>,
           "customer-1"
         );
 
@@ -396,7 +401,7 @@ describe("CustomerService", () => {
         });
 
         const result = await customerService.getActiveVisits(
-          mockSupabaseClient as any
+          mockSupabaseClient as unknown as SupabaseClient<Database>
         );
 
         expect(result).toHaveLength(1);
