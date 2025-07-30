@@ -32,32 +32,21 @@ export class AttendanceReportingService extends BaseService {
       );
 
       if (statsError) {
-        // RPCが存在しない場合(code: '42883')、またはメッセージに含まれる場合にフォールバック
-        if (
-          statsError.code === "42883" ||
-          statsError.message.includes("function get_attendance_dashboard_stats")
-        ) {
-          if (process.env.NODE_ENV === "development") {
-            console.warn(
-              "RPC get_attendance_dashboard_stats not found, falling back to client-side calculation"
-            );
-          }
-          return this.getDashboardFallback();
-        } else {
-          // その他のRPCエラーの場合はエラーをスローする
-          throw statsError;
-        }
+        console.error("Attendance dashboard RPC error:", statsError);
+        throw new Error(
+          statsError.code === "42883"
+            ? "Required database function is missing. Please run migrations."
+            : this.handleDatabaseError(
+                statsError,
+                "勤怠ダッシュボードデータの取得に失敗しました"
+              )
+        );
       }
 
       const stats = statsData?.[0];
 
       if (!stats) {
-        if (process.env.NODE_ENV === "development") {
-          console.warn(
-            "RPC get_attendance_dashboard_stats returned no data, falling back."
-          );
-        }
-        return this.getDashboardFallback();
+        throw new Error("勤怠ダッシュボードデータが見つかりません");
       }
 
       // Get weekly data in parallel
@@ -97,70 +86,9 @@ export class AttendanceReportingService extends BaseService {
         },
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to get attendance dashboard:", error);
-      }
-      return this.getDashboardFallback();
+      console.error("Failed to get attendance dashboard:", error);
+      throw error;
     }
-  }
-
-  // Fallback method for backward compatibility
-  private async getDashboardFallback(): Promise<AttendanceDashboard> {
-    const today = new Date().toISOString().split("T")[0];
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    const weekStartStr = weekStart.toISOString().split("T")[0];
-
-    const todayAttendance = await attendanceTrackingService.search({
-      startDate: today,
-      endDate: today,
-    });
-
-    const totalStaff = todayAttendance.length;
-    const presentStaff = todayAttendance.filter(
-      (a) => a.status === "present"
-    ).length;
-    const lateStaff = todayAttendance.filter((a) => a.status === "late").length;
-    const absentStaff = todayAttendance.filter(
-      (a) => a.status === "absent"
-    ).length;
-
-    const weekAttendance = await attendanceTrackingService.search({
-      startDate: weekStartStr,
-      endDate: today,
-    });
-
-    const averageAttendance =
-      weekAttendance.length > 0
-        ? (weekAttendance.filter((a) => a.status === "present").length /
-            weekAttendance.length) *
-          100
-        : 0;
-
-    const { totalWorkHours, totalOvertimeHours } =
-      this.calculateWeeklyWorkHours(weekAttendance);
-
-    const pendingShiftRequests = await shiftRequestService.getPendingCount();
-    const corrections =
-      await attendanceTrackingService.getCorrectionRequestsCount();
-
-    return {
-      today: {
-        totalStaff,
-        presentStaff,
-        lateStaff,
-        absentStaff,
-      },
-      thisWeek: {
-        averageAttendance,
-        totalWorkHours,
-        totalOvertimeHours,
-      },
-      pendingRequests: {
-        shiftRequests: pendingShiftRequests,
-        corrections,
-      },
-    };
   }
 
   async getMonthlyAttendanceSummary(
@@ -181,19 +109,15 @@ export class AttendanceReportingService extends BaseService {
       );
 
       if (error) {
-        // RPCが存在しない場合(code: '42883')、またはメッセージに含まれる場合にフォールバック
-        if (
-          error.code === "42883" ||
-          error.message.includes("function get_monthly_attendance_summary")
-        ) {
-          if (process.env.NODE_ENV === "development") {
-            console.warn(
-              "RPC get_monthly_attendance_summary not found, falling back to client-side calculation"
-            );
-          }
-          return this.getMonthlyAttendanceSummaryFallback(staffId, month);
-        }
-        throw error;
+        console.error("Monthly attendance summary RPC error:", error);
+        throw new Error(
+          error.code === "42883"
+            ? "Required database function is missing. Please run migrations."
+            : this.handleDatabaseError(
+                error,
+                "月次勤怠サマリーの取得に失敗しました"
+              )
+        );
       }
 
       if (!data || data.length === 0) {
@@ -222,10 +146,8 @@ export class AttendanceReportingService extends BaseService {
         lateDays: Number(summary.late_days) || 0,
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to get monthly attendance summary:", error);
-      }
-      return this.getMonthlyAttendanceSummaryFallback(staffId, month);
+      console.error("Failed to get monthly attendance summary:", error);
+      throw error;
     }
   }
 
@@ -240,50 +162,6 @@ export class AttendanceReportingService extends BaseService {
       return hours + minutes / 60;
     }
     return 0;
-  }
-
-  // Fallback method
-  private async getMonthlyAttendanceSummaryFallback(
-    staffId: string,
-    month: string
-  ): Promise<MonthlyAttendanceSummary> {
-    const startDate = `${month}-01`;
-    const endDate = new Date(month + "-01");
-    endDate.setMonth(endDate.getMonth() + 1);
-    endDate.setDate(0);
-    const endDateStr = endDate.toISOString().split("T")[0];
-
-    const records = await attendanceTrackingService.search({
-      staffId,
-      startDate,
-      endDate: endDateStr,
-    });
-
-    const totalWorkDays = records.length;
-    const presentDays = records.filter((r) => r.status === "present").length;
-    const absentDays = records.filter((r) => r.status === "absent").length;
-    const lateDays = records.filter((r) => r.status === "late").length;
-
-    const totalWorkHours =
-      records.reduce((sum, record) => {
-        return sum + (record.totalWorkingMinutes || 0);
-      }, 0) / 60;
-
-    const totalOvertimeHours =
-      records.reduce((sum, record) => {
-        const workingMinutes = record.totalWorkingMinutes || 0;
-        const overtimeMinutes = Math.max(0, workingMinutes - 480);
-        return sum + overtimeMinutes;
-      }, 0) / 60;
-
-    return {
-      totalWorkDays,
-      totalWorkHours,
-      totalOvertimeHours,
-      presentDays,
-      absentDays,
-      lateDays,
-    };
   }
 
   async generateMonthlyReport(month: string): Promise<{
