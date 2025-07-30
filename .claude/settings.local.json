@@ -81,7 +81,10 @@
       "Bash(npm run dev:*)",
       "Bash(psql:*)",
       "Bash(./fix-services.sh:*)",
-      "mcp__serena__activate_project"
+      "mcp__serena__activate_project",
+      "mcp__serena__initial_instructions",
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__get_current_config"
     ],
     "deny": []
   }

@@ -28,13 +28,13 @@ export async function getDashboardStats() {
       success: true,
       data: {
         totalCustomers: Number(data.today_customers) || 0,
-        todayReservations: 0, // Need to add this to the RPC function if needed
+        todayReservations: Number(data.today_reservations) || 0,
         todaySales: Number(data.today_sales) || 0,
         todayVisits: Number(data.today_visits) || 0,
-        todayNewCustomers: 0, // Need to add this to the RPC function if needed
-        activeCastCount: 0, // Need to add this to the RPC function if needed
+        todayNewCustomers: Number(data.today_new_customers) || 0,
+        activeCastCount: Number(data.active_cast_count) || 0,
         activeTableCount: Number(data.active_tables) || 0,
-        lowStockCount: 0, // Need to add this to the RPC function if needed
+        lowStockCount: Number(data.low_stock_count) || 0,
       },
     };
   } catch (error) {
