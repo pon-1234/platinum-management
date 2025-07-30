@@ -1,20 +1,13 @@
-import { attendanceService } from "@/services/attendance.service";
 import { AttendanceClient } from "./_components/AttendanceClient";
+import { getAttendanceDashboardAction } from "@/app/actions/attendance.actions";
 
 export default async function AttendancePage() {
-  let dashboardData = null;
-  let error = null;
-
-  try {
-    dashboardData = await attendanceService.getAttendanceDashboard();
-  } catch (err) {
-    error = "ダッシュボードデータの読み込みに失敗しました";
-    if (process.env.NODE_ENV === "development") {
-      console.error(err);
-    }
-  }
+  const result = await getAttendanceDashboardAction();
 
   return (
-    <AttendanceClient initialDashboardData={dashboardData} error={error} />
+    <AttendanceClient
+      initialDashboardData={result.success ? result.data : null}
+      error={!result.success ? result.error || null : null}
+    />
   );
 }
