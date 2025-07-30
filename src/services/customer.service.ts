@@ -150,7 +150,9 @@ export class CustomerService extends BaseService {
       }
 
       // Get customer IDs from search results (already sorted by similarity)
-      const customerIds = (data || []).map((item: { id: string }) => item.id);
+      const customerIds: string[] = (data || []).map(
+        (item: { id: string }) => item.id
+      );
 
       if (customerIds.length === 0) {
         return [];

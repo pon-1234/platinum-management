@@ -104,7 +104,7 @@ export class StaffService extends BaseService {
       }
 
       // Get staff IDs from search results
-      const staffIds = (searchResults || []).map(
+      const staffIds: string[] = (searchResults || []).map(
         (item: { id: string }) => item.id
       );
 
