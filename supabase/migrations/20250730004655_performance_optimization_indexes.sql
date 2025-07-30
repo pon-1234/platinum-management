@@ -24,8 +24,8 @@ USING gin (
 CREATE INDEX IF NOT EXISTS idx_visits_date_range ON visits (check_in_at, status);
 
 -- Create indexes for date range queries on attendance_records table
--- This optimizes queries filtering by work date and staff
-CREATE INDEX IF NOT EXISTS idx_attendance_date_range ON attendance_records (work_date, staff_id);
+-- This optimizes queries filtering by attendance date and staff
+CREATE INDEX IF NOT EXISTS idx_attendance_date_range ON attendance_records (attendance_date, staff_id);
 
 -- Add comments to explain the indexes
 COMMENT ON INDEX idx_customers_search IS 'GIN index for fast partial match searches on customer data';

@@ -1,4 +1,7 @@
--- Update the optimized dashboard statistics function to include missing statistics
+-- Drop existing function if it exists
+DROP FUNCTION IF EXISTS get_optimized_dashboard_stats(DATE);
+
+-- Create the optimized dashboard statistics function to include missing statistics
 CREATE OR REPLACE FUNCTION get_optimized_dashboard_stats(report_date DATE DEFAULT CURRENT_DATE)
 RETURNS TABLE (
   today_customers BIGINT,
@@ -26,7 +29,7 @@ BEGIN
   reservations AS (
     SELECT COUNT(*) as reservation_count
     FROM reservations
-    WHERE DATE(start_time) = report_date
+    WHERE reservation_date = report_date
       AND status IN ('confirmed', 'pending')
   ),
   active_cast AS (
