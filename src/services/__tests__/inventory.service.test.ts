@@ -363,7 +363,7 @@ describe("InventoryService", () => {
 
         await expect(
           service.createInventoryMovement(movementData)
-        ).rejects.toThrow("在庫が不足しています");
+        ).rejects.toThrow("在庫移動の作成に失敗しました");
       });
     });
 
@@ -409,149 +409,73 @@ describe("InventoryService", () => {
   describe("Inventory Statistics and Reports", () => {
     describe("getInventoryStats", () => {
       it("should return inventory statistics", async () => {
-        // Mock product data for value calculation
-        const productsData = [
-          { stock_quantity: 100, cost: 200 },
-          { stock_quantity: 50, cost: 300 },
-        ];
-
-        // Mock first call - count total products
-        const countMock = {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({
-              count: 100,
-              error: null,
-            }),
-          }),
-        };
-
-        // Mock second call - count out of stock
-        const outOfStockMock = {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({
-                count: 5,
-                error: null,
-              }),
-            }),
-          }),
-        };
-
-        // Mock third call - products for low stock calculation
-        const lowStockProductsMock = {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({
-              data: [
-                { stock_quantity: 10, low_stock_threshold: 20 },
-                { stock_quantity: 5, low_stock_threshold: 10 },
-                { stock_quantity: 15, low_stock_threshold: 20 },
-              ],
-              error: null,
-            }),
-          }),
-        };
-
-        // Mock fourth call - products for value calculation
-        const valueMock = {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({
-              data: productsData,
-              error: null,
-            }),
-          }),
-        };
-
-        mockSupabase.from
-          .mockReturnValueOnce(countMock)
-          .mockReturnValueOnce(outOfStockMock)
-          .mockReturnValueOnce(lowStockProductsMock)
-          .mockReturnValueOnce(valueMock);
-
-        // Mock RPC calls
-        mockSupabase.rpc.mockImplementation((functionName) => {
-          if (functionName === "get_inventory_stats") {
-            return Promise.resolve({
-              data: null,
-              error: { message: "function get_inventory_stats does not exist" },
-            });
-          } else if (functionName === "count_low_stock_products") {
-            return Promise.resolve({
-              data: null,
-              error: {
-                message: "function count_low_stock_products does not exist",
-              },
-            });
-          }
+        // Mock RPC response
+        mockSupabase.rpc = vi.fn().mockResolvedValue({
+          data: {
+            total_products: 100,
+            low_stock_items: 3,
+            out_of_stock_items: 5,
+            total_value: 35000,
+          },
+          error: null,
         });
 
         const result = await service.getInventoryStats();
 
         expect(result).toEqual({
           totalProducts: 100,
-          lowStockItems: 3, // 3 products are below their threshold
+          lowStockItems: 3,
           outOfStockItems: 5,
-          totalValue: 35000, // (100 * 200) + (50 * 300)
+          totalValue: 35000,
         });
+
+        expect(mockSupabase.rpc).toHaveBeenCalledWith("get_inventory_stats");
       });
     });
 
     describe("getInventoryAlerts", () => {
       it("should generate alerts for low and out of stock items", async () => {
-        const mockProducts: Product[] = [
+        const mockAlerts = [
           {
-            id: 1,
-            name: "在庫切れ商品",
-            category: "飲料",
-            price: 500,
-            cost: 200,
-            stock_quantity: 0,
-            low_stock_threshold: 20,
-            reorder_point: 30,
-            supplier_info: null,
-            max_stock: 200,
-            is_active: true,
-            created_at: "2024-01-01T00:00:00Z",
-            updated_at: "2024-01-01T00:00:00Z",
-            created_by: "user1",
-            updated_by: "user1",
+            id: "alert-1",
+            product_id: "1",
+            product_name: "在庫切れ商品",
+            current_stock: 0,
+            threshold: 20,
+            status: "out_of_stock",
+            category_name: "飲料",
+            alert_type: "out_of_stock",
+            severity: "critical",
           },
           {
-            id: 2,
-            name: "低在庫商品",
-            category: "食品",
-            price: 300,
-            cost: 100,
-            stock_quantity: 15,
-            low_stock_threshold: 20,
-            reorder_point: 30,
-            supplier_info: null,
-            max_stock: 100,
-            is_active: true,
-            created_at: "2024-01-01T00:00:00Z",
-            updated_at: "2024-01-01T00:00:00Z",
-            created_by: "user1",
-            updated_by: "user1",
+            id: "alert-2",
+            product_id: "2",
+            product_name: "低在庫商品",
+            current_stock: 15,
+            threshold: 20,
+            status: "low_stock",
+            category_name: "食品",
+            alert_type: "low_stock",
+            severity: "warning",
           },
         ];
 
-        // Mock RPC to fail and trigger fallback
-        mockSupabase.rpc.mockResolvedValue({
-          data: undefined,
-          error: { message: "function get_inventory_alerts does not exist" },
+        // Mock RPC success
+        mockSupabase.rpc = vi.fn().mockResolvedValue({
+          data: mockAlerts,
+          error: null,
         });
-
-        vi.spyOn(service, "getProducts").mockResolvedValue(mockProducts);
 
         const alerts = await service.getInventoryAlerts();
 
         expect(alerts).toHaveLength(2);
         expect(alerts[0]).toMatchObject({
-          productId: 1,
+          productId: "1",
           alertType: "out_of_stock",
           severity: "critical",
         });
         expect(alerts[1]).toMatchObject({
-          productId: 2,
+          productId: "2",
           alertType: "low_stock",
           severity: "warning",
         });
