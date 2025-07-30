@@ -128,21 +128,75 @@ export class CustomerService extends BaseService {
     // Validate search parameters
     const validatedParams = customerSearchSchema.parse(params);
 
+    // Use optimized search function if search query is provided
+    if (validatedParams.query && validatedParams.query.length >= 2) {
+      const { data, error } = await supabase.rpc("search_customers_optimized", {
+        search_term: validatedParams.query,
+        limit_count: validatedParams.limit ?? 20,
+        offset_count: validatedParams.offset ?? 0,
+      });
+
+      if (error) {
+        console.error("Optimized customer search error:", error);
+        // If RPC function doesn't exist, fall back to standard query
+        if (error.code === "42883") {
+          throw new Error(
+            "Required database function is missing. Please run migrations."
+          );
+        }
+        throw new Error(
+          this.handleDatabaseError(error, "顧客検索に失敗しました")
+        );
+      }
+
+      // Get customer IDs from search results (already sorted by similarity)
+      const customerIds = (data || []).map((item: any) => item.id);
+
+      if (customerIds.length === 0) {
+        return [];
+      }
+
+      // Fetch complete customer data for the matched IDs
+      let detailQuery = supabase
+        .from("customers")
+        .select("*")
+        .in("id", customerIds);
+
+      // Apply status filter if provided
+      if (validatedParams.status) {
+        detailQuery = detailQuery.eq("status", validatedParams.status);
+      }
+
+      const { data: customerDetails, error: detailError } = await detailQuery;
+
+      if (detailError) {
+        throw new Error(
+          this.handleDatabaseError(
+            detailError,
+            "顧客詳細情報の取得に失敗しました"
+          )
+        );
+      }
+
+      // Create a map for quick lookup
+      const customerMap = new Map(
+        (customerDetails || []).map((item) => [
+          item.id,
+          this.mapToCustomer(item),
+        ])
+      );
+
+      // Return customers in the order of search results (by similarity)
+      return customerIds
+        .map((id) => customerMap.get(id))
+        .filter((customer): customer is Customer => customer !== undefined);
+    }
+
+    // If no search query, use standard query
     let query = supabase
       .from("customers")
       .select("*")
       .order("created_at", { ascending: false });
-
-    // Add search query if provided
-    if (validatedParams.query) {
-      // Search across multiple fields
-      query = query.or(
-        `name.ilike.%${validatedParams.query}%,` +
-          `name_kana.ilike.%${validatedParams.query}%,` +
-          `phone_number.ilike.%${validatedParams.query}%,` +
-          `line_id.ilike.%${validatedParams.query}%`
-      );
-    }
 
     // Filter by status if provided
     if (validatedParams.status) {

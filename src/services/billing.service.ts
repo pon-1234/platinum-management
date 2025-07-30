@@ -529,15 +529,15 @@ export class BillingService extends BaseService {
       ]);
 
       if (billingReport.error) {
-        // Fallback to old method if RPC doesn't exist
-        if (
-          billingReport.error.message.includes(
-            "function generate_daily_billing_report"
-          )
-        ) {
-          return this.generateDailyReportFallback(date);
-        }
-        throw billingReport.error;
+        console.error("Daily billing report RPC error:", billingReport.error);
+        throw new Error(
+          billingReport.error.code === "42883"
+            ? "Required database function is missing. Please run migrations."
+            : this.handleDatabaseError(
+                billingReport.error,
+                "日別レポートの生成に失敗しました"
+              )
+        );
       }
 
       const reportData = billingReport.data;
@@ -576,112 +576,9 @@ export class BillingService extends BaseService {
         ),
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to generate daily report:", error);
-      }
-      // Fallback to old implementation
-      return this.generateDailyReportFallback(date);
+      console.error("Failed to generate daily report:", error);
+      throw error;
     }
-  }
-
-  // Fallback method for backward compatibility
-  private async generateDailyReportFallback(
-    date: string
-  ): Promise<DailyReport> {
-    const startDate = `${date}T00:00:00.000Z`;
-    const endDate = `${date}T23:59:59.999Z`;
-
-    // Get daily visits
-    const visits = await this.searchVisits({
-      startDate,
-      endDate,
-      status: "completed",
-    });
-
-    const totalVisits = visits.length;
-    const totalSales = visits.reduce(
-      (sum, visit) => sum + (visit.totalAmount || 0),
-      0
-    );
-    const totalCash = visits
-      .filter((v) => v.paymentMethod === "cash")
-      .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
-    const totalCard = visits
-      .filter(
-        (v) => v.paymentMethod === "card" || v.paymentMethod === "credit_card"
-      )
-      .reduce((sum, visit) => sum + (visit.totalAmount || 0), 0);
-
-    // Get order items for the day with product and cast details
-    const orderItems = await this.getOrderItemsWithDetails(startDate, endDate);
-
-    // Calculate top products
-    const productStats = new Map<
-      number,
-      {
-        productId: number;
-        productName: string;
-        quantity: number;
-        totalAmount: number;
-      }
-    >();
-
-    orderItems.forEach((item) => {
-      if (item.product) {
-        const current = productStats.get(item.productId) || {
-          productId: item.productId,
-          productName: item.product.name,
-          quantity: 0,
-          totalAmount: 0,
-        };
-        current.quantity += item.quantity;
-        current.totalAmount += item.totalPrice;
-        productStats.set(item.productId, current);
-      }
-    });
-
-    const topProducts = Array.from(productStats.values())
-      .sort((a, b) => b.totalAmount - a.totalAmount)
-      .slice(0, 5);
-
-    // Calculate top casts
-    const castStats = new Map<
-      string,
-      {
-        castId: string;
-        castName: string;
-        orderCount: number;
-        totalAmount: number;
-      }
-    >();
-
-    orderItems.forEach((item) => {
-      if (item.castId && item.cast) {
-        const current = castStats.get(item.castId) || {
-          castId: item.castId,
-          castName: item.cast.fullName,
-          orderCount: 0,
-          totalAmount: 0,
-        };
-        current.orderCount += 1;
-        current.totalAmount += item.totalPrice;
-        castStats.set(item.castId, current);
-      }
-    });
-
-    const topCasts = Array.from(castStats.values())
-      .sort((a, b) => b.totalAmount - a.totalAmount)
-      .slice(0, 5);
-
-    return {
-      date,
-      totalVisits,
-      totalSales,
-      totalCash,
-      totalCard,
-      topProducts,
-      topCasts,
-    };
   }
 
   private async getOrderItemsWithDetails(startDate: string, endDate: string) {

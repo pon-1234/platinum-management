@@ -1,22 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import {
-  CalendarIcon,
-  ClockIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { format } from "date-fns";
-import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
-import { WeeklySchedule } from "@/components/attendance/WeeklySchedule";
-import { TimeClock } from "@/components/attendance/TimeClock";
-import { ShiftRequestList } from "@/components/attendance/ShiftRequestList";
 import { attendanceService } from "@/services/attendance.service";
 import type { AttendanceDashboard as AttendanceDashboardType } from "@/types/attendance.types";
+import {
+  AttendanceTabNavigation,
+  type TabType,
+} from "./AttendanceTabNavigation";
 
-type TabType = "dashboard" | "schedule" | "timeclock" | "requests";
+// Lazy load tab components for better performance
+const AttendanceDashboardTab = lazy(() =>
+  import("./AttendanceDashboardTab").then((m) => ({
+    default: m.AttendanceDashboardTab,
+  }))
+);
+const AttendanceScheduleTab = lazy(() =>
+  import("./AttendanceScheduleTab").then((m) => ({
+    default: m.AttendanceScheduleTab,
+  }))
+);
+const AttendanceTimeClockTab = lazy(() =>
+  import("./AttendanceTimeClockTab").then((m) => ({
+    default: m.AttendanceTimeClockTab,
+  }))
+);
+const AttendanceRequestsTab = lazy(() =>
+  import("./AttendanceRequestsTab").then((m) => ({
+    default: m.AttendanceRequestsTab,
+  }))
+);
+
+// Loading component for Suspense fallback
+const TabLoadingFallback = () => (
+  <div className="flex justify-center items-center h-64">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 interface AttendanceClientProps {
   initialDashboardData: AttendanceDashboardType | null;
@@ -35,7 +56,16 @@ export function AttendanceClient({
     useState<AttendanceDashboardType | null>(initialDashboardData);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loadDashboardData = async () => {
+  // Memoize callback functions to prevent unnecessary re-renders
+  const handleTabChange = useCallback((tab: TabType) => {
+    setActiveTab(tab);
+  }, []);
+
+  const handleDateChange = useCallback((date: string) => {
+    setSelectedDate(date);
+  }, []);
+
+  const loadDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await attendanceService.getAttendanceDashboard();
@@ -47,34 +77,7 @@ export function AttendanceClient({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const tabs = [
-    {
-      id: "dashboard" as TabType,
-      label: "ダッシュボード",
-      icon: UserGroupIcon,
-      roles: ["admin", "manager", "hall"],
-    },
-    {
-      id: "schedule" as TabType,
-      label: "スケジュール",
-      icon: CalendarIcon,
-      roles: ["admin", "manager", "hall"],
-    },
-    {
-      id: "timeclock" as TabType,
-      label: "タイムクロック",
-      icon: ClockIcon,
-      roles: ["admin", "manager", "hall", "cast"],
-    },
-    {
-      id: "requests" as TabType,
-      label: "シフト申請",
-      icon: DocumentTextIcon,
-      roles: ["admin", "manager"],
-    },
-  ];
+  }, []);
 
   if (error) {
     return (
@@ -97,63 +100,37 @@ export function AttendanceClient({
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => (
-                <RoleGate
-                  key={tab.id}
-                  allowedRoles={tab.roles as ("admin" | "manager" | "cast")[]}
-                >
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                    }`}
-                  >
-                    <tab.icon className="w-5 h-5 inline-block mr-2" />
-                    {tab.label}
-                  </button>
-                </RoleGate>
-              ))}
-            </nav>
-          </div>
-        </div>
+        {/* Tab Navigation */}
+        <AttendanceTabNavigation
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
 
-        {/* Content */}
-        <div>
+        {/* Tab Content with Lazy Loading */}
+        <Suspense fallback={<TabLoadingFallback />}>
           {activeTab === "dashboard" && (
-            <RoleGate allowedRoles={["admin", "manager", "hall"]}>
-              <AttendanceDashboard
-                data={dashboardData}
-                isLoading={isLoading}
-                onRefresh={loadDashboardData}
-              />
-            </RoleGate>
+            <AttendanceDashboardTab
+              data={dashboardData}
+              isLoading={isLoading}
+              onRefresh={loadDashboardData}
+            />
           )}
 
           {activeTab === "schedule" && (
-            <RoleGate allowedRoles={["admin", "manager", "hall"]}>
-              <WeeklySchedule
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-              />
-            </RoleGate>
+            <AttendanceScheduleTab
+              selectedDate={selectedDate}
+              onDateChange={handleDateChange}
+            />
           )}
 
           {activeTab === "timeclock" && (
-            <TimeClock onClockAction={loadDashboardData} />
+            <AttendanceTimeClockTab onClockAction={loadDashboardData} />
           )}
 
           {activeTab === "requests" && (
-            <RoleGate allowedRoles={["admin", "manager"]}>
-              <ShiftRequestList onRequestUpdate={loadDashboardData} />
-            </RoleGate>
+            <AttendanceRequestsTab onRequestUpdate={loadDashboardData} />
           )}
-        </div>
+        </Suspense>
       </div>
     </RoleGate>
   );

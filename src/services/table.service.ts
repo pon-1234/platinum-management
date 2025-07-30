@@ -345,6 +345,9 @@ export class TableService extends BaseService {
   }
 
   subscribeToAllTableUpdates(callback: (tables: Table[]) => void): () => void {
+    console.warn(
+      "subscribeToAllTableUpdates is deprecated. Use subscribeToTableUpdatesDifferential for better performance."
+    );
     // Initial load
     this.searchTables({ isActive: true }).then(callback);
 
@@ -361,6 +364,69 @@ export class TableService extends BaseService {
           // Reload all tables when any change occurs
           const tables = await this.searchTables({ isActive: true });
           callback(tables);
+        }
+      )
+      .subscribe();
+
+    // Return unsubscribe function
+    return () => {
+      if (this.realtimeChannel) {
+        this.supabase.removeChannel(this.realtimeChannel);
+        this.realtimeChannel = null;
+      }
+    };
+  }
+
+  // Optimized differential update subscription
+  subscribeToTableUpdatesDifferential(
+    onUpdate: (updatedTable: Table) => void,
+    onDelete: (tableId: string) => void,
+    onInitialLoad: (allTables: Table[]) => void
+  ): () => void {
+    // Initial load
+    this.searchTables({ isActive: true }).then(onInitialLoad);
+
+    this.realtimeChannel = this.supabase
+      .channel("table-differential-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "tables",
+        },
+        (payload) => {
+          const table = this.mapToTable(
+            payload.new as Database["public"]["Tables"]["tables"]["Row"]
+          );
+          onUpdate(table);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tables",
+        },
+        (payload) => {
+          const table = this.mapToTable(
+            payload.new as Database["public"]["Tables"]["tables"]["Row"]
+          );
+          onUpdate(table);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "tables",
+        },
+        (payload) => {
+          const oldData =
+            payload.old as Database["public"]["Tables"]["tables"]["Row"];
+          onDelete(oldData.id);
         }
       )
       .subscribe();

@@ -83,17 +83,74 @@ export class StaffService extends BaseService {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    // Build query with filters
+    // Use optimized search if search query is provided
+    if (searchQuery && searchQuery.length >= 2) {
+      const { data: searchResults, error: searchError } =
+        await this.supabase.rpc("search_staffs_optimized", {
+          search_term: searchQuery,
+          limit_count: limit,
+          offset_count: from,
+        });
+
+      if (searchError) {
+        console.error("Optimized staff search error:", searchError);
+        // If RPC function doesn't exist, fall back to standard query
+        if (searchError.code === "42883") {
+          throw new Error(
+            "Required database function is missing. Please run migrations."
+          );
+        }
+        this.handleError(searchError, "スタッフ検索に失敗しました");
+      }
+
+      // Get staff IDs from search results
+      const staffIds = (searchResults || []).map((item: any) => item.id);
+
+      if (staffIds.length === 0) {
+        return { data: [], totalCount: 0, hasMore: false };
+      }
+
+      // Fetch complete staff data for matched IDs
+      let detailQuery = this.supabase
+        .from("staffs")
+        .select("*")
+        .in("id", staffIds);
+
+      // Apply role filter if provided
+      if (roleFilter) {
+        detailQuery = detailQuery.eq("role", roleFilter);
+      }
+
+      const { data: staffDetails, error: detailError } = await detailQuery;
+
+      if (detailError) {
+        this.handleError(detailError, "スタッフ詳細情報の取得に失敗しました");
+      }
+
+      // Create a map for quick lookup
+      const staffMap = new Map(
+        (staffDetails || []).map((item) => [item.id, this.mapToStaff(item)])
+      );
+
+      // Return staff in the order of search results (by similarity)
+      const staffList = staffIds
+        .map((id: string) => staffMap.get(id))
+        .filter((staff): staff is Staff => staff !== undefined);
+
+      // For search results, we can't easily get the total count
+      // so we'll return the actual result count
+      return {
+        data: staffList,
+        totalCount: staffList.length,
+        hasMore: staffList.length === limit,
+      };
+    }
+
+    // If no search query, use standard query
     let countQuery = this.supabase
       .from("staffs")
       .select("*", { count: "exact", head: true });
     let dataQuery = this.supabase.from("staffs").select("*");
-
-    // Apply search filter
-    if (searchQuery) {
-      countQuery = countQuery.ilike("full_name", `%${searchQuery}%`);
-      dataQuery = dataQuery.ilike("full_name", `%${searchQuery}%`);
-    }
 
     // Apply role filter
     if (roleFilter) {
