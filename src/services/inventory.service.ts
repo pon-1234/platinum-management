@@ -271,7 +271,7 @@ export class InventoryService extends BaseService {
           isRPCMissing
             ? "Required database function is missing. Please run migrations."
             : this.handleDatabaseError(
-                error as any,
+                error as Error,
                 "在庫移動の作成に失敗しました"
               )
         );

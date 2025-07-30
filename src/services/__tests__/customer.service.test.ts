@@ -44,6 +44,7 @@ describe("CustomerService", () => {
     or: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
     single: vi.fn(),
   };
 
@@ -216,6 +217,8 @@ describe("CustomerService", () => {
 
   describe("searchCustomers", () => {
     it("should search customers with query", async () => {
+      const mockSearchResults = [{ id: "customer-1" }];
+
       const mockCustomers = [
         {
           id: "customer-1",
@@ -233,9 +236,29 @@ describe("CustomerService", () => {
         },
       ];
 
-      mockDbMethods.range.mockResolvedValue({
-        data: mockCustomers,
+      // Mock RPC call for search
+      mockSupabaseClient.rpc = vi.fn().mockResolvedValue({
+        data: mockSearchResults,
         error: null,
+      });
+
+      // Reset mock methods
+      Object.keys(mockDbMethods).forEach((method) => {
+        if (typeof mockDbMethods[method].mockReturnThis === "function") {
+          mockDbMethods[method].mockReturnThis();
+        }
+      });
+
+      // Mock the from().select().in() chain
+      mockSupabaseClient.from.mockReturnValue({
+        ...mockDbMethods,
+        select: vi.fn().mockReturnValue({
+          ...mockDbMethods,
+          in: vi.fn().mockResolvedValue({
+            data: mockCustomers,
+            error: null,
+          }),
+        }),
       });
 
       const result = await customerService.searchCustomers(
@@ -249,7 +272,14 @@ describe("CustomerService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("田中太郎");
-      expect(mockDbMethods.or).toHaveBeenCalled();
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
+        "search_customers_optimized",
+        {
+          search_term: "田中",
+          limit_count: 20,
+          offset_count: 0,
+        }
+      );
     });
 
     it("should filter by status", async () => {
