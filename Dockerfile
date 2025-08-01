@@ -3,39 +3,41 @@
 # ────────────────────────────────────────────────────────────
 FROM claude-sandbox:latest
 
-# ────────────────────────────────────────────────────────────
-#  0. root 権限に切替
-# ────────────────────────────────────────────────────────────
+########################################################################
+# 0. root 権限へ
+########################################################################
 USER root
 ARG DEBIAN_FRONTEND=noninteractive
 
-# ────────────────────────────────────────────────────────────
-#  1. 共通ランタイム & ツール
-#     - git / python3 / pip
-#     - curl / gnupg / ca-certificates   (NodeSource 追加に必須)
-#     - pipx / uv
-# ────────────────────────────────────────────────────────────
+########################################################################
+# 1. 共通ツール & ランタイム
+#    - bash            : NodeSource スクリプトが bash 必須
+#    - git / python3   : Serena ダウンロード & 実行
+#    - pipx / uv       : 推奨パッケージマネージャ
+########################################################################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        git python3 python3-pip \
+        bash \
+        git \
+        python3 python3-pip \
         curl gnupg ca-certificates && \
     \
-    # pipx + uv
+    # ---- pipx + uv ---------------------------------------------------
     pip install --no-cache-dir pipx && \
     pipx ensurepath && \
     pipx install uv && \
     \
-    # ── 1-1. Node.js (LTS) ────────────────────────────────
-    # apt の公式 repo では nodejs が無い場合があるので NodeSource を利用
+    # ---- Node.js (LTS) ----------------------------------------------
+    # bash が入ったので NodeSource でインストール
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     \
-    # パッケージキャッシュ削除
+    # ---- キャッシュ削除 ---------------------------------------------
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ────────────────────────────────────────────────────────────
-#  2. GitHub CLI（もとの手順を維持）
-# ────────────────────────────────────────────────────────────
+########################################################################
+# 2. GitHub CLI（既存ステップを維持）
+########################################################################
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
       gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) \
@@ -46,11 +48,11 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
     apt-get install -y --no-install-recommends gh && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ────────────────────────────────────────────────────────────
-#  3. 非 root ユーザー（既定の 'node'）へ
-# ────────────────────────────────────────────────────────────
+########################################################################
+# 3. 非 root ユーザーへ戻る
+########################################################################
 USER node
 WORKDIR /workspace
 
-# pipx / uv の PATH を node ユーザーでも使えるよう追記
+# pipx/uv が使う ~/.local/bin を PATH に追加
 ENV PATH="/home/node/.local/bin:${PATH}"
