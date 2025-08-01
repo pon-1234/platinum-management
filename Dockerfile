@@ -1,38 +1,40 @@
 # ────────────────────────────────────────────────────────────
-#  Base image: Claude CLI の公式サンドボックス
+#  Base: Claude CLI の公式サンドボックス
 # ────────────────────────────────────────────────────────────
 FROM claude-sandbox:latest
 
 # ────────────────────────────────────────────────────────────
-#  0. ルート権限に切り替え
+#  0. root 権限に切替
 # ────────────────────────────────────────────────────────────
 USER root
+ARG DEBIAN_FRONTEND=noninteractive
 
 # ────────────────────────────────────────────────────────────
-#  1. 共通ツール & ランタイム
-#     - git            : Serena を GitHub から取得
-#     - python3/pip    : pipx/uv 用ランタイム
-#     - pipx           : Python アプリを隔離インストール
-#     - uv (+uvx)      : Serena 推奨パッケージマネージャ
-#     - nodejs         : TypeScript/JS Language Server 用
+#  1. 共通ランタイム & ツール
+#     - git / python3 / pip
+#     - curl / gnupg / ca-certificates   (NodeSource 追加に必須)
+#     - pipx / uv
 # ────────────────────────────────────────────────────────────
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        git \
-        python3 python3-pip \
-        nodejs \
-        ca-certificates curl gnupg && \
+        git python3 python3-pip \
+        curl gnupg ca-certificates && \
+    \
     # pipx + uv
     pip install --no-cache-dir pipx && \
     pipx ensurepath && \
     pipx install uv && \
-    # (pipx が ~/.local/bin を使うので PATH を明示)
-    echo 'export PATH="$PATH:/root/.local/bin"' >> /etc/profile.d/pipx_path.sh && \
+    \
+    # ── 1-1. Node.js (LTS) ────────────────────────────────
+    # apt の公式 repo では nodejs が無い場合があるので NodeSource を利用
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    \
     # パッケージキャッシュ削除
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ────────────────────────────────────────────────────────────
-#  2. GitHub CLI (既存のステップを保持)
+#  2. GitHub CLI（もとの手順を維持）
 # ────────────────────────────────────────────────────────────
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
       gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg && \
@@ -45,17 +47,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ────────────────────────────────────────────────────────────
-#  3. 非 root ユーザー (既存どおり 'node')
+#  3. 非 root ユーザー（既定の 'node'）へ
 # ────────────────────────────────────────────────────────────
 USER node
 WORKDIR /workspace
 
-# ────────────────────────────────────────────────────────────
-#  4. 環境変数 (pipx / uv を node ユーザーで使う)
-# ────────────────────────────────────────────────────────────
+# pipx / uv の PATH を node ユーザーでも使えるよう追記
 ENV PATH="/home/node/.local/bin:${PATH}"
-
-# ────────────────────────────────────────────────────────────
-#  5. エントリポイントは画像側の既定値をそのまま利用
-#     （Serena は stdio モードで Claude が自動 spawn）
-# ────────────────────────────────────────────────────────────
