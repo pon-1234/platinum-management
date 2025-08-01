@@ -499,7 +499,7 @@ BEGIN
     r.reservation_count,
     s.new_customers,
     ac.cast_count,
-    ls.low_stock_items
+    ls.low_stock_items AS low_stock_count
   FROM stats s
   CROSS JOIN reservations r
   CROSS JOIN active_cast ac
