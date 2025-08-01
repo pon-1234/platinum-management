@@ -24,17 +24,37 @@ export async function getDashboardStats() {
       );
     }
 
+    // RPCがTABLEを返すので、結果は配列。最初の要素を取得する。
+    const stats = data?.[0];
+
+    if (!stats) {
+      // データがない場合はデフォルト値を返す
+      return {
+        success: true,
+        data: {
+          totalCustomers: 0,
+          todayReservations: 0,
+          todaySales: 0,
+          todayVisits: 0,
+          todayNewCustomers: 0,
+          activeCastCount: 0,
+          activeTableCount: 0,
+          lowStockCount: 0,
+        },
+      };
+    }
+
     return {
       success: true,
       data: {
-        totalCustomers: Number(data.today_customers) || 0,
-        todayReservations: Number(data.today_reservations) || 0,
-        todaySales: Number(data.today_sales) || 0,
-        todayVisits: Number(data.today_visits) || 0,
-        todayNewCustomers: Number(data.today_new_customers) || 0,
-        activeCastCount: Number(data.active_cast_count) || 0,
-        activeTableCount: Number(data.active_tables) || 0,
-        lowStockCount: Number(data.low_stock_count) || 0,
+        totalCustomers: Number(stats.today_customers) || 0,
+        todayReservations: Number(stats.today_reservations) || 0,
+        todaySales: Number(stats.today_sales) || 0,
+        todayVisits: Number(stats.today_visits) || 0,
+        todayNewCustomers: Number(stats.today_new_customers) || 0,
+        activeCastCount: Number(stats.active_cast_count) || 0,
+        activeTableCount: Number(stats.active_tables) || 0,
+        lowStockCount: Number(stats.low_stock_count) || 0,
       },
     };
   } catch (error) {

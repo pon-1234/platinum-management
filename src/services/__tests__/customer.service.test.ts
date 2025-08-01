@@ -237,15 +237,17 @@ describe("CustomerService", () => {
       ];
 
       // Mock RPC call for search
-      mockSupabaseClient.rpc = vi.fn().mockResolvedValue({
+      const mockRpc = vi.fn().mockResolvedValue({
         data: mockSearchResults,
         error: null,
       });
+      Object.assign(mockSupabaseClient, { rpc: mockRpc });
 
       // Reset mock methods
       Object.keys(mockDbMethods).forEach((method) => {
-        if (typeof mockDbMethods[method].mockReturnThis === "function") {
-          mockDbMethods[method].mockReturnThis();
+        const methodValue = mockDbMethods[method as keyof typeof mockDbMethods];
+        if (methodValue && typeof methodValue.mockReturnThis === "function") {
+          methodValue.mockReturnThis();
         }
       });
 
@@ -272,14 +274,11 @@ describe("CustomerService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("田中太郎");
-      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
-        "search_customers_optimized",
-        {
-          search_term: "田中",
-          limit_count: 20,
-          offset_count: 0,
-        }
-      );
+      expect(mockRpc).toHaveBeenCalledWith("search_customers_optimized", {
+        search_term: "田中",
+        limit_count: 20,
+        offset_count: 0,
+      });
     });
 
     it("should filter by status", async () => {
