@@ -570,72 +570,92 @@ export class InventoryService extends BaseService {
   }
 
   // 在庫ページの全データを一度に取得（パフォーマンス最適化）
-  async getInventoryPageData(filter?: InventorySearchFilter) {
+  async getInventoryPageData(
+    filter?: InventorySearchFilter & { offset?: number; limit?: number }
+  ) {
     try {
-      // RPC関数を使用してデータベース側で全データを集約
-      const { data, error } = await this.supabase.rpc(
-        "get_inventory_page_data",
-        {
-          p_category: filter?.category || null,
-          p_search_term: filter?.searchTerm || null,
-        }
-      );
+      // 最適化されたRPC関数を使用
+      const functionName = "get_inventory_page_data_optimized";
+      const { data, error } = await this.supabase.rpc(functionName, {
+        p_category: filter?.category || null,
+        p_search_term: filter?.searchTerm || null,
+        p_offset: filter?.offset || 0,
+        p_limit: filter?.limit || 50,
+      });
 
       if (error) {
         console.error("Inventory page data RPC error:", error);
-        throw new Error(
-          error.code === "42883"
-            ? "Required database function is missing. Please run migrations."
-            : this.handleDatabaseError(
-                error,
+        // フォールバック: 最適化版が存在しない場合は従来の関数を使用
+        if (error.code === "42883") {
+          const { data: fallbackData, error: fallbackError } =
+            await this.supabase.rpc("get_inventory_page_data", {
+              p_category: filter?.category || null,
+              p_search_term: filter?.searchTerm || null,
+            });
+
+          if (fallbackError) {
+            throw new Error(
+              this.handleDatabaseError(
+                fallbackError,
                 "在庫ページデータ取得に失敗しました"
               )
+            );
+          }
+
+          return this.parseInventoryPageData(fallbackData || {});
+        }
+
+        throw new Error(
+          this.handleDatabaseError(error, "在庫ページデータ取得に失敗しました")
         );
       }
 
-      // RPC結果をパース
-      const result = data || {};
-      return {
-        products: result.products || [],
-        stats: result.stats || {
-          totalProducts: 0,
-          lowStockItems: 0,
-          outOfStockItems: 0,
-          totalValue: 0,
-        },
-        alerts: (result.alerts || []).map(
-          (alert: {
-            id: string;
-            product_id: string;
-            product_name: string;
-            current_stock: number;
-            threshold: number;
-            status: string;
-            category_name: string;
-            alert_type?: string;
-            severity?: string;
-          }) => ({
-            id: alert.id,
-            productId: alert.product_id,
-            productName: alert.product_name,
-            currentStock: alert.current_stock,
-            threshold: alert.threshold,
-            alertType: (alert.alert_type || alert.status) as
-              | "out_of_stock"
-              | "low_stock"
-              | "overstock",
-            severity: (alert.severity || "warning") as "critical" | "warning",
-            createdAt: new Date().toISOString(),
-          })
-        ),
-        categories: result.categories || [],
-      };
+      return this.parseInventoryPageData(data || {});
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("getInventoryPageData failed:", error);
       }
       throw error;
     }
+  }
+
+  private parseInventoryPageData(result: any) {
+    return {
+      products: result.products || [],
+      stats: result.stats || {
+        totalProducts: 0,
+        lowStockItems: 0,
+        outOfStockItems: 0,
+        totalValue: 0,
+      },
+      alerts: (result.alerts || []).map(
+        (alert: {
+          id: string;
+          product_id: string;
+          product_name: string;
+          current_stock: number;
+          threshold: number;
+          status: string;
+          category_name: string;
+          alert_type?: string;
+          severity?: string;
+        }) => ({
+          id: alert.id,
+          productId: alert.product_id,
+          productName: alert.product_name,
+          currentStock: alert.current_stock,
+          threshold: alert.threshold,
+          alertType: (alert.alert_type || alert.status) as
+            | "out_of_stock"
+            | "low_stock"
+            | "overstock",
+          severity: (alert.severity || "warning") as "critical" | "warning",
+          createdAt: new Date().toISOString(),
+        })
+      ),
+      categories: result.categories || [],
+      totalCount: result.total_count || result.products?.length || 0,
+    };
   }
 }
 
