@@ -11,15 +11,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ########################################################################
 # 1. 共通ツール & ランタイム
-#    - bash            : NodeSource スクリプトが bash 必須
-#    - git / python3   : Serena ダウンロード & 実行
-#    - pipx / uv       : 推奨パッケージマネージャ
 ########################################################################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         bash \
         git \
-        python3 python3-pip \
+        python3 python3-pip python3-venv \   # ← ここに python3-venv を追加
         curl gnupg ca-certificates && \
     \
     # ---- pipx + uv ---------------------------------------------------
@@ -28,7 +25,6 @@ RUN apt-get update && \
     pipx install uv && \
     \
     # ---- Node.js (LTS) ----------------------------------------------
-    # bash が入ったので NodeSource でインストール
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     \
@@ -40,9 +36,7 @@ RUN apt-get update && \
 ########################################################################
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
       gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) \
-      signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
-      https://cli.github.com/packages stable main" \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
       > /etc/apt/sources.list.d/github-cli.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends gh && \
