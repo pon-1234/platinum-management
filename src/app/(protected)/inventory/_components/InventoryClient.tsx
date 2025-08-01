@@ -44,7 +44,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // デバウンス用のタイマー
-  const searchDebounceTimer = useRef<NodeJS.Timeout>();
+  const searchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const refreshData = useCallback(async () => {
     try {

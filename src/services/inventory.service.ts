@@ -398,7 +398,7 @@ export class InventoryService extends BaseService {
           severity?: string;
         }) => ({
           id: alert.id,
-          productId: alert.product_id,
+          productId: parseInt(alert.product_id, 10),
           productName: alert.product_name,
           currentStock: alert.current_stock,
           threshold: alert.threshold,
@@ -619,40 +619,56 @@ export class InventoryService extends BaseService {
     }
   }
 
-  private parseInventoryPageData(result: any) {
+  private parseInventoryPageData(result: {
+    products?: Product[];
+    stats?: {
+      total_products: number;
+      low_stock_items: number;
+      out_of_stock_items: number;
+      total_value: number;
+    };
+    alerts?: Array<{
+      id: string;
+      product_id: string;
+      product_name: string;
+      current_stock: number;
+      threshold: number;
+      status: string;
+      category_name: string;
+      alert_type?: string;
+      severity?: string;
+    }>;
+    categories?: string[];
+    total_count?: number;
+  }) {
     return {
       products: result.products || [],
-      stats: result.stats || {
-        totalProducts: 0,
-        lowStockItems: 0,
-        outOfStockItems: 0,
-        totalValue: 0,
-      },
-      alerts: (result.alerts || []).map(
-        (alert: {
-          id: string;
-          product_id: string;
-          product_name: string;
-          current_stock: number;
-          threshold: number;
-          status: string;
-          category_name: string;
-          alert_type?: string;
-          severity?: string;
-        }) => ({
-          id: alert.id,
-          productId: alert.product_id,
-          productName: alert.product_name,
-          currentStock: alert.current_stock,
-          threshold: alert.threshold,
-          alertType: (alert.alert_type || alert.status) as
-            | "out_of_stock"
-            | "low_stock"
-            | "overstock",
-          severity: (alert.severity || "warning") as "critical" | "warning",
-          createdAt: new Date().toISOString(),
-        })
-      ),
+      stats: result.stats
+        ? {
+            totalProducts: Number(result.stats.total_products) || 0,
+            lowStockItems: Number(result.stats.low_stock_items) || 0,
+            outOfStockItems: Number(result.stats.out_of_stock_items) || 0,
+            totalValue: Number(result.stats.total_value) || 0,
+          }
+        : {
+            totalProducts: 0,
+            lowStockItems: 0,
+            outOfStockItems: 0,
+            totalValue: 0,
+          },
+      alerts: (result.alerts || []).map((alert) => ({
+        id: alert.id,
+        productId: parseInt(alert.product_id, 10),
+        productName: alert.product_name,
+        currentStock: alert.current_stock,
+        threshold: alert.threshold,
+        alertType: (alert.alert_type || alert.status) as
+          | "out_of_stock"
+          | "low_stock"
+          | "overstock",
+        severity: (alert.severity || "warning") as "critical" | "warning",
+        createdAt: new Date().toISOString(),
+      })),
       categories: result.categories || [],
       totalCount: result.total_count || result.products?.length || 0,
     };
