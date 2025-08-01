@@ -492,14 +492,14 @@ BEGIN
       AND is_active = true
   )
   SELECT
-    s.customer_count,
-    s.total_sales,
-    s.visit_count,
+    s.customer_count::BIGINT AS today_customers,
+    s.total_sales::NUMERIC AS today_sales,
+    s.visit_count::BIGINT AS today_visits,
     (SELECT COUNT(*) FROM tables WHERE current_status != 'available')::BIGINT as active_tables,
-    r.reservation_count,
-    s.new_customers,
-    ac.cast_count,
-    ls.low_stock_items AS low_stock_count
+    r.reservation_count::BIGINT AS today_reservations,
+    s.new_customers::BIGINT AS today_new_customers,
+    ac.cast_count::BIGINT AS active_cast_count,
+    ls.low_stock_items::BIGINT AS low_stock_count
   FROM stats s
   CROSS JOIN reservations r
   CROSS JOIN active_cast ac

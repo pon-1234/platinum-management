@@ -42,20 +42,22 @@ pnpm install
 新しい開発環境をセットアップする場合は、以下の手順でSupabaseデータベースを初期化してください：
 
 1. Supabaseプロジェクトを作成し、SQL Editorにアクセス
-2. `supabase/V1_init_schema.sql` の内容をSQL Editorで実行
+2. `supabase/migrations/20250730010000_unified_schema.sql` の内容をSQL Editorで実行
 
 ```bash
 # ファイルの内容をクリップボードにコピー
-cat supabase/V1_init_schema.sql | pbcopy
+cat supabase/migrations/20250730010000_unified_schema.sql | pbcopy
 ```
 
-このスキーマファイルには以下が含まれています：
+このマイグレーションファイルには以下が含まれています：
 - 全テーブル定義（スタッフ、顧客、予約、売上等）
 - Row Level Security (RLS) ポリシー
 - インデックス最適化
-- 必要な関数とトリガー
+- 必要な関数とトリガー（ダッシュボード統計関数の型修正済み）
 
-**注意**: 古いマイグレーションファイル（`supabase/migrations/archive/`内）は使用しないでください。これらは開発過程の履歴であり、`V1_init_schema.sql`に統合済みです。
+**重要**: 
+- このファイルは統合されたスキーマファイルで、すべての必要な定義が含まれています
+- 既存のデータベースに適用する場合は、事前にバックアップを取得してください
 
 ### 4. 開発サーバーの起動
 
