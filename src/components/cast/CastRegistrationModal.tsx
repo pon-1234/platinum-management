@@ -142,7 +142,7 @@ export function CastRegistrationModal({
         <div>
           <label
             htmlFor="staffId"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700"
           >
             スタッフ選択 <span className="text-red-500">*</span>
           </label>
@@ -154,7 +154,7 @@ export function CastRegistrationModal({
             <select
               id="staffId"
               {...form.register("staffId")}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="">スタッフを選択してください</option>
               {availableStaff.map((staff) => (
@@ -175,7 +175,7 @@ export function CastRegistrationModal({
         <div>
           <label
             htmlFor="stageName"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700"
           >
             源氏名 <span className="text-red-500">*</span>
           </label>
@@ -183,7 +183,7 @@ export function CastRegistrationModal({
             type="text"
             id="stageName"
             {...form.register("stageName")}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             placeholder="例: 愛香"
           />
           {form.formState.errors.stageName && (
@@ -197,7 +197,7 @@ export function CastRegistrationModal({
         <div>
           <label
             htmlFor="hourlyRate"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700"
           >
             時給（円） <span className="text-red-500">*</span>
           </label>
@@ -205,7 +205,7 @@ export function CastRegistrationModal({
             type="number"
             id="hourlyRate"
             {...form.register("hourlyRate", { valueAsNumber: true })}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             min="1000"
             max="10000"
             step="100"
@@ -221,7 +221,7 @@ export function CastRegistrationModal({
         <div>
           <label
             htmlFor="backPercentage"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700"
           >
             バック率（%） <span className="text-red-500">*</span>
           </label>
@@ -229,7 +229,7 @@ export function CastRegistrationModal({
             type="number"
             id="backPercentage"
             {...form.register("backPercentage", { valueAsNumber: true })}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             min="0"
             max="100"
             step="5"
@@ -245,7 +245,7 @@ export function CastRegistrationModal({
         <div>
           <label
             htmlFor="memo"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700"
           >
             メモ
           </label>
@@ -253,7 +253,7 @@ export function CastRegistrationModal({
             id="memo"
             {...form.register("memo")}
             rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             placeholder="特記事項があれば入力してください"
           />
           {form.formState.errors.memo && (
@@ -268,7 +268,7 @@ export function CastRegistrationModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             disabled={isSubmitting}
           >
             キャンセル

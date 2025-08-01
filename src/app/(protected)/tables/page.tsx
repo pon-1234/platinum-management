@@ -107,10 +107,8 @@ export default function TablesPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              テーブル管理
-            </h1>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl font-bold text-gray-900">テーブル管理</h1>
+            <p className="mt-2 text-sm text-gray-600">
               テーブルをクリックしてステータスを変更できます
             </p>
           </div>

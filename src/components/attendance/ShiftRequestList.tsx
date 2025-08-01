@@ -116,15 +116,12 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow">
         <div className="p-6 animate-pulse">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+          <div className="h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="h-16 bg-gray-200 dark:bg-gray-700 rounded"
-              ></div>
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
             ))}
           </div>
         </div>
@@ -135,9 +132,9 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
   return (
     <div className="space-y-6">
       {/* Header and Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-xl font-semibold text-gray-900">
             シフト申請管理
           </h2>
           <div className="flex space-x-2">
@@ -158,7 +155,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
             className={`px-3 py-2 text-sm rounded-md ${
               statusFilter === "all"
                 ? "bg-indigo-600 text-white"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
             すべて
@@ -170,7 +167,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
               className={`px-3 py-2 text-sm rounded-md ${
                 statusFilter === status.value
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
               {status.label}
@@ -180,39 +177,35 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
       </div>
 
       {/* Request List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow">
         {requests.length === 0 ? (
           <div className="p-8 text-center">
             <ExclamationTriangleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               申請がありません
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              現在、シフト申請はありません。
-            </p>
+            <p className="text-gray-600">現在、シフト申請はありません。</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="divide-y divide-gray-200">
             {requests.map((request) => (
-              <div
-                key={request.id}
-                className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
+              <div key={request.id} className="p-6 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-2">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-gray-600">
                         <UserIcon className="w-4 h-4 mr-1" />
-                        {request.staffName || request.staffId}{" "}
+                        {request.staffName || request.staffId}
+                        {""}
                         {/* Display staff name or ID */}
                       </div>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-gray-600">
                         <CalendarIcon className="w-4 h-4 mr-1" />
                         {format(new Date(request.requestedDate), "M月d日(E)", {
                           locale: ja,
                         })}
                       </div>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center text-sm text-gray-600">
                         <ClockIcon className="w-4 h-4 mr-1" />
                         {request.startTime} - {request.endTime}
                       </div>
@@ -220,20 +213,20 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
                     </div>
 
                     {request.notes && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      <p className="text-sm text-gray-600 mb-2">
                         備考: {request.notes}
                       </p>
                     )}
 
                     {request.status === "rejected" &&
                       request.rejectionReason && (
-                        <p className="text-sm text-red-600 dark:text-red-400">
+                        <p className="text-sm text-red-600">
                           却下理由: {request.rejectionReason}
                         </p>
                       )}
 
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      申請日時:{" "}
+                    <div className="text-xs text-gray-500">
+                      申請日時:{""}
                       {format(new Date(request.createdAt), "yyyy/MM/dd HH:mm")}
                     </div>
                   </div>
@@ -275,14 +268,14 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600">
             却下する理由を入力してください（必須）
           </p>
           <textarea
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="却下理由を入力してください"
           />
           <div className="flex space-x-3">
@@ -294,7 +287,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
                 rejectionReason.trim()
                   ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
               却下する
@@ -304,7 +297,7 @@ export function ShiftRequestList({ onRequestUpdate }: ShiftRequestListProps) {
                 setSelectedRequest(null);
                 setRejectionReason("");
               }}
-              className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               キャンセル
             </button>

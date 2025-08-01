@@ -34,9 +34,7 @@ export default function CastManagementPage() {
   return (
     <RoleGate allowedRoles={["admin", "manager"]}>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-8">
-          キャスト管理
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">キャスト管理</h1>
 
         {/* Error Display */}
         {error && (
@@ -48,9 +46,7 @@ export default function CastManagementPage() {
         {/* Cast List */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              キャスト一覧
-            </h2>
+            <h2 className="text-lg font-medium text-gray-900">キャスト一覧</h2>
             {can("cast", "manage") && (
               <button
                 onClick={() => setIsRegistrationModalOpen(true)}
@@ -85,7 +81,7 @@ export default function CastManagementPage() {
               {casts.map((cast) => (
                 <div
                   key={cast.staffId}
-                  className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="bg-white shadow rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4 flex-1">
@@ -97,15 +93,15 @@ export default function CastManagementPage() {
                           className="h-12 w-12 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                          <span className="text-gray-600 dark:text-gray-300 font-medium">
+                        <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center">
+                          <span className="text-gray-600 font-medium">
                             {cast.stageName.charAt(0)}
                           </span>
                         </div>
                       )}
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <h3 className="text-sm font-medium text-gray-900">
                             {cast.stageName}
                           </h3>
                           {!cast.isActive && (
@@ -114,10 +110,10 @@ export default function CastManagementPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-500">
                           時給: ¥{cast.hourlyRate?.toLocaleString() || "-"}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-500">
                           バック率: {cast.backPercentage}%
                         </p>
                       </div>

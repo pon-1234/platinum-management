@@ -125,28 +125,28 @@ export function ReservationCalendar({
   };
 
   const statusColors = {
-    pending: "bg-yellow-200 dark:bg-yellow-800",
-    confirmed: "bg-blue-200 dark:bg-blue-800",
-    checked_in: "bg-green-200 dark:bg-green-800",
+    pending: "bg-yellow-200",
+    confirmed: "bg-blue-200",
+    checked_in: "bg-green-200",
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div className="bg-white shadow rounded-lg p-6">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+        <h2 className="text-lg font-medium text-gray-900">
           {format(currentMonth, "yyyy年MM月", { locale: ja })}
         </h2>
         <div className="flex space-x-2">
           <button
             onClick={handlePreviousMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -164,7 +164,7 @@ export function ReservationCalendar({
                 ? "text-red-600"
                 : index === 6
                   ? "text-blue-600"
-                  : "text-gray-700 dark:text-gray-300"
+                  : "text-gray-700"
             }`}
           >
             {day}
@@ -189,19 +189,19 @@ export function ReservationCalendar({
               onClick={() => handleDateClick(date)}
               disabled={!isCurrentMonth}
               className={`
-                relative p-2 h-20 border rounded-lg transition-all
-                ${isCurrentMonth ? "hover:bg-gray-50 dark:hover:bg-gray-700" : "opacity-50 cursor-not-allowed"}
-                ${isSelected ? "ring-2 ring-indigo-500" : ""}
-                ${isToday(date) ? "bg-indigo-50 dark:bg-indigo-900/20" : ""}
-                ${dayOfWeek === 0 ? "text-red-600" : dayOfWeek === 6 ? "text-blue-600" : ""}
-              `}
+ relative p-2 h-20 border rounded-lg transition-all
+ ${isCurrentMonth ? "hover:bg-gray-50" : "opacity-50 cursor-not-allowed"}
+ ${isSelected ? "ring-2 ring-indigo-500" : ""}
+ ${isToday(date) ? "bg-indigo-50" : ""}
+ ${dayOfWeek === 0 ? "text-red-600" : dayOfWeek === 6 ? "text-blue-600" : ""}
+ `}
             >
               <div className="text-sm font-medium">{format(date, "d")}</div>
 
               {count > 0 && (
                 <div className="mt-1">
                   <div
-                    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors] || "bg-gray-200 dark:bg-gray-700"}`}
+                    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors] || "bg-gray-200"}`}
                   >
                     {count}
                   </div>
@@ -214,13 +214,13 @@ export function ReservationCalendar({
 
       {/* Selected Date Reservations */}
       {selectedDate && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-900 mb-4">
             {format(selectedDate, "MM月dd日", { locale: ja })}の予約
           </h3>
           {isLoading ? (
             <div className="text-center py-4">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-gray-100"></div>
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -229,14 +229,14 @@ export function ReservationCalendar({
                   <button
                     key={reservation.id}
                     onClick={() => onReservationSelect?.(reservation)}
-                    className="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="font-medium text-sm">
                           {reservation.reservationTime.slice(0, 5)}
                         </span>
-                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="ml-2 text-sm text-gray-600">
                           {reservation.numberOfGuests}名
                         </span>
                       </div>
@@ -262,11 +262,7 @@ export function ReservationCalendar({
                     </div>
                   </button>
                 )
-              ) || (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  予約はありません
-                </p>
-              )}
+              ) || <p className="text-sm text-gray-500">予約はありません</p>}
             </div>
           )}
         </div>

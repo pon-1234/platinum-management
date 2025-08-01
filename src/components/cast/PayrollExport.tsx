@@ -69,14 +69,14 @@ export function PayrollExport({ casts }: PayrollExportProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+    <div className="bg-white shadow rounded-lg p-6">
+      <h2 className="text-lg font-medium text-gray-900 mb-4">
         給与データエクスポート
       </h2>
 
       {/* Date Range Selection */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+        <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
           <Calendar className="w-4 h-4 mr-1" />
           期間選択
         </h3>
@@ -84,7 +84,7 @@ export function PayrollExport({ casts }: PayrollExportProps) {
           <div>
             <label
               htmlFor="start-date"
-              className="block text-sm text-gray-600 dark:text-gray-400 mb-1"
+              className="block text-sm text-gray-600 mb-1"
             >
               開始日
             </label>
@@ -95,13 +95,13 @@ export function PayrollExport({ casts }: PayrollExportProps) {
               onChange={(e) =>
                 setDateRange({ ...dateRange, startDate: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
           <div>
             <label
               htmlFor="end-date"
-              className="block text-sm text-gray-600 dark:text-gray-400 mb-1"
+              className="block text-sm text-gray-600 mb-1"
             >
               終了日
             </label>
@@ -112,7 +112,7 @@ export function PayrollExport({ casts }: PayrollExportProps) {
               onChange={(e) =>
                 setDateRange({ ...dateRange, endDate: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
         </div>
@@ -121,24 +121,24 @@ export function PayrollExport({ casts }: PayrollExportProps) {
       {/* Cast Selection */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+          <h3 className="text-sm font-medium text-gray-700 flex items-center">
             <Users className="w-4 h-4 mr-1" />
             キャスト選択
           </h3>
           <button
             onClick={handleSelectAll}
-            className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            className="text-sm text-indigo-600 hover:text-indigo-500"
           >
             {selectedCasts.length === casts.length
               ? "選択を解除"
               : "すべて選択"}
           </button>
         </div>
-        <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3">
+        <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
           {casts.map((cast) => (
             <label
               key={cast.staffId}
-              className="flex items-center py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+              className="flex items-center py-2 hover:bg-gray-50 cursor-pointer"
             >
               <input
                 type="checkbox"
@@ -154,7 +154,7 @@ export function PayrollExport({ casts }: PayrollExportProps) {
                 }}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
-              <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">
+              <span className="ml-3 text-sm text-gray-700">
                 {cast.stageName}
               </span>
             </label>
@@ -175,7 +175,7 @@ export function PayrollExport({ casts }: PayrollExportProps) {
       </div>
 
       {selectedCasts.length > 0 && (
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-right">
+        <p className="mt-2 text-sm text-gray-500 text-right">
           {selectedCasts.length}名のキャストを選択中
         </p>
       )}

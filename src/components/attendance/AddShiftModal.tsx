@@ -197,20 +197,18 @@ export function AddShiftModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="シフト追加" size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Date Header */}
-        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 p-4 rounded-lg">
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-lg">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-              <CalendarIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <CalendarIcon className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">
                 {format(new Date(selectedDate), "yyyy年M月d日(E)", {
                   locale: ja,
                 })}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                新しいシフトを追加
-              </p>
+              <p className="text-sm text-gray-600">新しいシフトを追加</p>
             </div>
           </div>
         </div>
@@ -219,7 +217,7 @@ export function AddShiftModal({
         <div className="space-y-6">
           {/* Staff Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <UserIcon className="h-4 w-4 inline mr-1" />
               スタッフ
             </label>
@@ -228,10 +226,8 @@ export function AddShiftModal({
               onChange={(e) =>
                 setFormData({ ...formData, staffId: e.target.value })
               }
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 ${
-                errors.staffId
-                  ? "border-red-300 dark:border-red-600"
-                  : "border-gray-300 dark:border-gray-600"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                errors.staffId ? "border-red-300" : "border-gray-300"
               }`}
               disabled={isLoading || isSubmitting}
             >
@@ -243,16 +239,14 @@ export function AddShiftModal({
               ))}
             </select>
             {errors.staffId && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.staffId}
-              </p>
+              <p className="mt-1 text-sm text-red-600">{errors.staffId}</p>
             )}
           </div>
 
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <ClockIcon className="h-4 w-4 inline mr-1" />
                 開始時間
               </label>
@@ -262,22 +256,18 @@ export function AddShiftModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 ${
-                  errors.startTime
-                    ? "border-red-300 dark:border-red-600"
-                    : "border-gray-300 dark:border-gray-600"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  errors.startTime ? "border-red-300" : "border-gray-300"
                 }`}
                 disabled={isSubmitting}
               />
               {errors.startTime && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {errors.startTime}
-                </p>
+                <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <ClockIcon className="h-4 w-4 inline mr-1" />
                 終了時間
               </label>
@@ -287,24 +277,20 @@ export function AddShiftModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 ${
-                  errors.endTime
-                    ? "border-red-300 dark:border-red-600"
-                    : "border-gray-300 dark:border-gray-600"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  errors.endTime ? "border-red-300" : "border-gray-300"
                 }`}
                 disabled={isSubmitting}
               />
               {errors.endTime && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {errors.endTime}
-                </p>
+                <p className="mt-1 text-sm text-red-600">{errors.endTime}</p>
               )}
             </div>
           </div>
 
           {/* Shift Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <TagIcon className="h-4 w-4 inline mr-1" />
               シフトタイプ
             </label>
@@ -316,7 +302,7 @@ export function AddShiftModal({
                   shiftType: e.target.value as ShiftType,
                 })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               disabled={isSubmitting}
             >
               {shiftTypes.map((type) => (
@@ -329,7 +315,7 @@ export function AddShiftModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <DocumentTextIcon className="h-4 w-4 inline mr-1" />
               備考
             </label>
@@ -339,7 +325,7 @@ export function AddShiftModal({
                 setFormData({ ...formData, notes: e.target.value })
               }
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="必要に応じて備考を入力してください"
               disabled={isSubmitting}
             />
@@ -348,20 +334,18 @@ export function AddShiftModal({
 
         {/* Submit Error */}
         {errors.submit && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-            <p className="text-red-600 dark:text-red-400 text-sm">
-              {errors.submit}
-            </p>
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-red-600 text-sm">{errors.submit}</p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             キャンセル
           </button>

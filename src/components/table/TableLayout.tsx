@@ -128,9 +128,7 @@ export function TableLayout({
                   ]
                 )}
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {label}
-              </span>
+              <span className="text-sm text-gray-600">{label}</span>
             </div>
           ))}
         </div>
@@ -139,9 +137,7 @@ export function TableLayout({
       {/* Table Layout by Location */}
       {Object.entries(tablesByLocation).map(([location, locationTables]) => (
         <div key={location} className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-            {location}
-          </h3>
+          <h3 className="text-lg font-medium text-gray-900">{location}</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {locationTables.map((table) => (
               <div key={table.id} className="relative group">

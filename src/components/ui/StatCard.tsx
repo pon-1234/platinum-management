@@ -49,9 +49,7 @@ export function StatCard({
   };
 
   return (
-    <div
-      className={`bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg ${className}`}
-    >
+    <div className={`bg-white overflow-hidden shadow rounded-lg ${className}`}>
       <div className="p-5">
         <div className="flex items-center">
           {icon && (
@@ -61,10 +59,10 @@ export function StatCard({
           )}
           <div className={`${icon ? "ml-5" : ""} w-0 flex-1`}>
             <dl>
-              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+              <dt className="text-sm font-medium text-gray-500 truncate">
                 {title}
               </dt>
-              <dd className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <dd className="text-lg font-semibold text-gray-900">
                 {formattedValue}
               </dd>
               {change && (

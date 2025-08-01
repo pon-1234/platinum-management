@@ -144,13 +144,13 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
     const status = getStatusText();
     switch (status) {
       case "勤務中":
-        return "text-green-600 dark:text-green-400";
+        return "text-green-600";
       case "休憩中":
-        return "text-yellow-600 dark:text-yellow-400";
+        return "text-yellow-600";
       case "退勤済み":
-        return "text-gray-600 dark:text-gray-400";
+        return "text-gray-600";
       default:
-        return "text-gray-500 dark:text-gray-500";
+        return "text-gray-500";
     }
   };
 
@@ -164,14 +164,12 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
 
   if (!currentStaff) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+      <div className="bg-white rounded-lg shadow p-8 text-center">
         <ClockIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
           スタッフ情報が見つかりません
         </h3>
-        <p className="text-gray-600 dark:text-gray-400">
-          ログインし直してください
-        </p>
+        <p className="text-gray-600">ログインし直してください</p>
       </div>
     );
   }
@@ -179,12 +177,12 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Current Time Display */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
-        <ClockIcon className="w-16 h-16 text-indigo-600 dark:text-indigo-400 mx-auto mb-4" />
-        <div className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <ClockIcon className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+        <div className="text-4xl font-bold text-gray-900 mb-2">
           {format(currentTime, "HH:mm:ss")}
         </div>
-        <div className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+        <div className="text-lg text-gray-600 mb-4">
           {format(currentTime, "yyyy年M月d日 (E)", {
             locale: ja,
           })}
@@ -195,16 +193,14 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
       </div>
 
       {/* Staff Info */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center mb-4">
           <UserIcon className="w-6 h-6 text-gray-400 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="text-lg font-medium text-gray-900">
               {currentStaff.fullName}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {currentStaff.role}
-            </p>
+            <p className="text-sm text-gray-600">{currentStaff.role}</p>
           </div>
         </div>
 
@@ -212,40 +208,32 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
         {todayRecord && (
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-600 dark:text-gray-400">
-                出勤時刻:
-              </span>
-              <div className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="text-gray-600">出勤時刻:</span>
+              <div className="font-medium text-gray-900">
                 {todayRecord.clockInTime
                   ? format(new Date(todayRecord.clockInTime), "HH:mm")
                   : "-"}
               </div>
             </div>
             <div>
-              <span className="text-gray-600 dark:text-gray-400">
-                退勤時刻:
-              </span>
-              <div className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="text-gray-600">退勤時刻:</span>
+              <div className="font-medium text-gray-900">
                 {todayRecord.clockOutTime
                   ? format(new Date(todayRecord.clockOutTime), "HH:mm")
                   : "-"}
               </div>
             </div>
             <div>
-              <span className="text-gray-600 dark:text-gray-400">
-                休憩開始:
-              </span>
-              <div className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="text-gray-600">休憩開始:</span>
+              <div className="font-medium text-gray-900">
                 {todayRecord.breakStartTime
                   ? format(new Date(todayRecord.breakStartTime), "HH:mm")
                   : "-"}
               </div>
             </div>
             <div>
-              <span className="text-gray-600 dark:text-gray-400">
-                休憩終了:
-              </span>
-              <div className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="text-gray-600">休憩終了:</span>
+              <div className="font-medium text-gray-900">
                 {todayRecord.breakEndTime
                   ? format(new Date(todayRecord.breakEndTime), "HH:mm")
                   : "-"}
@@ -256,10 +244,10 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
       </div>
 
       {/* Notes Input */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <label
           htmlFor="notes"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          className="block text-sm font-medium text-gray-700 mb-2"
         >
           備考（任意）
         </label>
@@ -268,13 +256,13 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="打刻に関する備考があれば入力してください"
         />
       </div>
 
       {/* Action Buttons */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => handleClockAction("clock_in")}
@@ -282,7 +270,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
             className={`flex items-center justify-center px-6 py-4 rounded-lg font-medium transition-colors ${
               canClockIn && !isLoading
                 ? "bg-green-600 text-white hover:bg-green-700"
-                : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
             <PlayIcon className="w-5 h-5 mr-2" />
@@ -295,7 +283,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
             className={`flex items-center justify-center px-6 py-4 rounded-lg font-medium transition-colors ${
               canClockOut && !isLoading
                 ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
             <StopIcon className="w-5 h-5 mr-2" />
@@ -308,7 +296,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
             className={`flex items-center justify-center px-6 py-4 rounded-lg font-medium transition-colors ${
               canStartBreak && !isLoading
                 ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
             <PauseIcon className="w-5 h-5 mr-2" />
@@ -321,7 +309,7 @@ export function TimeClock({ onClockAction }: TimeClockProps) {
             className={`flex items-center justify-center px-6 py-4 rounded-lg font-medium transition-colors ${
               canEndBreak && !isLoading
                 ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
             <PlayIcon className="w-5 h-5 mr-2" />
