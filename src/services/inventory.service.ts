@@ -575,28 +575,13 @@ export class InventoryService extends BaseService {
 
       if (error) {
         console.error("Inventory page data RPC error:", error);
-        // フォールバック: 最適化版が存在しない場合は従来の関数を使用
-        if (error.code === "42883") {
-          const { data: fallbackData, error: fallbackError } =
-            await this.supabase.rpc("get_inventory_page_data", {
-              p_category: filter?.category || null,
-              p_search_term: filter?.searchTerm || null,
-            });
-
-          if (fallbackError) {
-            throw new Error(
-              this.handleDatabaseError(
-                fallbackError,
+        throw new Error(
+          error.code === "42883"
+            ? "Required database function is missing. Please run migrations."
+            : this.handleDatabaseError(
+                error,
                 "在庫ページデータ取得に失敗しました"
               )
-            );
-          }
-
-          return this.parseInventoryPageData(fallbackData || {});
-        }
-
-        throw new Error(
-          this.handleDatabaseError(error, "在庫ページデータ取得に失敗しました")
         );
       }
 

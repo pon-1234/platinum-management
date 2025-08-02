@@ -1,5 +1,4 @@
 // Legacy store - TO BE REMOVED after migration
-export { useAttendanceStore } from "./attendance.store";
 
 // New split stores
 export { useAttendanceDashboardStore } from "./attendance-dashboard.store";

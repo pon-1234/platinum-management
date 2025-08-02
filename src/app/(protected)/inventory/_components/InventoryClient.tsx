@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useDebounce } from "@/hooks";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { EmptyState } from "@/components/common";
@@ -43,15 +44,16 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // デバウンス用のタイマー
-  const searchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  // デバウンス処理
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedCategory = useDebounce(selectedCategory, 300);
 
   const refreshData = useCallback(async () => {
     try {
       setIsRefreshing(true);
       const result = await getInventoryPageData({
-        category: selectedCategory !== "all" ? selectedCategory : undefined,
-        searchTerm: searchTerm || undefined,
+        category: debouncedCategory !== "all" ? debouncedCategory : undefined,
+        searchTerm: debouncedSearchTerm || undefined,
       });
 
       if (result.success) {
@@ -68,7 +70,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     } finally {
       setIsRefreshing(false);
     }
-  }, [searchTerm, selectedCategory]);
+  }, [debouncedSearchTerm, debouncedCategory]);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -92,22 +94,10 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     refreshData();
   };
 
-  // デバウンスされた検索
+  // デバウンスされた値が変更されたときにデータを更新
   useEffect(() => {
-    if (searchDebounceTimer.current) {
-      clearTimeout(searchDebounceTimer.current);
-    }
-
-    searchDebounceTimer.current = setTimeout(() => {
-      refreshData();
-    }, 300); // 300ms のデバウンス
-
-    return () => {
-      if (searchDebounceTimer.current) {
-        clearTimeout(searchDebounceTimer.current);
-      }
-    };
-  }, [searchTerm, selectedCategory, refreshData]);
+    refreshData();
+  }, [refreshData]);
 
   const lowStockAlerts = alerts.filter(
     (alert) =>

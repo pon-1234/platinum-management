@@ -149,49 +149,15 @@ export class CustomerService extends BaseService {
         );
       }
 
-      // Get customer IDs from search results (already sorted by similarity)
-      const customerIds: string[] = (data || []).map(
-        (item: { id: string }) => item.id
-      );
+      // RPC関数が詳細情報を含めて返すように最適化されたので、直接マップして返す
+      const customers = (data || [])
+        .filter(
+          (item: any) =>
+            !validatedParams.status || item.status === validatedParams.status
+        )
+        .map((item: any) => this.mapToCustomer(item));
 
-      if (customerIds.length === 0) {
-        return [];
-      }
-
-      // Fetch complete customer data for the matched IDs
-      let detailQuery = supabase
-        .from("customers")
-        .select("*")
-        .in("id", customerIds);
-
-      // Apply status filter if provided
-      if (validatedParams.status) {
-        detailQuery = detailQuery.eq("status", validatedParams.status);
-      }
-
-      const { data: customerDetails, error: detailError } = await detailQuery;
-
-      if (detailError) {
-        throw new Error(
-          this.handleDatabaseError(
-            detailError,
-            "顧客詳細情報の取得に失敗しました"
-          )
-        );
-      }
-
-      // Create a map for quick lookup
-      const customerMap = new Map(
-        (customerDetails || []).map((item) => [
-          item.id,
-          this.mapToCustomer(item),
-        ])
-      );
-
-      // Return customers in the order of search results (by similarity)
-      return customerIds
-        .map((id) => customerMap.get(id))
-        .filter((customer): customer is Customer => customer !== undefined);
+      return customers;
     }
 
     // If no search query, use standard query
