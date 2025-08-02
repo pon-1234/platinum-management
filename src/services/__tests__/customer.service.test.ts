@@ -217,29 +217,39 @@ describe("CustomerService", () => {
 
   describe("searchCustomers", () => {
     it("should search customers with query", async () => {
-      const mockSearchResults = [{ id: "customer-1" }];
-
-      const mockCustomers = [
+      const mockSearchResults = [
         {
           id: "customer-1",
           name: "田中太郎",
           name_kana: "タナカタロウ",
           phone_number: "090-1234-5678",
           line_id: null,
-          birthday: null,
+          birth_date: null,
+          job: null,
           memo: null,
+          source: null,
+          rank: null,
           status: "active" as const,
-          created_by: "staff-123",
-          updated_by: "staff-123",
+          last_visit_date: null,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
+          similarity: 0.9,
         },
       ];
 
       // Mock RPC call for search
-      mockSupabaseClient.rpc = vi.fn().mockResolvedValue({
+      const mockRpc = vi.fn().mockResolvedValue({
         data: mockSearchResults,
         error: null,
+      });
+      Object.assign(mockSupabaseClient, { rpc: mockRpc });
+
+      // Reset mock methods
+      Object.keys(mockDbMethods).forEach((method) => {
+        const methodValue = mockDbMethods[method as keyof typeof mockDbMethods];
+        if (methodValue && typeof methodValue.mockReturnThis === "function") {
+          methodValue.mockReturnThis();
+        }
       });
 
       // Reset mock methods
@@ -272,14 +282,11 @@ describe("CustomerService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("田中太郎");
-      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
-        "search_customers_optimized",
-        {
-          search_term: "田中",
-          limit_count: 20,
-          offset_count: 0,
-        }
-      );
+      expect(mockRpc).toHaveBeenCalledWith("search_customers_optimized", {
+        search_term: "田中",
+        limit_count: 20,
+        offset_count: 0,
+      });
     });
 
     it("should filter by status", async () => {

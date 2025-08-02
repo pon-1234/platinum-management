@@ -39,7 +39,7 @@ export function Card({
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-lg ${shadowClass} ${paddingClass} ${hoverClass} ${className}`}
+      className={`bg-white rounded-lg ${shadowClass} ${paddingClass} ${hoverClass} ${className}`}
       onClick={onClick}
     >
       {children}

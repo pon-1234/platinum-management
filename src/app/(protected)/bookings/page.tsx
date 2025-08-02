@@ -47,9 +47,7 @@ export default function BookingsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              予約管理
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">予約管理</h1>
             <button
               onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -69,7 +67,7 @@ export default function BookingsPage() {
               className={`px-4 py-2 text-sm font-medium rounded-l-lg focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                 viewMode === "list"
                   ? "bg-indigo-600 text-white"
-                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               <ListBulletIcon className="w-4 h-4 inline-block mr-2" />
@@ -81,7 +79,7 @@ export default function BookingsPage() {
               className={`px-4 py-2 text-sm font-medium rounded-r-lg focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                 viewMode === "calendar"
                   ? "bg-indigo-600 text-white"
-                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               <CalendarIcon className="w-4 h-4 inline-block mr-2" />
@@ -96,7 +94,7 @@ export default function BookingsPage() {
             <div className="flex items-center space-x-4">
               <label
                 htmlFor="date"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="text-sm font-medium text-gray-700"
               >
                 日付:
               </label>
@@ -105,7 +103,7 @@ export default function BookingsPage() {
                 id="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
           </div>

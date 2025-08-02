@@ -91,12 +91,12 @@ export function TableStatusModal({
         {/* Modal */}
         <form
           onSubmit={form.handleAsyncSubmit(handleSubmit)}
-          className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
+          className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
         >
           <div className="absolute right-0 top-0 pr-4 pt-4">
             <button
               type="button"
-              className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               onClick={onClose}
               disabled={form.formState.isSubmitting}
             >
@@ -107,7 +107,7 @@ export function TableStatusModal({
 
           <div className="sm:flex sm:items-start">
             <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-              <h3 className="text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100">
+              <h3 className="text-lg font-semibold leading-6 text-gray-900">
                 テーブルステータス変更
               </h3>
 
@@ -119,11 +119,11 @@ export function TableStatusModal({
               )}
 
               <div className="mt-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  テーブル:{" "}
+                <p className="text-sm text-gray-600">
+                  テーブル:{""}
                   <span className="font-medium">{table.tableName}</span>
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-600 mt-1">
                   定員: {table.capacity}名
                 </p>
               </div>
@@ -135,7 +135,7 @@ export function TableStatusModal({
                     className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none ${
                       selectedStatus === option.value
                         ? "border-indigo-500 ring-2 ring-indigo-500"
-                        : "border-gray-300 dark:border-gray-600"
+                        : "border-gray-300"
                     }`}
                   >
                     <input
@@ -147,10 +147,10 @@ export function TableStatusModal({
                     />
                     <div className="flex flex-1">
                       <div className="flex flex-col">
-                        <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <span className="block text-sm font-medium text-gray-900">
                           {option.label}
                         </span>
-                        <span className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <span className="mt-1 flex items-center text-sm text-gray-500">
                           {option.description}
                         </span>
                       </div>
@@ -159,7 +159,7 @@ export function TableStatusModal({
                       className={`ml-3 flex h-5 w-5 items-center justify-center rounded-full border ${
                         selectedStatus === option.value
                           ? "border-indigo-500 bg-indigo-500"
-                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                          : "border-gray-300 bg-white"
                       }`}
                     >
                       {selectedStatus === option.value && (
@@ -194,7 +194,7 @@ export function TableStatusModal({
               type="button"
               onClick={onClose}
               disabled={form.formState.isSubmitting}
-              className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 sm:mt-0 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               キャンセル
             </button>

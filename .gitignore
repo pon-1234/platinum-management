@@ -53,3 +53,6 @@ next-env.d.ts
 
 # pnpm
 .pnpm-store/
+
+# serena cache
+/.serena/cache/

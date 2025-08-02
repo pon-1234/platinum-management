@@ -8,7 +8,7 @@
 | **作成者** | (担当者名) |
 | **最終更新日** | 2025年1月27日 |
 
-> **Note**: 本ドキュメントは [.kiro/specs/platinum-management-system/design.md](../.kiro/specs/platinum-management-system/design.md) の内容を統合し、単一の情報源として整理したものです。
+> **Note**: 本ドキュメントは、プロジェクトの設計情報を集約した単一の情報源です。
 
 ---
 

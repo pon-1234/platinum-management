@@ -19,55 +19,49 @@ export class QRStatisticsService extends BaseService {
    * QRコード統計データを取得
    */
   async getQRCodeStats(): Promise<QRCodeStats> {
-    const today = new Date().toISOString().split("T")[0];
+    try {
+      // Use optimized RPC function to get all stats in a single query
+      const { data, error } = await this.supabase.rpc("get_qr_code_stats");
 
-    const [
-      totalScansResult,
-      successfulScansResult,
-      activeQRCodesResult,
-      todayScansResult,
-    ] = await Promise.all([
-      this.supabase
-        .from("qr_attendance_logs")
-        .select("id", { count: "exact", head: true }),
-      this.supabase
-        .from("qr_attendance_logs")
-        .select("id", { count: "exact", head: true })
-        .eq("success", true),
-      this.supabase
-        .from("qr_codes")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true)
-        .gt("expires_at", new Date().toISOString()),
-      this.supabase
-        .from("qr_attendance_logs")
-        .select("staff_id", { count: "exact", head: true })
-        .gte("created_at", `${today}T00:00:00.000Z`)
-        .lt("created_at", `${today}T23:59:59.999Z`),
-    ]);
+      if (error) {
+        throw new Error(
+          error.code === "42883"
+            ? "Required database function is missing. Please run migrations."
+            : this.handleDatabaseError(
+                error,
+                "QRコード統計の取得に失敗しました"
+              )
+        );
+      }
 
-    // ユニークユーザー数を取得
-    const { data: uniqueUsersData } = await this.supabase
-      .from("qr_attendance_logs")
-      .select("staff_id")
-      .gte("created_at", `${today}T00:00:00.000Z`)
-      .lt("created_at", `${today}T23:59:59.999Z`);
+      if (!data || data.length === 0) {
+        return {
+          totalScans: 0,
+          successfulScans: 0,
+          failedScans: 0,
+          activeQRCodes: 0,
+          todayScans: 0,
+          monthlyScans: 0,
+          uniqueUsers: 0,
+          totalStaff: 0,
+        };
+      }
 
-    const uniqueUsers = new Set(
-      uniqueUsersData?.map((log) => log.staff_id) || []
-    ).size;
-
-    return {
-      totalScans: totalScansResult.count || 0,
-      successfulScans: successfulScansResult.count || 0,
-      failedScans:
-        (totalScansResult.count || 0) - (successfulScansResult.count || 0),
-      activeQRCodes: activeQRCodesResult.count || 0,
-      todayScans: todayScansResult.count || 0,
-      monthlyScans: totalScansResult.count || 0,
-      uniqueUsers,
-      totalStaff: uniqueUsers,
-    };
+      const stats = data[0];
+      return {
+        totalScans: Number(stats.total_scans) || 0,
+        successfulScans: Number(stats.successful_scans) || 0,
+        failedScans: Number(stats.failed_scans) || 0,
+        activeQRCodes: Number(stats.active_qr_codes) || 0,
+        todayScans: Number(stats.today_scans) || 0,
+        monthlyScans: Number(stats.total_scans) || 0, // Using total_scans as monthly for now
+        uniqueUsers: Number(stats.unique_users_today) || 0,
+        totalStaff: Number(stats.unique_users_today) || 0, // Using unique users as totalStaff for now
+      };
+    } catch (error) {
+      console.error("getQRCodeStats error:", error);
+      throw error;
+    }
   }
 
   /**

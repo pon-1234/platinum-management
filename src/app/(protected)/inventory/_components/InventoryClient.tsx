@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useDebounce } from "@/hooks";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { EmptyState } from "@/components/common";
@@ -43,12 +44,16 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // デバウンス処理
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedCategory = useDebounce(selectedCategory, 300);
+
   const refreshData = useCallback(async () => {
     try {
       setIsRefreshing(true);
       const result = await getInventoryPageData({
-        category: selectedCategory !== "all" ? selectedCategory : undefined,
-        searchTerm: searchTerm || undefined,
+        category: debouncedCategory !== "all" ? debouncedCategory : undefined,
+        searchTerm: debouncedSearchTerm || undefined,
       });
 
       if (result.success) {
@@ -65,7 +70,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     } finally {
       setIsRefreshing(false);
     }
-  }, [searchTerm, selectedCategory]);
+  }, [debouncedSearchTerm, debouncedCategory]);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -89,19 +94,18 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     refreshData();
   };
 
+  // デバウンスされた値が変更されたときにデータを更新
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
   const lowStockAlerts = alerts.filter(
     (alert) =>
       alert.alertType === "low_stock" || alert.alertType === "out_of_stock"
   );
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // フィルタリングはサーバー側で行われるため、クライアント側では不要
+  const filteredProducts = products;
 
   if (error) {
     return (
@@ -208,12 +212,14 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
           <SearchInput
             value={searchTerm}
             onChange={setSearchTerm}
-            placeholder="商品名または仕入先で検索..."
+            placeholder="商品名で検索..."
+            disabled={isRefreshing}
           />
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            disabled={isRefreshing}
           >
             <option value="all">全カテゴリー</option>
             {categories.map((category) => (
@@ -227,7 +233,11 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
 
       {/* Inventory Table */}
       <Card>
-        {filteredProducts.length === 0 ? (
+        {isRefreshing ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <EmptyState
             title="在庫アイテムが見つかりません"
             description="検索条件を変更するか、新しい在庫アイテムを追加してください。"

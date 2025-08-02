@@ -149,47 +149,35 @@ export class CustomerService extends BaseService {
         );
       }
 
-      // Get customer IDs from search results (already sorted by similarity)
-      const customerIds = (data || []).map((item: { id: string }) => item.id);
-
-      if (customerIds.length === 0) {
-        return [];
+      // RPC関数が詳細情報を含めて返すように最適化されたので、直接マップして返す
+      interface SearchResult {
+        id: string;
+        name: string;
+        name_kana: string | null;
+        phone_number: string | null;
+        line_id: string | null;
+        birthday: string | null;
+        job: string | null;
+        memo: string | null;
+        source: string | null;
+        rank: string | null;
+        status: "active" | "vip" | "blocked";
+        last_visit_date: string | null;
+        created_at: string;
+        updated_at: string;
+        created_by: string | null;
+        updated_by: string | null;
+        similarity: number;
       }
 
-      // Fetch complete customer data for the matched IDs
-      let detailQuery = supabase
-        .from("customers")
-        .select("*")
-        .in("id", customerIds);
+      const customers = ((data as SearchResult[]) || [])
+        .filter(
+          (item) =>
+            !validatedParams.status || item.status === validatedParams.status
+        )
+        .map((item) => this.mapToCustomer(item));
 
-      // Apply status filter if provided
-      if (validatedParams.status) {
-        detailQuery = detailQuery.eq("status", validatedParams.status);
-      }
-
-      const { data: customerDetails, error: detailError } = await detailQuery;
-
-      if (detailError) {
-        throw new Error(
-          this.handleDatabaseError(
-            detailError,
-            "顧客詳細情報の取得に失敗しました"
-          )
-        );
-      }
-
-      // Create a map for quick lookup
-      const customerMap = new Map(
-        (customerDetails || []).map((item) => [
-          item.id,
-          this.mapToCustomer(item),
-        ])
-      );
-
-      // Return customers in the order of search results (by similarity)
-      return customerIds
-        .map((id) => customerMap.get(id))
-        .filter((customer): customer is Customer => customer !== undefined);
+      return customers;
     }
 
     // If no search query, use standard query

@@ -132,13 +132,13 @@ export function WeeklySchedule({
   const getShiftTypeColor = (shiftType: string) => {
     switch (shiftType) {
       case "regular":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-blue-100 text-blue-800";
       case "overtime":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+        return "bg-orange-100 text-orange-800";
       case "holiday":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -149,19 +149,16 @@ export function WeeklySchedule({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
           <div className="grid grid-cols-7 gap-4">
             {[...Array(7)].map((_, i) => (
               <div key={i} className="space-y-3">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-6 bg-gray-200 rounded"></div>
                 <div className="space-y-2">
                   {[...Array(3)].map((_, j) => (
-                    <div
-                      key={j}
-                      className="h-16 bg-gray-200 dark:bg-gray-700 rounded"
-                    ></div>
+                    <div key={j} className="h-16 bg-gray-200 rounded"></div>
                   ))}
                 </div>
               </div>
@@ -173,26 +170,26 @@ export function WeeklySchedule({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className="bg-white rounded-lg shadow">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="text-xl font-semibold text-gray-900">
               週間スケジュール
             </h2>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => navigateWeek("prev")}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="p-2 text-gray-500 hover:text-gray-700"
               >
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 px-3">
+              <span className="text-sm font-medium text-gray-900 px-3">
                 {format(new Date(currentWeekStart), "yyyy年M月d日", {
                   locale: ja,
-                })}{" "}
-                -{" "}
+                })}
+                {""}-{""}
                 {format(
                   new Date(weeklyData?.weekEnd || currentWeekStart),
                   "M月d日",
@@ -201,7 +198,7 @@ export function WeeklySchedule({
               </span>
               <button
                 onClick={() => navigateWeek("next")}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="p-2 text-gray-500 hover:text-gray-700"
               >
                 <ChevronRightIcon className="w-5 h-5" />
               </button>
@@ -210,7 +207,7 @@ export function WeeklySchedule({
           <div className="flex items-center space-x-3">
             <button
               onClick={goToToday}
-              className="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex items-center px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               <CalendarDaysIcon className="w-4 h-4 mr-2" />
               今日
@@ -230,19 +227,19 @@ export function WeeklySchedule({
             <div key={day.date} className="min-h-48">
               {/* Day Header */}
               <div className="text-center mb-3">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <div className="text-sm font-medium text-gray-500">
                   {getDayOfWeekLabel(dayIndex)}
                 </div>
                 <div
                   className={`text-lg font-semibold ${
                     day.date === format(new Date(), "yyyy-MM-dd")
-                      ? "text-indigo-600 dark:text-indigo-400"
-                      : "text-gray-900 dark:text-gray-100"
+                      ? "text-indigo-600"
+                      : "text-gray-900"
                   }`}
                 >
                   {format(new Date(day.date), "d")}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-gray-500">
                   {day.totalStaff}人予定
                 </div>
               </div>
@@ -265,7 +262,7 @@ export function WeeklySchedule({
                 ))}
 
                 {day.shifts.length === 0 && (
-                  <div className="text-center py-4 text-gray-400 dark:text-gray-500">
+                  <div className="text-center py-4 text-gray-400">
                     <div className="text-xs">シフトなし</div>
                   </div>
                 )}
@@ -273,7 +270,7 @@ export function WeeklySchedule({
                 {/* Add Shift Button */}
                 <button
                   onClick={() => handleAddShiftClick(day.date)}
-                  className="w-full p-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md text-gray-400 dark:text-gray-500 hover:border-indigo-300 hover:text-indigo-500 dark:hover:border-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className="w-full p-2 border-2 border-dashed border-gray-300 rounded-md text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors"
                 >
                   <PlusIcon className="w-4 h-4 mx-auto" />
                 </button>
@@ -284,18 +281,18 @@ export function WeeklySchedule({
       </div>
 
       {/* Summary */}
-      <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-lg">
+      <div className="px-6 py-4 bg-gray-50 rounded-b-lg">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-6">
-            <div className="text-gray-600 dark:text-gray-300">
-              総シフト数:{" "}
+            <div className="text-gray-600">
+              総シフト数:{""}
               {weeklyData?.days.reduce(
                 (total, day) => total + day.totalStaff,
                 0
               ) || 0}
             </div>
-            <div className="text-gray-600 dark:text-gray-300">
-              確定済み:{" "}
+            <div className="text-gray-600">
+              確定済み:{""}
               {weeklyData?.days.reduce(
                 (total, day) => total + day.confirmedStaff,
                 0
@@ -305,21 +302,15 @@ export function WeeklySchedule({
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-200 rounded"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-300">
-                通常勤務
-              </span>
+              <span className="text-xs text-gray-600">通常勤務</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-orange-200 rounded"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-300">
-                残業
-              </span>
+              <span className="text-xs text-gray-600">残業</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-red-200 rounded"></div>
-              <span className="text-xs text-gray-600 dark:text-gray-300">
-                休日出勤
-              </span>
+              <span className="text-xs text-gray-600">休日出勤</span>
             </div>
           </div>
         </div>

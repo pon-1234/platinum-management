@@ -193,6 +193,8 @@ export const getCategories = createSafeAction(z.object({}), async () => {
 const getInventoryPageDataSchema = z.object({
   category: z.string().optional(),
   searchTerm: z.string().optional(),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
 });
 
 export const getInventoryPageData = createSafeAction(

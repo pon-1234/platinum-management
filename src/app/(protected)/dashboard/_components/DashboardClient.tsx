@@ -4,6 +4,11 @@ interface DashboardStats {
   totalCustomers: number;
   todayReservations: number;
   todaySales: number;
+  todayVisits: number;
+  todayNewCustomers: number;
+  activeCastCount: number;
+  activeTableCount: number;
+  lowStockCount: number;
 }
 
 interface DashboardClientProps {
@@ -24,6 +29,11 @@ export function DashboardClient({ initialStats, error }: DashboardClientProps) {
     totalCustomers: 0,
     todayReservations: 0,
     todaySales: 0,
+    todayVisits: 0,
+    todayNewCustomers: 0,
+    activeCastCount: 0,
+    activeTableCount: 0,
+    lowStockCount: 0,
   };
 
   return (

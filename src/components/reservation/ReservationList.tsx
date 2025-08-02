@@ -96,16 +96,14 @@ export function ReservationList({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   if (reservations.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        予約がありません
-      </div>
+      <div className="text-center py-8 text-gray-500">予約がありません</div>
     );
   }
 
@@ -124,13 +122,13 @@ export function ReservationList({
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-medium text-gray-900">
                     {customer?.name || "不明な顧客"}
                   </h3>
                   {getStatusBadge(reservation.status)}
                 </div>
 
-                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     {format(
@@ -157,14 +155,16 @@ export function ReservationList({
 
                 {table && (
                   <div className="mt-2 text-sm">
-                    <span className="font-medium">テーブル:</span>{" "}
+                    <span className="font-medium">テーブル:</span>
+                    {""}
                     {table.tableName}
                   </div>
                 )}
 
                 {reservation.specialRequests && (
-                  <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">特記事項:</span>{" "}
+                  <div className="mt-2 text-sm text-gray-600">
+                    <span className="font-medium">特記事項:</span>
+                    {""}
                     {reservation.specialRequests}
                   </div>
                 )}
@@ -177,7 +177,7 @@ export function ReservationList({
                       e.stopPropagation();
                       handleCheckIn(reservation);
                     }}
-                    className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                     title="チェックイン"
                   >
                     <Check className="w-5 h-5" />
@@ -187,7 +187,7 @@ export function ReservationList({
                       e.stopPropagation();
                       handleCancel(reservation);
                     }}
-                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="キャンセル"
                   >
                     <X className="w-5 h-5" />
