@@ -1,8 +1,9 @@
 -- =============================================================================
--- Platinum Management System - 統合スキーマ (最終版)
--- 最終更新日: 2025-07-30
--- 説明: 全てのテーブル、関数、RLSポリシーを含む完全なスキーマ定義。
---       パフォーマンス最適化、RLSの厳格化、可読性向上を適用済み。
+-- Platinum Management System - Initial Schema
+-- Date: 2025-08-04
+-- Description: The complete initial schema for the database.
+--              This file should be used for setting up new development environments.
+--              Subsequent changes should be handled via differential migration files.
 -- =============================================================================
 
 -- =============================================================================
@@ -382,14 +383,6 @@ CREATE INDEX idx_attendance_records_staff_date ON attendance_records(staff_id, a
 CREATE INDEX idx_bottle_keeps_customer_status ON bottle_keeps(customer_id, status);
 
 -- パフォーマンス最適化インデックス
-CREATE INDEX IF NOT EXISTS idx_customers_search ON customers
-USING gin (
-  name gin_trgm_ops,
-  name_kana gin_trgm_ops,
-  phone_number gin_trgm_ops,
-  line_id gin_trgm_ops
-);
-
 CREATE INDEX IF NOT EXISTS idx_staffs_search ON staffs
 USING gin (
   full_name gin_trgm_ops,
@@ -504,50 +497,6 @@ BEGIN
   CROSS JOIN reservations r
   CROSS JOIN active_cast ac
   CROSS JOIN low_stock ls;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 最適化された顧客検索関数
-CREATE OR REPLACE FUNCTION search_customers_optimized(
-  search_term TEXT,
-  limit_count INTEGER DEFAULT 20,
-  offset_count INTEGER DEFAULT 0
-)
-RETURNS TABLE (
-  id UUID,
-  name TEXT,
-  name_kana TEXT,
-  phone_number TEXT,
-  line_id TEXT,
-  similarity REAL
-) AS $$
-BEGIN
-  IF LENGTH(search_term) < 2 THEN
-    RETURN;
-  END IF;
-
-  RETURN QUERY
-  SELECT
-    c.id,
-    c.name,
-    c.name_kana,
-    c.phone_number,
-    c.line_id,
-    GREATEST(
-      similarity(COALESCE(c.name, ''), search_term),
-      similarity(COALESCE(c.name_kana, ''), search_term),
-      similarity(COALESCE(c.phone_number, ''), search_term),
-      similarity(COALESCE(c.line_id, ''), search_term)
-    ) as sim
-  FROM customers c
-  WHERE
-    c.name % search_term OR
-    c.name_kana % search_term OR
-    c.phone_number % search_term OR
-    c.line_id % search_term
-  ORDER BY sim DESC
-  LIMIT limit_count
-  OFFSET offset_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -827,79 +776,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 在庫ページデータ取得関数
-CREATE OR REPLACE FUNCTION get_inventory_page_data(
-  p_category TEXT DEFAULT NULL,
-  p_search_term TEXT DEFAULT NULL
-)
-RETURNS JSON AS $$
-DECLARE
-  result JSON;
-BEGIN
-  -- 全データを一度のクエリで取得してJSON形式で返す
-  WITH filtered_products AS (
-    SELECT * FROM products
-    WHERE is_active = true
-      AND (p_category IS NULL OR category = p_category)
-      AND (p_search_term IS NULL OR name ILIKE '%' || p_search_term || '%')
-    ORDER BY name
-  ),
-  stats AS (
-    SELECT
-      COUNT(*)::INTEGER AS total_products,
-      COUNT(CASE WHEN stock_quantity <= low_stock_threshold AND stock_quantity > 0 THEN 1 END)::INTEGER AS low_stock_items,
-      COUNT(CASE WHEN stock_quantity = 0 THEN 1 END)::INTEGER AS out_of_stock_items,
-      COALESCE(SUM(stock_quantity * cost), 0)::NUMERIC AS total_value
-    FROM products
-    WHERE is_active = true
-  ),
-  alerts AS (
-    SELECT
-      CASE
-        WHEN stock_quantity = 0 THEN 'out-' || id::TEXT
-        WHEN stock_quantity <= low_stock_threshold THEN 'low-' || id::TEXT
-        ELSE 'over-' || id::TEXT
-      END AS id,
-      id::TEXT AS product_id,
-      name AS product_name,
-      stock_quantity AS current_stock,
-      CASE
-        WHEN stock_quantity = 0 OR stock_quantity <= low_stock_threshold THEN low_stock_threshold
-        ELSE max_stock
-      END AS threshold,
-      CASE
-        WHEN stock_quantity = 0 THEN 'out_of_stock'
-        WHEN stock_quantity <= low_stock_threshold THEN 'low_stock'
-        ELSE 'overstock'
-      END AS alert_type,
-      CASE
-        WHEN stock_quantity = 0 THEN 'critical'
-        ELSE 'warning'
-      END AS severity
-    FROM products
-    WHERE is_active = true
-      AND (stock_quantity = 0 OR stock_quantity <= low_stock_threshold OR stock_quantity >= max_stock)
-    ORDER BY
-      CASE WHEN stock_quantity = 0 THEN 1 ELSE 2 END,
-      stock_quantity
-  ),
-  categories AS (
-    SELECT DISTINCT category
-    FROM products
-    WHERE is_active = true
-    ORDER BY category
-  )
-  SELECT json_build_object(
-    'products', COALESCE((SELECT json_agg(p.*) FROM filtered_products p), '[]'::JSON),
-    'stats', (SELECT row_to_json(s.*) FROM stats s),
-    'alerts', COALESCE((SELECT json_agg(a.*) FROM alerts a), '[]'::JSON),
-    'categories', COALESCE((SELECT json_agg(c.category) FROM categories c), '[]'::JSON)
-  ) INTO result;
-
-  RETURN result;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- =============================================================================
 -- 6. Row Level Security (RLS) ポリシーの設定 (改善版)
 -- =============================================================================
@@ -1018,11 +894,9 @@ CREATE POLICY "Allow admin/manager write access" ON compliance_reports FOR ALL U
 -- =============================================================================
 COMMENT ON COLUMN tables.is_active IS 'テーブルが運用中かどうか（撤去されていないか）';
 COMMENT ON COLUMN tables.is_available IS 'テーブルが現在利用可能かどうか（空席か）';
-COMMENT ON INDEX idx_customers_search IS 'GIN index for fast partial match searches on customer data';
 COMMENT ON INDEX idx_staffs_search IS 'GIN index for fast partial match searches on staff names';
 COMMENT ON INDEX idx_visits_date_range IS 'B-tree index for date range queries on visits';
 COMMENT ON INDEX idx_attendance_date_range IS 'B-tree index for date range queries on attendance records';
-COMMENT ON FUNCTION search_customers_optimized IS 'Optimized customer search using Trigram similarity for fast partial matching';
 COMMENT ON FUNCTION search_staffs_optimized IS 'Optimized staff search using Trigram similarity for fast partial matching';
 COMMENT ON FUNCTION get_optimized_dashboard_stats IS 'Optimized dashboard statistics calculation including all required metrics';
 
@@ -1036,47 +910,378 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
 
 -- =============================================================================
--- 9. サンプルデータの挿入
+-- 9. パフォーマンス最適化の適用 (2025-08-01 to 2025-08-03)
 -- =============================================================================
 
--- サンプルスタッフ
-INSERT INTO staffs (id, full_name, email, phone, role) VALUES
-  ('550e8400-e29b-41d4-a716-446655440001', '山田太郎', 'yamada@example.com', '090-1111-1111', 'manager'),
-  ('550e8400-e29b-41d4-a716-446655440002', '鈴木花子', 'suzuki@example.com', '090-2222-2222', 'cast'),
-  ('550e8400-e29b-41d4-a716-446655440003', '田中美咲', 'tanaka@example.com', '090-3333-3333', 'cast');
+-- 在庫管理のパフォーマンス最適化 (2025-08-01)
+CREATE MATERIALIZED VIEW IF NOT EXISTS inventory_stats_mv AS
+SELECT
+  COUNT(*)::INTEGER AS total_products,
+  COUNT(CASE WHEN stock_quantity <= low_stock_threshold AND stock_quantity > 0 THEN 1 END)::INTEGER AS low_stock_items,
+  COUNT(CASE WHEN stock_quantity = 0 THEN 1 END)::INTEGER AS out_of_stock_items,
+  COALESCE(SUM(stock_quantity * cost), 0)::NUMERIC AS total_value
+FROM products
+WHERE is_active = true;
 
--- サンプルテーブル
-INSERT INTO tables (table_number, capacity, location) VALUES
-  ('A-1', 4, '1階窓際'),
-  ('A-2', 4, '1階窓際'),
-  ('B-1', 6, '1階中央'),
-  ('B-2', 6, '1階中央'),
-  ('VIP-1', 8, '2階VIPルーム'),
-  ('VIP-2', 10, '2階VIPルーム');
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_stats_mv ON inventory_stats_mv ((1));
 
--- サンプルキャストプロフィール
-INSERT INTO casts_profile (staff_id, stage_name, experience_months) VALUES
-  ('550e8400-e29b-41d4-a716-446655440002', 'はなちゃん', 12),
-  ('550e8400-e29b-41d4-a716-446655440003', 'みさきちゃん', 6);
+CREATE MATERIALIZED VIEW IF NOT EXISTS inventory_alerts_mv AS
+SELECT
+  CASE
+    WHEN stock_quantity = 0 THEN 'out-' || id::TEXT
+    WHEN stock_quantity <= low_stock_threshold THEN 'low-' || id::TEXT
+    ELSE 'over-' || id::TEXT
+  END AS id,
+  id::TEXT AS product_id,
+  name AS product_name,
+  stock_quantity AS current_stock,
+  CASE
+    WHEN stock_quantity = 0 OR stock_quantity <= low_stock_threshold THEN low_stock_threshold
+    ELSE max_stock
+  END AS threshold,
+  CASE
+    WHEN stock_quantity = 0 THEN 'out_of_stock'
+    WHEN stock_quantity <= low_stock_threshold THEN 'low_stock'
+    ELSE 'overstock'
+  END AS alert_type,
+  CASE
+    WHEN stock_quantity = 0 THEN 'critical'
+    ELSE 'warning'
+  END AS severity
+FROM products
+WHERE is_active = true
+  AND (stock_quantity = 0 OR stock_quantity <= low_stock_threshold OR stock_quantity >= max_stock)
+ORDER BY
+  CASE WHEN stock_quantity = 0 THEN 1 ELSE 2 END,
+  stock_quantity;
 
--- サンプル顧客
-INSERT INTO customers (name, name_kana, phone_number, status) VALUES
-  ('佐藤一郎', 'サトウイチロウ', '090-5555-5555', 'active'),
-  ('高橋二郎', 'タカハシジロウ', '090-6666-6666', 'vip'),
-  ('伊藤三郎', 'イトウサブロウ', '090-7777-7777', 'active');
+CREATE INDEX IF NOT EXISTS idx_products_search ON products 
+USING gin (name gin_trgm_ops) 
+WHERE is_active = true;
 
--- サンプル商品
-INSERT INTO products (name, category, price, cost, stock_quantity, low_stock_threshold) VALUES
-  ('ビール', 'ドリンク', 800, 300, 100, 20),
-  ('ハイボール', 'ドリンク', 700, 250, 80, 20),
-  ('シャンパン', 'ボトル', 15000, 8000, 10, 2),
-  ('ウイスキー', 'ボトル', 12000, 6000, 15, 3),
-  ('焼酎', 'ボトル', 8000, 4000, 20, 5),
-  ('枝豆', 'フード', 500, 200, 50, 10),
-  ('ミックスナッツ', 'フード', 800, 300, 30, 10),
-  ('チーズ盛り合わせ', 'フード', 1500, 600, 20, 5),
-  ('フルーツ盛り合わせ', 'フード', 2000, 1000, 15, 3),
-  ('ドライフルーツ', 'フード', 1000, 400, 25, 5);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products (category) 
+WHERE is_active = true;
+
+CREATE INDEX IF NOT EXISTS idx_products_stock_status ON products (stock_quantity, low_stock_threshold) 
+WHERE is_active = true;
+
+CREATE OR REPLACE FUNCTION refresh_inventory_stats()
+RETURNS void AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY inventory_stats_mv;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY inventory_alerts_mv;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION trigger_refresh_inventory_stats()
+RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('refresh_inventory_stats', '');
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS refresh_inventory_stats_trigger ON products;
+CREATE TRIGGER refresh_inventory_stats_trigger
+AFTER INSERT OR UPDATE OR DELETE ON products
+FOR EACH STATEMENT
+EXECUTE FUNCTION trigger_refresh_inventory_stats();
+
+CREATE OR REPLACE FUNCTION get_inventory_page_data_optimized(
+  p_category TEXT DEFAULT NULL,
+  p_search_term TEXT DEFAULT NULL,
+  p_offset INTEGER DEFAULT 0,
+  p_limit INTEGER DEFAULT 50
+)
+RETURNS JSON AS $$
+DECLARE
+  result JSON;
+BEGIN
+  WITH filtered_products AS (
+    SELECT 
+      id,
+      name,
+      category,
+      price,
+      cost,
+      stock_quantity,
+      low_stock_threshold,
+      max_stock,
+      reorder_point,
+      is_active,
+      created_at,
+      updated_at
+    FROM products
+    WHERE is_active = true
+      AND (p_category IS NULL OR category = p_category)
+      AND (p_search_term IS NULL OR name ILIKE '%' || p_search_term || '%')
+    ORDER BY name
+    LIMIT p_limit
+    OFFSET p_offset
+  ),
+  categories AS (
+    SELECT DISTINCT category
+    FROM products
+    WHERE is_active = true
+    ORDER BY category
+  )
+  SELECT json_build_object(
+    'products', COALESCE((SELECT json_agg(p.*) FROM filtered_products p), '[]'::JSON),
+    'stats', (SELECT row_to_json(s.*) FROM inventory_stats_mv s),
+    'alerts', COALESCE((SELECT json_agg(a.*) FROM inventory_alerts_mv a), '[]'::JSON),
+    'categories', COALESCE((SELECT json_agg(c.category) FROM categories c), '[]'::JSON),
+    'total_count', (
+      SELECT COUNT(*)
+      FROM products
+      WHERE is_active = true
+        AND (p_category IS NULL OR category = p_category)
+        AND (p_search_term IS NULL OR name ILIKE '%' || p_search_term || '%')
+    )
+  ) INTO result;
+
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+REFRESH MATERIALIZED VIEW inventory_stats_mv;
+REFRESH MATERIALIZED VIEW inventory_alerts_mv;
+
+-- パフォーマンス最適化の統合 (2025-08-02)
+CREATE OR REPLACE FUNCTION get_available_staff_for_cast()
+RETURNS TABLE (
+  id UUID,
+  full_name TEXT,
+  role TEXT,
+  is_active BOOLEAN
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    s.id,
+    s.full_name,
+    s.role,
+    s.is_active
+  FROM staffs s
+  LEFT JOIN casts_profile cp ON s.id = cp.staff_id
+  WHERE 
+    s.role != 'admin'
+    AND s.is_active = true
+    AND cp.staff_id IS NULL
+  ORDER BY s.full_name;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_bottle_keep_stats()
+RETURNS TABLE (
+  total_bottles BIGINT,
+  active_bottles BIGINT,
+  expired_bottles BIGINT,
+  consumed_bottles BIGINT,
+  expiring_soon BIGINT,
+  total_value NUMERIC
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  one_week_from_now DATE;
+BEGIN
+  one_week_from_now := CURRENT_DATE + INTERVAL '7 days';
+  
+  RETURN QUERY
+  SELECT
+    COUNT(*)::BIGINT AS total_bottles,
+    COUNT(*) FILTER (WHERE status = 'active')::BIGINT AS active_bottles,
+    COUNT(*) FILTER (WHERE status = 'expired')::BIGINT AS expired_bottles,
+    COUNT(*) FILTER (WHERE status = 'consumed')::BIGINT AS consumed_bottles,
+    COUNT(*) FILTER (WHERE status = 'active' AND expiry_date <= one_week_from_now)::BIGINT AS expiring_soon,
+    COALESCE(
+      SUM(
+        CASE 
+          WHEN bk.status = 'active' THEN bk.remaining_percentage/100.0 * p.price
+          ELSE 0
+        END
+      ), 0
+    )::NUMERIC AS total_value
+  FROM bottle_keeps bk
+  LEFT JOIN products p ON bk.product_id = p.id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_qr_code_stats()
+RETURNS TABLE (
+  total_scans BIGINT,
+  successful_scans BIGINT,
+  failed_scans BIGINT,
+  active_qr_codes BIGINT,
+  today_scans BIGINT,
+  unique_users_today BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  today_start TIMESTAMPTZ;
+  today_end TIMESTAMPTZ;
+BEGIN
+  today_start := CURRENT_DATE::TIMESTAMPTZ;
+  today_end := (CURRENT_DATE + INTERVAL '1 day')::TIMESTAMPTZ;
+  
+  RETURN QUERY
+  WITH scan_stats AS (
+    SELECT
+      COUNT(*)::BIGINT AS total_scans,
+      COUNT(*) FILTER (WHERE success = true)::BIGINT AS successful_scans,
+      COUNT(*) FILTER (WHERE scanned_at >= today_start AND scanned_at < today_end)::BIGINT AS today_scans
+    FROM qr_attendance_logs
+  ),
+  active_codes AS (
+    SELECT COUNT(*)::BIGINT AS active_qr_codes
+    FROM qr_codes
+    WHERE is_active = true AND (expires_at IS NULL OR expires_at > NOW())
+  ),
+  unique_today AS (
+    SELECT COUNT(DISTINCT staff_id)::BIGINT AS unique_users_today
+    FROM qr_attendance_logs
+    WHERE scanned_at >= today_start AND scanned_at < today_end
+  )
+  SELECT
+    scan_stats.total_scans,
+    scan_stats.successful_scans,
+    scan_stats.total_scans - scan_stats.successful_scans AS failed_scans,
+    active_codes.active_qr_codes,
+    scan_stats.today_scans,
+    unique_today.unique_users_today
+  FROM scan_stats, active_codes, unique_today;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_weekly_schedule(week_start DATE)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- TODO: Implement actual weekly schedule logic
+  RETURN jsonb_build_object(
+    'weekStart', week_start,
+    'dailySchedules', '[]'::jsonb
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_available_staff_for_cast() TO authenticated;
+GRANT EXECUTE ON FUNCTION get_bottle_keep_stats() TO authenticated;
+GRANT EXECUTE ON FUNCTION get_qr_code_stats() TO authenticated;
+GRANT EXECUTE ON FUNCTION get_weekly_schedule(DATE) TO authenticated;
+
+COMMENT ON FUNCTION get_available_staff_for_cast() IS 'Returns all active staff members who are not admins and not already registered as casts';
+COMMENT ON FUNCTION get_bottle_keep_stats() IS 'Returns comprehensive bottle keep statistics including counts by status and total value';
+COMMENT ON FUNCTION get_qr_code_stats() IS 'Returns comprehensive QR code usage statistics';
+COMMENT ON FUNCTION get_weekly_schedule(DATE) IS 'Returns weekly schedule data for the given week start date';
+
+CREATE INDEX IF NOT EXISTS idx_shift_requests_status ON shift_requests(status);
+CREATE INDEX IF NOT EXISTS idx_shift_requests_staff_status ON shift_requests(staff_id, status);
+CREATE INDEX IF NOT EXISTS idx_shift_requests_date ON shift_requests(requested_date DESC);
+CREATE INDEX IF NOT EXISTS idx_bottle_keeps_status ON bottle_keeps(status);
+CREATE INDEX IF NOT EXISTS idx_bottle_keeps_expiry ON bottle_keeps(expiry_date) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_qr_attendance_logs_created ON qr_attendance_logs(scanned_at DESC);
+CREATE INDEX IF NOT EXISTS idx_qr_attendance_logs_staff_date ON qr_attendance_logs(staff_id, scanned_at DESC);
+CREATE INDEX IF NOT EXISTS idx_qr_codes_active ON qr_codes(is_active, expires_at) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_tables_location_status ON tables(location, current_status);
+CREATE INDEX IF NOT EXISTS idx_visits_customer ON visits(customer_id);
+CREATE INDEX IF NOT EXISTS idx_visits_table ON visits(table_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_product ON inventory_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_created ON inventory_movements(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_casts_profile_staff ON casts_profile(staff_id);
+
+COMMENT ON INDEX idx_attendance_records_staff_date IS 'Optimizes queries for staff attendance history';
+COMMENT ON INDEX idx_attendance_records_date IS 'Optimizes queries for daily attendance reports';
+COMMENT ON INDEX idx_shift_requests_status IS 'Optimizes queries for pending shift requests';
+COMMENT ON INDEX idx_bottle_keeps_status IS 'Optimizes bottle keep statistics queries';
+COMMENT ON INDEX idx_bottle_keeps_expiry IS 'Optimizes queries for expiring bottles';
+COMMENT ON INDEX idx_qr_attendance_logs_created IS 'Optimizes QR code statistics queries';
+
+-- 顧客検索の最適化 (2025-08-03)
+CREATE OR REPLACE FUNCTION search_customers_optimized(
+  search_term TEXT,
+  limit_count INTEGER DEFAULT 20,
+  offset_count INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  name_kana TEXT,
+  phone_number TEXT,
+  line_id TEXT,
+  birthday DATE,
+  occupation TEXT,
+  notes TEXT,
+  customer_rank VARCHAR,
+  status customer_status,
+  last_visit_date DATE,
+  created_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  created_by UUID,
+  updated_by UUID,
+  similarity REAL
+) AS $$
+BEGIN
+  IF LENGTH(search_term) < 2 THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    c.id,
+    c.name,
+    c.name_kana,
+    c.phone_number,
+    c.line_id,
+    c.birthday,
+    c.occupation,
+    c.notes,
+    c.customer_rank,
+    c.status,
+    c.last_visit_date,
+    c.created_at,
+    c.updated_at,
+    c.created_by,
+    c.updated_by,
+    GREATEST(
+      similarity(COALESCE(c.name, ''), search_term),
+      similarity(COALESCE(c.name_kana, ''), search_term),
+      similarity(COALESCE(c.phone_number, ''), search_term),
+      similarity(COALESCE(c.line_id, ''), search_term)
+    ) as sim
+  FROM customers c
+  WHERE
+    c.name % search_term OR
+    c.name_kana % search_term OR
+    c.phone_number % search_term OR
+    c.line_id % search_term
+  ORDER BY sim DESC
+  LIMIT limit_count
+  OFFSET offset_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP INDEX IF EXISTS idx_customers_search;
+CREATE INDEX idx_customers_search ON customers
+USING gin (
+  name gin_trgm_ops,
+  name_kana gin_trgm_ops,
+  phone_number gin_trgm_ops,
+  line_id gin_trgm_ops
+);
+
+-- =============================================================================
+-- 10. 統計情報の更新
+-- =============================================================================
+ANALYZE;
 
 -- =============================================================================
 -- 完了
