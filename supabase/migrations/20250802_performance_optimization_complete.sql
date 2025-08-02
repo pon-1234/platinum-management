@@ -192,7 +192,7 @@ WHERE is_active = true;
 
 -- Tables indexes for real-time updates
 CREATE INDEX IF NOT EXISTS idx_tables_location_status 
-ON tables(location, status);
+ON tables(location, current_status);
 
 CREATE INDEX IF NOT EXISTS idx_tables_active 
 ON tables(is_active) 
