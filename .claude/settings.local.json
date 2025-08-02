@@ -31,7 +31,8 @@
       "mcp__serena__replace_symbol_body",
       "mcp__serena__replace_regex",
       "Bash(pnpm supabase db reset:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(psql:*)"
     ],
     "deny": []
   }
