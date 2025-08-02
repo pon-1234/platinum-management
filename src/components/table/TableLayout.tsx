@@ -51,9 +51,26 @@ export function TableLayout({
       loadTables();
 
       // Subscribe to real-time updates only if not using prop tables
-      const unsubscribe = tableService.subscribeToAllTableUpdates(
-        (updatedTables) => {
-          setInternalTables(updatedTables);
+      const unsubscribe = tableService.subscribeToTableUpdatesDifferential(
+        (updatedTable) => {
+          setInternalTables((prev) => {
+            const index = prev.findIndex((t) => t.id === updatedTable.id);
+            if (index >= 0) {
+              // Update existing table
+              const newTables = [...prev];
+              newTables[index] = updatedTable;
+              return newTables;
+            } else {
+              // Add new table
+              return [...prev, updatedTable];
+            }
+          });
+        },
+        (tableId) => {
+          setInternalTables((prev) => prev.filter((t) => t.id !== tableId));
+        },
+        (allTables) => {
+          setInternalTables(allTables);
         }
       );
 

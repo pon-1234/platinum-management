@@ -78,7 +78,7 @@ export type { ClockAction, ClockActionType };
 export type { CalendarShift, DailySchedule, WeeklySchedule, ShiftType };
 export type { AttendanceDashboard, MonthlyAttendanceSummary };
 
-// Legacy aliases for backward compatibility
+// Legacy aliases for backward compatibility - TODO: Remove in future refactoring
 export type CreateShiftTemplateData = CreateShiftTemplateInput;
 export type UpdateShiftTemplateData = UpdateShiftTemplateInput;
 export type CreateShiftRequestData = CreateShiftRequestInput;

@@ -305,56 +305,45 @@ export class BottleKeepService extends BaseService {
 
   // ボトルキープ統計
   async getBottleKeepStats(): Promise<BottleKeepStats> {
-    // ステータス別のカウントをデータベースで集計
-    // ステータス別のカウントを個別に取得
-    const { count: totalBottles } = await this.supabase
-      .from("bottle_keeps")
-      .select("*", { count: "exact", head: true });
+    try {
+      // Use optimized RPC function to get all stats in a single query
+      const { data, error } = await this.supabase.rpc("get_bottle_keep_stats");
 
-    const { count: activeBottles } = await this.supabase
-      .from("bottle_keeps")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "active");
+      if (error) {
+        throw new Error(
+          error.code === "42883"
+            ? "Required database function is missing. Please run migrations."
+            : this.handleDatabaseError(
+                error,
+                "ボトルキープ統計の取得に失敗しました"
+              )
+        );
+      }
 
-    const { count: expiredBottles } = await this.supabase
-      .from("bottle_keeps")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "expired");
+      if (!data || data.length === 0) {
+        return {
+          totalBottles: 0,
+          activeBottles: 0,
+          expiredBottles: 0,
+          consumedBottles: 0,
+          totalValue: 0,
+          expiringTown: 0,
+        };
+      }
 
-    const { count: consumedBottles } = await this.supabase
-      .from("bottle_keeps")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "consumed");
-
-    // アクティブなボトルの総価値を計算
-    const { data: activeBottlesData } = await this.supabase
-      .from("bottle_keeps")
-      .select("remaining_amount, product:products(price)")
-      .eq("status", "active");
-
-    const totalValue =
-      activeBottlesData?.reduce(
-        (sum, b) => sum + (b.product?.[0]?.price || 0) * b.remaining_amount,
-        0
-      ) || 0;
-
-    // 一週間以内に期限切れ
-    const oneWeekFromNow = new Date();
-    oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-    const { count: expiringTown } = await this.supabase
-      .from("bottle_keeps")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "active")
-      .lte("expiry_date", oneWeekFromNow.toISOString().split("T")[0]);
-
-    return {
-      totalBottles: totalBottles || 0,
-      activeBottles: activeBottles || 0,
-      expiredBottles: expiredBottles || 0,
-      consumedBottles: consumedBottles || 0,
-      totalValue,
-      expiringTown: expiringTown || 0,
-    };
+      const stats = data[0];
+      return {
+        totalBottles: Number(stats.total_bottles) || 0,
+        activeBottles: Number(stats.active_bottles) || 0,
+        expiredBottles: Number(stats.expired_bottles) || 0,
+        consumedBottles: Number(stats.consumed_bottles) || 0,
+        totalValue: Number(stats.total_value) || 0,
+        expiringTown: Number(stats.expiring_soon) || 0,
+      };
+    } catch (error) {
+      console.error("getBottleKeepStats error:", error);
+      throw error;
+    }
   }
 
   // ボトルキープアラート

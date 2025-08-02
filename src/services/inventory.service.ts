@@ -47,20 +47,10 @@ export class InventoryService extends BaseService {
         );
 
         if (error) {
-          // RPCが存在しない場合は従来の方法でフォールバック
-          if (process.env.NODE_ENV === "development") {
-            console.warn(
-              "RPC get_low_stock_productsが存在しません。クライアントサイドで処理します。"
-            );
-          }
-          const { data: allProducts, error: queryError } = await query;
-          if (queryError) {
-            throw new Error(
-              this.handleDatabaseError(queryError, "商品取得に失敗しました")
-            );
-          }
-          return (allProducts || []).filter(
-            (product) => product.stock_quantity < product.low_stock_threshold
+          throw new Error(
+            error.code === "42883"
+              ? "Required database function is missing. Please run migrations."
+              : this.handleDatabaseError(error, "商品取得に失敗しました")
           );
         }
 
