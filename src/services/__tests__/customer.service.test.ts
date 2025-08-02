@@ -252,6 +252,25 @@ describe("CustomerService", () => {
         }
       });
 
+      // Reset mock methods
+      Object.keys(mockDbMethods).forEach((method) => {
+        if (typeof mockDbMethods[method].mockReturnThis === "function") {
+          mockDbMethods[method].mockReturnThis();
+        }
+      });
+
+      // Mock the from().select().in() chain
+      mockSupabaseClient.from.mockReturnValue({
+        ...mockDbMethods,
+        select: vi.fn().mockReturnValue({
+          ...mockDbMethods,
+          in: vi.fn().mockResolvedValue({
+            data: mockCustomers,
+            error: null,
+          }),
+        }),
+      });
+
       const result = await customerService.searchCustomers(
         mockSupabaseClient as unknown as SupabaseClient<Database>,
         {
