@@ -150,12 +150,32 @@ export class CustomerService extends BaseService {
       }
 
       // RPC関数が詳細情報を含めて返すように最適化されたので、直接マップして返す
-      const customers = (data || [])
+      interface SearchResult {
+        id: string;
+        name: string;
+        name_kana: string | null;
+        phone_number: string | null;
+        line_id: string | null;
+        birthday: string | null;
+        job: string | null;
+        memo: string | null;
+        source: string | null;
+        rank: string | null;
+        status: "active" | "vip" | "blocked";
+        last_visit_date: string | null;
+        created_at: string;
+        updated_at: string;
+        created_by: string | null;
+        updated_by: string | null;
+        similarity: number;
+      }
+
+      const customers = ((data as SearchResult[]) || [])
         .filter(
-          (item: any) =>
+          (item) =>
             !validatedParams.status || item.status === validatedParams.status
         )
-        .map((item: any) => this.mapToCustomer(item));
+        .map((item) => this.mapToCustomer(item));
 
       return customers;
     }

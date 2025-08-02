@@ -10,7 +10,7 @@ RETURNS TABLE (
   name_kana TEXT,
   phone_number TEXT,
   line_id TEXT,
-  birth_date DATE,
+  birthday DATE,
   job TEXT,
   memo TEXT,
   source TEXT,
@@ -19,6 +19,8 @@ RETURNS TABLE (
   last_visit_date DATE,
   created_at TIMESTAMP WITH TIME ZONE,
   updated_at TIMESTAMP WITH TIME ZONE,
+  created_by UUID,
+  updated_by UUID,
   similarity REAL
 ) AS $$
 BEGIN
@@ -33,7 +35,7 @@ BEGIN
     c.name_kana,
     c.phone_number,
     c.line_id,
-    c.birth_date,
+    c.birthday,
     c.job,
     c.memo,
     c.source,
@@ -42,6 +44,8 @@ BEGIN
     c.last_visit_date,
     c.created_at,
     c.updated_at,
+    c.created_by,
+    c.updated_by,
     GREATEST(
       similarity(COALESCE(c.name, ''), search_term),
       similarity(COALESCE(c.name_kana, ''), search_term),
