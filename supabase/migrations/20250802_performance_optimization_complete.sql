@@ -96,7 +96,7 @@ BEGIN
     SELECT
       COUNT(*)::BIGINT AS total_scans,
       COUNT(*) FILTER (WHERE success = true)::BIGINT AS successful_scans,
-      COUNT(*) FILTER (WHERE created_at >= today_start AND created_at < today_end)::BIGINT AS today_scans
+      COUNT(*) FILTER (WHERE scanned_at >= today_start AND scanned_at < today_end)::BIGINT AS today_scans
     FROM qr_attendance_logs
   ),
   active_codes AS (
@@ -107,7 +107,7 @@ BEGIN
   unique_today AS (
     SELECT COUNT(DISTINCT staff_id)::BIGINT AS unique_users_today
     FROM qr_attendance_logs
-    WHERE created_at >= today_start AND created_at < today_end
+    WHERE scanned_at >= today_start AND scanned_at < today_end
   )
   SELECT
     scan_stats.total_scans,
@@ -181,10 +181,10 @@ WHERE status = 'active';
 
 -- QR Code related indexes
 CREATE INDEX IF NOT EXISTS idx_qr_attendance_logs_created 
-ON qr_attendance_logs(created_at DESC);
+ON qr_attendance_logs(scanned_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_qr_attendance_logs_staff_date 
-ON qr_attendance_logs(staff_id, created_at DESC);
+ON qr_attendance_logs(staff_id, scanned_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_qr_codes_active 
 ON qr_codes(is_active, expires_at) 
@@ -233,7 +233,6 @@ ON casts_profile(staff_id);
 -- Comments for index documentation
 COMMENT ON INDEX idx_attendance_records_staff_date IS 'Optimizes queries for staff attendance history';
 COMMENT ON INDEX idx_attendance_records_date IS 'Optimizes queries for daily attendance reports';
-COMMENT ON INDEX idx_attendance_records_needs_correction IS 'Optimizes queries for correction requests';
 COMMENT ON INDEX idx_shift_requests_status IS 'Optimizes queries for pending shift requests';
 COMMENT ON INDEX idx_bottle_keeps_status IS 'Optimizes bottle keep statistics queries';
 COMMENT ON INDEX idx_bottle_keeps_expiry IS 'Optimizes queries for expiring bottles';
