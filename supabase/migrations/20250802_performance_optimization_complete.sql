@@ -153,14 +153,10 @@ COMMENT ON FUNCTION get_weekly_schedule(DATE) IS 'Returns weekly schedule data f
 
 -- Attendance Records indexes
 CREATE INDEX IF NOT EXISTS idx_attendance_records_staff_date 
-ON attendance_records(staff_id, date DESC);
+ON attendance_records(staff_id, attendance_date DESC);
 
 CREATE INDEX IF NOT EXISTS idx_attendance_records_date 
-ON attendance_records(date DESC);
-
-CREATE INDEX IF NOT EXISTS idx_attendance_records_needs_correction 
-ON attendance_records(needs_correction) 
-WHERE needs_correction = true;
+ON attendance_records(attendance_date DESC);
 
 -- Shift Requests indexes
 CREATE INDEX IF NOT EXISTS idx_shift_requests_status 
@@ -170,7 +166,7 @@ CREATE INDEX IF NOT EXISTS idx_shift_requests_staff_status
 ON shift_requests(staff_id, status);
 
 CREATE INDEX IF NOT EXISTS idx_shift_requests_date 
-ON shift_requests(request_date DESC);
+ON shift_requests(requested_date DESC);
 
 -- Bottle Keeps indexes
 CREATE INDEX IF NOT EXISTS idx_bottle_keeps_status 
