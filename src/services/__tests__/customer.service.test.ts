@@ -217,22 +217,23 @@ describe("CustomerService", () => {
 
   describe("searchCustomers", () => {
     it("should search customers with query", async () => {
-      const mockSearchResults = [{ id: "customer-1" }];
-
-      const mockCustomers = [
+      const mockSearchResults = [
         {
           id: "customer-1",
           name: "田中太郎",
           name_kana: "タナカタロウ",
           phone_number: "090-1234-5678",
           line_id: null,
-          birthday: null,
+          birth_date: null,
+          job: null,
           memo: null,
+          source: null,
+          rank: null,
           status: "active" as const,
-          created_by: "staff-123",
-          updated_by: "staff-123",
+          last_visit_date: null,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
+          similarity: 0.9,
         },
       ];
 
@@ -249,18 +250,6 @@ describe("CustomerService", () => {
         if (methodValue && typeof methodValue.mockReturnThis === "function") {
           methodValue.mockReturnThis();
         }
-      });
-
-      // Mock the from().select().in() chain
-      mockSupabaseClient.from.mockReturnValue({
-        ...mockDbMethods,
-        select: vi.fn().mockReturnValue({
-          ...mockDbMethods,
-          in: vi.fn().mockResolvedValue({
-            data: mockCustomers,
-            error: null,
-          }),
-        }),
       });
 
       const result = await customerService.searchCustomers(

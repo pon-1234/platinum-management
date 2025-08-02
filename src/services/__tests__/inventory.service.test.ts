@@ -438,7 +438,7 @@ describe("InventoryService", () => {
         const mockAlerts = [
           {
             id: "alert-1",
-            product_id: "1",
+            product_id: 1,
             product_name: "在庫切れ商品",
             current_stock: 0,
             threshold: 20,
@@ -449,7 +449,7 @@ describe("InventoryService", () => {
           },
           {
             id: "alert-2",
-            product_id: "2",
+            product_id: 2,
             product_name: "低在庫商品",
             current_stock: 15,
             threshold: 20,
@@ -470,12 +470,12 @@ describe("InventoryService", () => {
 
         expect(alerts).toHaveLength(2);
         expect(alerts[0]).toMatchObject({
-          productId: "1",
+          productId: 1,
           alertType: "out_of_stock",
           severity: "critical",
         });
         expect(alerts[1]).toMatchObject({
-          productId: "2",
+          productId: 2,
           alertType: "low_stock",
           severity: "warning",
         });
