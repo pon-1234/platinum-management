@@ -35,7 +35,6 @@
       "Bash(supabase login:*)",
       "Bash(git checkout:*)",
       "Bash(gh pr create:*)",
-      "Bash(PGPASSWORD:*)",
       "Bash(npx eslint:*)",
       "Bash(npm run type-check:*)",
       "Bash(gh pr reopen:*)",
