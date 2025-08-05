@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Toaster } from "react-hot-toast";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import TanstackProvider from "@/components/providers/TanstackProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,7 +43,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ErrorBoundary>{children}</ErrorBoundary>
+        <ErrorBoundary>
+          <TanstackProvider>{children}</TanstackProvider>
+        </ErrorBoundary>
         <Toaster
           position="top-center"
           toastOptions={{

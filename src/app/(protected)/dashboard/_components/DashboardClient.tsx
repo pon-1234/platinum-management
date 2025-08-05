@@ -1,5 +1,9 @@
 "use client";
 
+import { RecentActivities } from "./RecentActivities";
+import { HourlySalesChart } from "./HourlySalesChart";
+
+// ... (existing interfaces)
 interface DashboardStats {
   totalCustomers: number;
   todayReservations: number;
@@ -11,12 +15,31 @@ interface DashboardStats {
   lowStockCount: number;
 }
 
+interface Activity {
+  id: string;
+  created_at: string;
+  activity_type: string;
+  details: string;
+}
+
+interface HourlySale {
+  hour: string;
+  total_sales: number;
+}
+
 interface DashboardClientProps {
   initialStats: DashboardStats | null;
+  recentActivities: Activity[];
+  hourlySales: HourlySale[];
   error: string | null;
 }
 
-export function DashboardClient({ initialStats, error }: DashboardClientProps) {
+export function DashboardClient({
+  initialStats,
+  recentActivities,
+  hourlySales,
+  error,
+}: DashboardClientProps) {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
@@ -52,6 +75,7 @@ export function DashboardClient({ initialStats, error }: DashboardClientProps) {
       )}
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {/* ... (existing stat cards) */}
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -122,6 +146,15 @@ export function DashboardClient({ initialStats, error }: DashboardClientProps) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="lg:col-span-1">
+          <HourlySalesChart salesData={hourlySales} />
+        </div>
+        <div className="lg:col-span-1">
+          <RecentActivities activities={recentActivities} />
         </div>
       </div>
     </div>

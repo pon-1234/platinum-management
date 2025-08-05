@@ -14,6 +14,7 @@ interface CustomerFormProps {
   onSubmit: (data: CreateCustomerInput) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 const statusOptions: { value: CustomerStatus; label: string }[] = [
@@ -27,6 +28,7 @@ export function CustomerForm({
   onSubmit,
   onCancel,
   isLoading = false,
+  error = null,
 }: CustomerFormProps) {
   const isEdit = !!customer;
 
@@ -56,6 +58,11 @@ export function CustomerForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {error && (
+        <div className="rounded-md bg-red-50 p-4">
+          <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label
