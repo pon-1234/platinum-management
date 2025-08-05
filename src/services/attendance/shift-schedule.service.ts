@@ -221,7 +221,15 @@ export class ShiftScheduleService extends BaseService {
     try {
       let query = this.supabase
         .from("confirmed_shifts")
-        .select("*")
+        .select(
+          `
+          *,
+          staff:staff_id (
+            id,
+            name
+          )
+        `
+        )
         .order("shift_date", { ascending: true });
 
       if (params.staffId) {
@@ -400,11 +408,14 @@ export class ShiftScheduleService extends BaseService {
   }
 
   private mapToConfirmedShift(
-    data: Database["public"]["Tables"]["confirmed_shifts"]["Row"]
+    data: Database["public"]["Tables"]["confirmed_shifts"]["Row"] & {
+      staff?: { id: string; name: string } | null;
+    }
   ): ConfirmedShift {
     return {
       id: data.id,
       staffId: data.staff_id,
+      staffName: data.staff?.name || undefined,
       shiftTemplateId: null,
       shiftRequestId: null,
       date: data.shift_date,
