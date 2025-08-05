@@ -217,6 +217,23 @@ describe("CustomerService", () => {
 
   describe("searchCustomers", () => {
     it("should search customers with query", async () => {
+      const mockCustomers = [
+        {
+          id: "customer-1",
+          name: "田中太郎",
+          name_kana: null,
+          phone_number: null,
+          line_id: null,
+          birthday: null,
+          memo: null,
+          status: "regular" as const,
+          created_by: "staff-123",
+          updated_by: "staff-123",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+        },
+      ];
+
       const mockSearchResults = [
         {
           id: "customer-1",

@@ -470,12 +470,12 @@ describe("InventoryService", () => {
 
         expect(alerts).toHaveLength(2);
         expect(alerts[0]).toMatchObject({
-          productId: "1",
+          productId: 1,
           alertType: "out_of_stock",
           severity: "critical",
         });
         expect(alerts[1]).toMatchObject({
-          productId: "2",
+          productId: 2,
           alertType: "low_stock",
           severity: "warning",
         });
