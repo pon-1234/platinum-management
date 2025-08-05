@@ -22,7 +22,9 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      initialStats={statsResult.success ? statsResult.data : null}
+      initialStats={
+        statsResult.success && statsResult.data ? statsResult.data : null
+      }
       recentActivities={activitiesResult.success ? activitiesResult.data : []}
       hourlySales={salesResult.success ? salesResult.data : []}
       error={error || null}
