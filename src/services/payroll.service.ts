@@ -17,6 +17,42 @@ export interface PayrollCalculationDetails {
   totalPay: number;
 }
 
+// 売上データの型定義
+interface SalesData {
+  totalSales: number;
+  nominationCount: number;
+  nominationFees: number;
+  effectiveBackRate?: number;
+  orders: OrderItem[];
+}
+
+interface OrderItem {
+  id: string;
+  price: number;
+  quantity: number;
+  nomination_type_id?: string;
+  nomination_fee?: number;
+  visits?: {
+    cast_id: string;
+    check_in_time: string;
+  };
+  nomination_types?: {
+    id: string;
+    back_percentage: number;
+  };
+}
+
+interface AttendanceRecord {
+  check_in_time: string;
+  check_out_time: string;
+}
+
+interface SlideRule {
+  min_sales: number;
+  max_sales?: number;
+  back_percentage: number;
+}
+
 export interface PayrollDetailItem {
   type: "base" | "back" | "nomination" | "bonus" | "deduction";
   category: string;
@@ -24,7 +60,11 @@ export interface PayrollDetailItem {
   baseAmount: number;
   rate?: number;
   calculatedAmount: number;
-  metadata?: Record<string, unknown>;
+  metadata?: {
+    hours?: number;
+    sales?: number;
+    count?: number;
+  };
 }
 
 export class PayrollService {
@@ -159,7 +199,7 @@ export class PayrollService {
     hostessId: string,
     periodStart: Date,
     periodEnd: Date
-  ) {
+  ): Promise<SalesData> {
     const supabase = createClient();
     const { data: orders, error } = await supabase
       .from("order_items")
@@ -179,31 +219,27 @@ export class PayrollService {
 
     if (error) throw error;
 
-    const totalSales =
-      orders?.reduce(
-        (sum: number, order: Record<string, unknown>) =>
-          sum + (order.price as number) * (order.quantity as number),
-        0
-      ) || 0;
-    const nominationCount =
-      orders?.filter((o: Record<string, unknown>) => o.nomination_type_id)
-        .length || 0;
-    const nominationFees =
-      orders?.reduce(
-        (sum: number, order: Record<string, unknown>) =>
-          sum + ((order.nomination_fee as number) || 0),
-        0
-      ) || 0;
+    const typedOrders = (orders || []) as OrderItem[];
 
-    // 売上スライド制による実効バック率の計算
-    const effectiveBackRate = await this.getEffectiveBackRate(totalSales);
+    const totalSales = typedOrders.reduce(
+      (sum, order) => sum + order.price * order.quantity,
+      0
+    );
+
+    const nominationCount = typedOrders.filter(
+      (o) => o.nomination_type_id
+    ).length;
+
+    const nominationFees = typedOrders.reduce(
+      (sum, order) => sum + (order.nomination_fee || 0),
+      0
+    );
 
     return {
       totalSales,
       nominationCount,
       nominationFees,
-      effectiveBackRate,
-      orders,
+      orders: typedOrders,
     };
   }
 
@@ -211,29 +247,29 @@ export class PayrollService {
     hostessId: string,
     periodStart: Date,
     periodEnd: Date
-  ) {
+  ): Promise<number> {
     const supabase = createClient();
     const { data: attendance, error } = await supabase
-      .from("attendance_records")
-      .select("*")
-      .eq("staff_id", hostessId)
+      .from("cast_attendance")
+      .select("check_in_time, check_out_time")
+      .eq("cast_id", hostessId)
       .gte("check_in_time", periodStart.toISOString())
-      .lte("check_in_time", periodEnd.toISOString());
+      .lte("check_in_time", periodEnd.toISOString())
+      .not("check_out_time", "is", null);
 
     if (error) throw error;
 
     let totalHours = 0;
-    attendance?.forEach((record: Record<string, unknown>) => {
-      if (record.check_out_time) {
-        const checkIn = new Date(record.check_in_time as string);
-        const checkOut = new Date(record.check_out_time as string);
-        const hours =
-          (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
-        totalHours += hours;
-      }
+    const typedAttendance = (attendance || []) as AttendanceRecord[];
+
+    typedAttendance.forEach((record) => {
+      const checkIn = new Date(record.check_in_time);
+      const checkOut = new Date(record.check_out_time);
+      const hours = differenceInHours(checkOut, checkIn);
+      totalHours += hours;
     });
 
-    return Math.floor(totalHours); // 時間単位で切り捨て
+    return totalHours;
   }
 
   private static calculateBasePay(rule: PayrollRule, workingHours: number) {
@@ -242,9 +278,9 @@ export class PayrollService {
 
   private static async calculateBackPay(
     rule: PayrollRule,
-    salesData: Record<string, unknown>,
+    salesData: SalesData,
     ruleId: string
-  ) {
+  ): Promise<number> {
     // 売上スライドルールを取得
     const supabase = createClient();
     const { data: slideRules, error } = await supabase
@@ -256,11 +292,12 @@ export class PayrollService {
     if (error) throw error;
 
     let backPay = 0;
-    const totalSales = salesData.totalSales as number;
+    const totalSales = salesData.totalSales;
+    const typedSlideRules = (slideRules || []) as SlideRule[];
 
-    if (slideRules && slideRules.length > 0) {
+    if (typedSlideRules.length > 0) {
       // 売上スライド制の適用
-      for (const tier of slideRules) {
+      for (const tier of typedSlideRules) {
         if (totalSales >= tier.min_sales) {
           const tierMax = tier.max_sales || totalSales;
           const tierSales = Math.min(totalSales, tierMax) - tier.min_sales;
@@ -276,20 +313,15 @@ export class PayrollService {
   }
 
   private static async calculateNominationPay(
-    salesData: Record<string, unknown>
-  ) {
+    salesData: SalesData
+  ): Promise<number> {
     let nominationPay = 0;
+    const orders = salesData.orders;
 
-    if (salesData.orders) {
-      const orders = salesData.orders as Array<Record<string, unknown>>;
-      for (const order of orders) {
-        const nominationTypes = order.nomination_types as
-          | Record<string, unknown>
-          | undefined;
-        if (nominationTypes && order.nomination_fee) {
-          const backRate = (nominationTypes.back_percentage as number) / 100;
-          nominationPay += (order.nomination_fee as number) * backRate;
-        }
+    for (const order of orders) {
+      if (order.nomination_type_id && order.nomination_types) {
+        const nominationType = order.nomination_types;
+        nominationPay += order.price * (nominationType.back_percentage / 100);
       }
     }
 
@@ -302,47 +334,47 @@ export class PayrollService {
   ) {
     const supabase = createClient();
 
-    // まずpayroll_calculationsにサマリーを保存
-    const { data: payrollCalc, error: calcError } = await supabase
+    // 詳細項目をJSON形式に変換
+    const details = calculation.items.map((item) => ({
+      detail_type: item.type || "other",
+      item_name: item.name,
+      base_amount: item.baseAmount || 0,
+      rate_percentage: item.rate || null,
+      calculated_amount: item.calculatedAmount || 0,
+      quantity: item.quantity || null,
+      unit_price: item.unitPrice || null,
+      description: item.description || null,
+    }));
+
+    // RPC関数を使用してトランザクション内で保存
+    const { data: calculationId, error } = await supabase.rpc(
+      "save_payroll_calculation",
+      {
+        p_hostess_id: calculation.hostessId,
+        p_period_start: format(calculation.periodStart, "yyyy-MM-dd"),
+        p_period_end: format(calculation.periodEnd, "yyyy-MM-dd"),
+        p_rule_id: calculation.ruleId || null,
+        p_base_salary: calculation.basePay,
+        p_back_amount: calculation.backPay,
+        p_bonus_amount: calculation.nominationPay,
+        p_deductions: 0, // TODO: 控除計算を実装後に更新
+        p_gross_amount: calculation.totalPay,
+        p_net_amount: calculation.totalPay, // TODO: 控除適用後の金額を計算
+        p_status: status,
+        p_details: details,
+      }
+    );
+
+    if (error) throw error;
+
+    // 保存された計算結果を取得して返す
+    const { data: payrollCalc, error: fetchError } = await supabase
       .from("payroll_calculations")
-      .insert({
-        hostess_id: calculation.hostessId,
-        calculation_period_start: format(calculation.periodStart, "yyyy-MM-dd"),
-        calculation_period_end: format(calculation.periodEnd, "yyyy-MM-dd"),
-        payroll_rule_id: calculation.ruleId || null,
-        base_salary: calculation.basePay,
-        total_back_amount: calculation.backPay,
-        total_bonus_amount: calculation.nominationPay,
-        total_deductions: 0, // TODO: 控除計算を実装後に更新
-        gross_amount: calculation.totalPay,
-        net_amount: calculation.totalPay, // TODO: 控除適用後の金額を計算
-        calculation_status: status,
-      })
-      .select()
+      .select("*")
+      .eq("id", calculationId)
       .single();
 
-    if (calcError) throw calcError;
-
-    // payroll_detailsに詳細項目を保存
-    if (payrollCalc && calculation.items && calculation.items.length > 0) {
-      const details = calculation.items.map((item: any) => ({
-        payroll_calculation_id: payrollCalc.id,
-        detail_type: item.type || "other",
-        item_name: item.name,
-        base_amount: item.baseAmount || 0,
-        rate_percentage: item.rate || null,
-        calculated_amount: item.amount || 0,
-        quantity: item.quantity || null,
-        unit_price: item.unitPrice || null,
-        description: item.description || null,
-      }));
-
-      const { error: detailError } = await supabase
-        .from("payroll_details")
-        .insert(details);
-
-      if (detailError) throw detailError;
-    }
+    if (fetchError) throw fetchError;
 
     return payrollCalc;
   }
