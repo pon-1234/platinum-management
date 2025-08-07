@@ -14,6 +14,9 @@ const querySchema = z.object({
       "vip",
       "cohort",
       "trends",
+      "acquisition-channels",
+      "channel-comparison",
+      "referral-program",
     ])
     .optional(),
   retention_status: z.enum(["active", "churning", "churned"]).optional(),
@@ -31,6 +34,8 @@ const querySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  channel1: z.string().optional(),
+  channel2: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -47,6 +52,8 @@ export async function GET(request: NextRequest) {
       min_revenue: searchParams.get("min_revenue"),
       start_date: searchParams.get("start_date"),
       end_date: searchParams.get("end_date"),
+      channel1: searchParams.get("channel1"),
+      channel2: searchParams.get("channel2"),
     });
 
     if (!queryValidation.success) {
@@ -109,6 +116,32 @@ export async function GET(request: NextRequest) {
       case "trends":
         // Revenue trends will be handled in a separate endpoint
         data = { message: "Use /api/analytics/trends for trend analysis" };
+        break;
+
+      case "acquisition-channels":
+        data = await CustomerAnalyticsService.getAcquisitionChannelAnalysis(
+          params.start_date,
+          params.end_date
+        );
+        break;
+
+      case "channel-comparison":
+        if (!params.channel1 || !params.channel2) {
+          return NextResponse.json(
+            { error: "channel1 and channel2 are required for comparison" },
+            { status: 400 }
+          );
+        }
+        data = await CustomerAnalyticsService.compareChannelPerformance(
+          params.channel1,
+          params.channel2,
+          params.start_date,
+          params.end_date
+        );
+        break;
+
+      case "referral-program":
+        data = await CustomerAnalyticsService.analyzeReferralProgram();
         break;
 
       default:

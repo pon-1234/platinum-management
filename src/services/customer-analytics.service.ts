@@ -72,6 +72,82 @@ export interface AnalyticsSummary {
   at_risk_count: number;
 }
 
+// 獲得チャネル分析
+export interface AcquisitionChannelAnalysis {
+  channels: Array<{
+    channel: string;
+    customers: number;
+    revenue: number;
+    avg_ltv: number;
+    retention_rate: number;
+  }>;
+  top_referrers: Array<{
+    referrer_type: string;
+    referrer_id: string;
+    referrer_name: string;
+    referred_count: number;
+    total_revenue: number;
+  }>;
+  source_breakdown: Array<{
+    source: string;
+    count: number;
+    percentage: number;
+  }>;
+  monthly_trend: Array<{
+    month: string;
+    walk_in: number;
+    referral: number;
+    social_media: number;
+    online: number;
+    event: number;
+    other: number;
+    total: number;
+  }>;
+  campaign_performance?: Array<{
+    campaign: string;
+    customers: number;
+    revenue: number;
+    roi: number;
+  }>;
+}
+
+// チャネルパフォーマンス比較
+export interface ChannelComparison {
+  metric: string;
+  channel1_value: number;
+  channel2_value: number;
+  difference: number;
+  percentage_diff: number;
+}
+
+// 紹介プログラム分析
+export interface ReferralProgramAnalysis {
+  summary: {
+    total_referrals: number;
+    customer_referrals: number;
+    staff_referrals: number;
+    referral_revenue: number;
+  };
+  top_customer_referrers: Array<{
+    customer_id: string;
+    customer_name: string;
+    referral_count: number;
+    total_revenue_generated: number;
+    avg_referral_value: number;
+  }>;
+  top_staff_referrers: Array<{
+    staff_id: string;
+    staff_name: string;
+    referral_count: number;
+    total_revenue_generated: number;
+    avg_referral_value: number;
+  }>;
+  referral_chain_analysis: {
+    second_generation_referrals: number;
+    third_generation_referrals: number;
+  };
+}
+
 export class CustomerAnalyticsService {
   // 顧客メトリクス一覧取得
   static async getCustomerMetrics(filters?: {
@@ -402,5 +478,83 @@ export class CustomerAnalyticsService {
         })
       ),
     };
+  }
+
+  // 獲得チャネル分析取得
+  static async getAcquisitionChannelAnalysis(
+    startDate?: string,
+    endDate?: string
+  ): Promise<AcquisitionChannelAnalysis> {
+    const supabase = createClient();
+
+    const params: any = {};
+    if (startDate) params.p_start_date = startDate;
+    if (endDate) params.p_end_date = endDate;
+
+    const { data, error } = await supabase.rpc(
+      "get_acquisition_channel_analysis",
+      params
+    );
+
+    if (error) throw error;
+    return (
+      data || {
+        channels: [],
+        top_referrers: [],
+        source_breakdown: [],
+        monthly_trend: [],
+        campaign_performance: [],
+      }
+    );
+  }
+
+  // チャネルパフォーマンス比較
+  static async compareChannelPerformance(
+    channel1: string,
+    channel2: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ChannelComparison[]> {
+    const supabase = createClient();
+
+    const params: any = {
+      p_channel1: channel1,
+      p_channel2: channel2,
+    };
+    if (startDate) params.p_start_date = startDate;
+    if (endDate) params.p_end_date = endDate;
+
+    const { data, error } = await supabase.rpc(
+      "compare_channel_performance",
+      params
+    );
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  // 紹介プログラム分析
+  static async analyzeReferralProgram(): Promise<ReferralProgramAnalysis> {
+    const supabase = createClient();
+
+    const { data, error } = await supabase.rpc("analyze_referral_program");
+
+    if (error) throw error;
+    return (
+      data || {
+        summary: {
+          total_referrals: 0,
+          customer_referrals: 0,
+          staff_referrals: 0,
+          referral_revenue: 0,
+        },
+        top_customer_referrers: [],
+        top_staff_referrers: [],
+        referral_chain_analysis: {
+          second_generation_referrals: 0,
+          third_generation_referrals: 0,
+        },
+      }
+    );
   }
 }
