@@ -881,6 +881,258 @@ export interface Database {
           created_at?: string;
         };
       };
+      payroll_rules: {
+        Row: {
+          id: string;
+          rule_name: string;
+          description: string | null;
+          base_hourly_rate: number;
+          base_back_percentage: number;
+          is_active: boolean;
+          effective_from: string;
+          effective_until: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          rule_name: string;
+          description?: string | null;
+          base_hourly_rate?: number;
+          base_back_percentage?: number;
+          is_active?: boolean;
+          effective_from: string;
+          effective_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          rule_name?: string;
+          description?: string | null;
+          base_hourly_rate?: number;
+          base_back_percentage?: number;
+          is_active?: boolean;
+          effective_from?: string;
+          effective_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      payroll_back_rules: {
+        Row: {
+          id: string;
+          rule_id: string;
+          category: string;
+          back_percentage: number;
+          min_amount: number | null;
+          max_amount: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          category: string;
+          back_percentage: number;
+          min_amount?: number | null;
+          max_amount?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          category?: string;
+          back_percentage?: number;
+          min_amount?: number | null;
+          max_amount?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payroll_back_rules_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "payroll_rules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payroll_slide_rules: {
+        Row: {
+          id: string;
+          rule_id: string;
+          min_sales: number;
+          max_sales: number | null;
+          back_percentage: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          min_sales: number;
+          max_sales?: number | null;
+          back_percentage: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          min_sales?: number;
+          max_sales?: number | null;
+          back_percentage?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payroll_slide_rules_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "payroll_rules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payroll_nomination_types: {
+        Row: {
+          id: string;
+          name: string;
+          back_percentage: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          back_percentage: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          back_percentage?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      hostess_payroll_rules: {
+        Row: {
+          id: string;
+          hostess_id: string;
+          rule_id: string;
+          effective_from: string;
+          effective_until: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          hostess_id: string;
+          rule_id: string;
+          effective_from: string;
+          effective_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          hostess_id?: string;
+          rule_id?: string;
+          effective_from?: string;
+          effective_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hostess_payroll_rules_hostess_id_fkey";
+            columns: ["hostess_id"];
+            isOneToOne: false;
+            referencedRelation: "hostesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hostess_payroll_rules_rule_id_fkey";
+            columns: ["rule_id"];
+            isOneToOne: false;
+            referencedRelation: "payroll_rules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payroll_calculations: {
+        Row: {
+          id: string;
+          hostess_id: string;
+          period_start: string;
+          period_end: string;
+          total_sales: number;
+          base_pay: number;
+          back_pay: number;
+          nomination_pay: number;
+          total_pay: number;
+          status: string;
+          approved_by: string | null;
+          approved_at: string | null;
+          calculation_details: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          hostess_id: string;
+          period_start: string;
+          period_end: string;
+          total_sales?: number;
+          base_pay?: number;
+          back_pay?: number;
+          nomination_pay?: number;
+          total_pay?: number;
+          status?: string;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          calculation_details?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          hostess_id?: string;
+          period_start?: string;
+          period_end?: string;
+          total_sales?: number;
+          base_pay?: number;
+          back_pay?: number;
+          nomination_pay?: number;
+          total_pay?: number;
+          status?: string;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          calculation_details?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payroll_calculations_hostess_id_fkey";
+            columns: ["hostess_id"];
+            isOneToOne: false;
+            referencedRelation: "hostesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

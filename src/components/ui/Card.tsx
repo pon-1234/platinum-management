@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 
 interface CardProps {
   children: ReactNode;
@@ -23,6 +23,38 @@ const shadowConfig = {
   lg: "shadow-lg",
 };
 
+export const CardContent = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={`p-6 ${className}`}>{children}</div>;
+
+export const CardHeader = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={`p-6 pb-2 ${className}`}>{children}</div>;
+
+export const CardTitle = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <h3 className={`text-xl font-semibold ${className}`}>{children}</h3>;
+
+export const CardDescription = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <p className={`text-sm text-gray-600 mt-1 ${className}`}>{children}</p>;
+
 export function Card({
   children,
   className = "",
@@ -45,24 +77,6 @@ export function Card({
       {children}
     </div>
   );
-}
-
-interface CardHeaderProps {
-  children: ReactNode;
-  className?: string;
-}
-
-export function CardHeader({ children, className = "" }: CardHeaderProps) {
-  return <div className={`mb-4 ${className}`}>{children}</div>;
-}
-
-interface CardContentProps {
-  children: ReactNode;
-  className?: string;
-}
-
-export function CardContent({ children, className = "" }: CardContentProps) {
-  return <div className={className}>{children}</div>;
 }
 
 interface CardFooterProps {

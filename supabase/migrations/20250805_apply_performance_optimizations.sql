@@ -39,6 +39,7 @@ COMMENT ON INDEX idx_visits_date_range IS 'B-tree index for date range queries o
 COMMENT ON INDEX idx_attendance_date_range IS 'B-tree index for date range queries on attendance records';
 
 -- Optimized customer search function using Trigram similarity
+DROP FUNCTION IF EXISTS search_customers_optimized(TEXT, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION search_customers_optimized(
   search_term TEXT,
   limit_count INTEGER DEFAULT 20,
@@ -83,6 +84,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Optimized staff search function using Trigram similarity
+DROP FUNCTION IF EXISTS search_staffs_optimized(TEXT, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION search_staffs_optimized(
   search_term TEXT,
   limit_count INTEGER DEFAULT 20,

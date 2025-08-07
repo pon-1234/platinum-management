@@ -1199,7 +1199,7 @@ CREATE INDEX IF NOT EXISTS idx_inventory_movements_created ON inventory_movement
 CREATE INDEX IF NOT EXISTS idx_casts_profile_staff ON casts_profile(staff_id);
 
 COMMENT ON INDEX idx_attendance_records_staff_date IS 'Optimizes queries for staff attendance history';
-COMMENT ON INDEX idx_attendance_records_date IS 'Optimizes queries for daily attendance reports';
+-- COMMENT ON INDEX idx_attendance_records_date IS 'Optimizes queries for daily attendance reports';
 COMMENT ON INDEX idx_shift_requests_status IS 'Optimizes queries for pending shift requests';
 COMMENT ON INDEX idx_bottle_keeps_status IS 'Optimizes bottle keep statistics queries';
 COMMENT ON INDEX idx_bottle_keeps_expiry IS 'Optimizes queries for expiring bottles';
