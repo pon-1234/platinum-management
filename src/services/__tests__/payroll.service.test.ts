@@ -9,12 +9,27 @@ vi.mock("@/lib/supabase/client", () => ({
 
 // date-fnsのモック
 vi.mock("date-fns", () => ({
-  format: vi.fn((date, format) => "2024-01-01"),
+  format: vi.fn(() => "2024-01-01"),
   differenceInHours: vi.fn(() => 8),
 }));
 
+interface MockSupabase {
+  from: ReturnType<typeof vi.fn>;
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  gte: ReturnType<typeof vi.fn>;
+  lte: ReturnType<typeof vi.fn>;
+  not: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  single: ReturnType<typeof vi.fn>;
+  insert: ReturnType<typeof vi.fn>;
+  rpc: ReturnType<typeof vi.fn>;
+  data?: unknown;
+  error?: unknown;
+}
+
 describe("PayrollService", () => {
-  let mockSupabase: any;
+  let mockSupabase: MockSupabase;
 
   beforeEach(() => {
     // Supabaseクライアントのモックをリセット
@@ -30,7 +45,7 @@ describe("PayrollService", () => {
       insert: vi.fn(() => mockSupabase),
       rpc: vi.fn(),
     };
-    (createClient as any).mockReturnValue(mockSupabase);
+    (createClient as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
   });
 
   describe("getNominationTypes", () => {
@@ -161,7 +176,7 @@ describe("PayrollService", () => {
         ruleId: "rule-id",
         items: [
           {
-            type: "base",
+            type: "base" as const,
             category: "base_salary",
             name: "基本給",
             baseAmount: 160,
@@ -279,11 +294,15 @@ describe("PayrollService", () => {
 
       // calculateBackPayメソッドをテスト用に公開する必要があるため、
       // プライベートメソッドのテストは統合テストで行う
-      const result = await (PayrollService as any).calculateBackPay(
-        mockRule,
-        mockSalesData,
-        "rule-id"
-      );
+      const result = await (
+        PayrollService as unknown as {
+          calculateBackPay: (
+            rule: unknown,
+            salesData: unknown,
+            ruleId: string
+          ) => Promise<number>;
+        }
+      ).calculateBackPay(mockRule, mockSalesData, "rule-id");
 
       // 期待値: 500000*0.4 + 500000*0.45 + 500000*0.5 = 675000
       expect(result).toBe(675000);
@@ -306,11 +325,15 @@ describe("PayrollService", () => {
         error: null,
       });
 
-      const result = await (PayrollService as any).calculateBackPay(
-        mockRule,
-        mockSalesData,
-        "rule-id"
-      );
+      const result = await (
+        PayrollService as unknown as {
+          calculateBackPay: (
+            rule: unknown,
+            salesData: unknown,
+            ruleId: string
+          ) => Promise<number>;
+        }
+      ).calculateBackPay(mockRule, mockSalesData, "rule-id");
 
       expect(result).toBe(400000); // 1000000 * 0.4
     });

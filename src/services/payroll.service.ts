@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { Database } from "@/types/database.types";
-import { startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfMonth, endOfMonth, format, differenceInHours } from "date-fns";
 
 type PayrollRule = Database["public"]["Tables"]["payroll_rules"]["Row"];
 
@@ -60,6 +60,9 @@ export interface PayrollDetailItem {
   baseAmount: number;
   rate?: number;
   calculatedAmount: number;
+  quantity?: number;
+  unitPrice?: number;
+  description?: string;
   metadata?: {
     hours?: number;
     sales?: number;

@@ -11,10 +11,16 @@ const Tabs = React.forwardRef<
     <div ref={ref} className={cn("w-full", className)} {...props}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement, {
-            value,
-            setValue,
-          });
+          return React.cloneElement(
+            child as React.ReactElement<{
+              value?: string;
+              setValue?: (value: string) => void;
+            }>,
+            {
+              value,
+              setValue,
+            }
+          );
         }
         return child;
       })}

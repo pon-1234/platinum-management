@@ -206,7 +206,12 @@ export default function PayrollPage() {
         const batchPromises = batch.map(async (cast) => {
           setBatchProgress((prev) => ({
             ...prev,
-            castName: cast.display_name || cast.nickname || "Unknown",
+            castName:
+              (cast as unknown as { display_name?: string; nickname?: string })
+                .display_name ||
+              (cast as unknown as { display_name?: string; nickname?: string })
+                .nickname ||
+              "Unknown",
           }));
 
           try {
@@ -408,29 +413,48 @@ export default function PayrollPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {savedCalculations.map((calc) => (
-                  <div key={calc.id} className="border rounded p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">
-                          {calc.casts_profile?.staffs?.full_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(calc.period_start), "yyyy/MM/dd")} 〜{" "}
-                          {format(new Date(calc.period_end), "yyyy/MM/dd")}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold">
-                          ¥{calc.total_pay.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {calc.status === "approved" ? "承認済み" : "未承認"}
-                        </p>
+                {savedCalculations.map((calc: unknown) => {
+                  const calculation = calc as {
+                    id: string;
+                    casts_profile?: { staffs?: { full_name?: string } };
+                    period_start: string;
+                    period_end: string;
+                    total_pay?: number;
+                    status?: string;
+                  };
+                  return (
+                    <div key={calculation.id} className="border rounded p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">
+                            {calculation.casts_profile?.staffs?.full_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(
+                              new Date(calculation.period_start),
+                              "yyyy/MM/dd"
+                            )}{" "}
+                            〜{" "}
+                            {format(
+                              new Date(calculation.period_end),
+                              "yyyy/MM/dd"
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold">
+                            ¥{calculation.total_pay?.toLocaleString() || 0}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {calculation.status === "approved"
+                              ? "承認済み"
+                              : "未承認"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
