@@ -10,40 +10,29 @@ SELECT
   -- 来店回数
   COUNT(DISTINCT v.id) as visit_count,
   -- 最終来店日
-  MAX(v.check_in_time) as last_visit,
+  MAX(v.check_in_at) as last_visit,
   -- 平均来店間隔（日数）
   CASE 
     WHEN COUNT(DISTINCT v.id) > 1 THEN
-      EXTRACT(EPOCH FROM (MAX(v.check_in_time) - MIN(v.check_in_time))) / 86400 / NULLIF(COUNT(DISTINCT v.id) - 1, 0)
+      EXTRACT(EPOCH FROM (MAX(v.check_in_at) - MIN(v.check_in_at))) / 86400 / NULLIF(COUNT(DISTINCT v.id) - 1, 0)
     ELSE NULL
   END as avg_visit_interval_days,
   -- 総売上
-  COALESCE(SUM(o.total_amount), 0) as total_revenue,
+  COALESCE(SUM(v.total_amount), 0) as total_revenue,
   -- 平均客単価
   CASE 
     WHEN COUNT(DISTINCT v.id) > 0 THEN
-      COALESCE(SUM(o.total_amount), 0) / COUNT(DISTINCT v.id)
+      COALESCE(SUM(v.total_amount), 0) / COUNT(DISTINCT v.id)
     ELSE 0
   END as avg_spending_per_visit,
   -- アクティブステータス（30日以内に来店）
   CASE 
-    WHEN MAX(v.check_in_time) >= CURRENT_TIMESTAMP - INTERVAL '30 days' THEN 'active'
-    WHEN MAX(v.check_in_time) >= CURRENT_TIMESTAMP - INTERVAL '90 days' THEN 'churning'
+    WHEN MAX(v.check_in_at) >= CURRENT_TIMESTAMP - INTERVAL '30 days' THEN 'active'
+    WHEN MAX(v.check_in_at) >= CURRENT_TIMESTAMP - INTERVAL '90 days' THEN 'churning'
     ELSE 'churned'
   END as retention_status,
-  -- 指名スタッフ
-  (
-    SELECT s.full_name 
-    FROM staffs s 
-    WHERE s.id = (
-      SELECT host_staff_id 
-      FROM visits 
-      WHERE customer_id = c.id 
-      GROUP BY host_staff_id 
-      ORDER BY COUNT(*) DESC 
-      LIMIT 1
-    )
-  ) as favorite_staff,
+  -- 指名スタッフ (現在はNULL)
+  NULL::text as favorite_staff,
   -- ボトルキープ数
   (
     SELECT COUNT(*) 
@@ -52,7 +41,7 @@ SELECT
   ) as active_bottle_count
 FROM customers c
 LEFT JOIN visits v ON v.customer_id = c.id
-LEFT JOIN orders o ON o.visit_id = v.id
+
 GROUP BY c.id, c.name, c.phone_number, c.created_at;
 
 -- 顧客セグメントビュー
@@ -144,14 +133,14 @@ BEGIN
     SELECT 
       c.id as customer_id,
       c.name as customer_name,
-      EXTRACT(EPOCH FROM (p_end_date - MAX(v.check_in_time::date))) / 86400 as recency_days,
+      EXTRACT(EPOCH FROM (p_end_date - MAX(v.check_in_at::date))) / 86400 as recency_days,
       COUNT(DISTINCT v.id) as frequency,
-      COALESCE(SUM(o.total_amount), 0) as monetary
+      COALESCE(SUM(v.total_amount), 0) as monetary
     FROM customers c
     LEFT JOIN visits v ON v.customer_id = c.id 
-      AND v.check_in_time >= p_start_date 
-      AND v.check_in_time <= p_end_date
-    LEFT JOIN orders o ON o.visit_id = v.id
+      AND v.check_in_at >= p_start_date 
+      AND v.check_in_at <= p_end_date
+    
     GROUP BY c.id, c.name
   ),
   rfm_scores AS (
@@ -254,11 +243,11 @@ BEGIN
   -- 支出トレンド
   WITH spending_trends AS (
     SELECT 
-      COALESCE(SUM(CASE WHEN v.check_in_time >= CURRENT_DATE - INTERVAL '3 months' THEN o.total_amount END), 0) as recent_spending,
-      COALESCE(SUM(CASE WHEN v.check_in_time >= CURRENT_DATE - INTERVAL '6 months' 
-                        AND v.check_in_time < CURRENT_DATE - INTERVAL '3 months' THEN o.total_amount END), 0) as previous_spending
+      COALESCE(SUM(CASE WHEN v.check_in_at >= CURRENT_DATE - INTERVAL '3 months' THEN v.total_amount END), 0) as recent_spending,
+      COALESCE(SUM(CASE WHEN v.check_in_at >= CURRENT_DATE - INTERVAL '6 months' 
+                        AND v.check_in_at < CURRENT_DATE - INTERVAL '3 months' THEN v.total_amount END), 0) as previous_spending
     FROM visits v
-    LEFT JOIN orders o ON o.visit_id = v.id
+    
     WHERE v.customer_id = p_customer_id
   )
   SELECT 
@@ -329,8 +318,8 @@ END;
 $$;
 
 -- インデックスの作成
-CREATE INDEX IF NOT EXISTS idx_visits_customer_check_in ON visits(customer_id, check_in_time);
-CREATE INDEX IF NOT EXISTS idx_orders_visit_total ON orders(visit_id, total_amount);
+CREATE INDEX IF NOT EXISTS idx_visits_customer_check_in ON visits(customer_id, check_in_at);
+-- CREATE INDEX IF NOT EXISTS idx_orders_visit_total ON orders(visit_id, total_amount); -- orders table doesn't exist
 CREATE INDEX IF NOT EXISTS idx_bottle_keeps_customer_status ON bottle_keeps(customer_id, status);
 CREATE INDEX IF NOT EXISTS idx_customer_cohorts_month ON customer_cohorts(cohort_month);
 

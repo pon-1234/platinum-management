@@ -208,6 +208,9 @@ export interface Database {
           updated_by: string | null;
           created_at: string;
           updated_at: string;
+          total_guests: number;
+          billing_type: "single" | "split" | "mixed";
+          primary_customer_id: string | null;
         };
         Insert: {
           id?: string;
@@ -228,6 +231,9 @@ export interface Database {
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          total_guests?: number;
+          billing_type?: "single" | "split" | "mixed";
+          primary_customer_id?: string | null;
         };
         Update: {
           id?: string;
@@ -248,6 +254,9 @@ export interface Database {
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          total_guests?: number;
+          billing_type?: "single" | "split" | "mixed";
+          primary_customer_id?: string | null;
         };
       };
       tables: {
@@ -409,6 +418,8 @@ export interface Database {
           notes: string | null;
           created_by: string | null;
           created_at: string;
+          is_shared_item: boolean;
+          target_guest_id: string | null;
         };
         Insert: {
           id?: number;
@@ -420,6 +431,8 @@ export interface Database {
           notes?: string | null;
           created_by?: string | null;
           created_at?: string;
+          is_shared_item?: boolean;
+          target_guest_id?: string | null;
         };
         Update: {
           id?: number;
@@ -431,6 +444,8 @@ export interface Database {
           notes?: string | null;
           created_by?: string | null;
           created_at?: string;
+          is_shared_item?: boolean;
+          target_guest_id?: string | null;
         };
       };
       shift_templates: {
@@ -1132,6 +1147,179 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      visit_guests: {
+        Row: {
+          id: string;
+          visit_id: string;
+          customer_id: string;
+          guest_type: "main" | "companion" | "additional";
+          seat_position: number | null;
+          relationship_to_main: string | null;
+          is_primary_payer: boolean;
+          check_in_time: string;
+          check_out_time: string | null;
+          individual_subtotal: number;
+          individual_service_charge: number;
+          individual_tax_amount: number;
+          individual_total: number;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          visit_id: string;
+          customer_id: string;
+          guest_type?: "main" | "companion" | "additional";
+          seat_position?: number | null;
+          relationship_to_main?: string | null;
+          is_primary_payer?: boolean;
+          check_in_time?: string;
+          check_out_time?: string | null;
+          individual_subtotal?: number;
+          individual_service_charge?: number;
+          individual_tax_amount?: number;
+          individual_total?: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          visit_id?: string;
+          customer_id?: string;
+          guest_type?: "main" | "companion" | "additional";
+          seat_position?: number | null;
+          relationship_to_main?: string | null;
+          is_primary_payer?: boolean;
+          check_in_time?: string;
+          check_out_time?: string | null;
+          individual_subtotal?: number;
+          individual_service_charge?: number;
+          individual_tax_amount?: number;
+          individual_total?: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      guest_orders: {
+        Row: {
+          id: string;
+          visit_guest_id: string;
+          order_item_id: number;
+          quantity_for_guest: number;
+          amount_for_guest: number;
+          is_shared_item: boolean;
+          shared_percentage: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          visit_guest_id: string;
+          order_item_id: number;
+          quantity_for_guest?: number;
+          amount_for_guest?: number;
+          is_shared_item?: boolean;
+          shared_percentage?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          visit_guest_id?: string;
+          order_item_id?: number;
+          quantity_for_guest?: number;
+          amount_for_guest?: number;
+          is_shared_item?: boolean;
+          shared_percentage?: number | null;
+          created_at?: string;
+        };
+      };
+      guest_cast_assignments: {
+        Row: {
+          id: string;
+          visit_guest_id: string;
+          cast_id: string;
+          assignment_type: "shimei" | "dohan" | "after" | "help";
+          start_time: string;
+          end_time: string | null;
+          is_primary_assignment: boolean;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          visit_guest_id: string;
+          cast_id: string;
+          assignment_type: "shimei" | "dohan" | "after" | "help";
+          start_time?: string;
+          end_time?: string | null;
+          is_primary_assignment?: boolean;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          visit_guest_id?: string;
+          cast_id?: string;
+          assignment_type?: "shimei" | "dohan" | "after" | "help";
+          start_time?: string;
+          end_time?: string | null;
+          is_primary_assignment?: boolean;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
+      guest_billing_splits: {
+        Row: {
+          id: string;
+          visit_id: string;
+          visit_guest_id: string;
+          split_type: "individual" | "shared" | "treated";
+          split_amount: number;
+          payment_method: string | null;
+          payment_status: "pending" | "completed" | "cancelled";
+          paid_at: string | null;
+          notes: string | null;
+          processed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          visit_id: string;
+          visit_guest_id: string;
+          split_type: "individual" | "shared" | "treated";
+          split_amount?: number;
+          payment_method?: string | null;
+          payment_status?: "pending" | "completed" | "cancelled";
+          paid_at?: string | null;
+          notes?: string | null;
+          processed_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          visit_id?: string;
+          visit_guest_id?: string;
+          split_type?: "individual" | "shared" | "treated";
+          split_amount?: number;
+          payment_method?: string | null;
+          payment_status?: "pending" | "completed" | "cancelled";
+          paid_at?: string | null;
+          notes?: string | null;
+          processed_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
       };
     };
     Views: {
