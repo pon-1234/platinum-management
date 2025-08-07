@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
+import { updateBottleKeepSchema } from "@/lib/validations/bottle-keep";
+import { z } from "zod";
+
+// パラメータのバリデーションスキーマ
+const paramsSchema = z.object({
+  id: z.string().uuid("有効なIDを指定してください"),
+});
 
 // GET: ボトルキープ詳細取得
 export async function GET(
@@ -7,7 +14,22 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const bottle = await BottleKeepService.getBottleKeep(params.id);
+    // パラメータのバリデーション
+    const paramsValidation = paramsSchema.safeParse(params);
+
+    if (!paramsValidation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid parameters",
+          details: paramsValidation.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const bottle = await BottleKeepService.getBottleKeep(
+      paramsValidation.data.id
+    );
 
     if (!bottle) {
       return NextResponse.json(
@@ -32,8 +54,38 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // パラメータのバリデーション
+    const paramsValidation = paramsSchema.safeParse(params);
+
+    if (!paramsValidation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid parameters",
+          details: paramsValidation.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
-    const bottle = await BottleKeepService.updateBottleKeep(params.id, body);
+
+    // リクエストボディのバリデーション
+    const bodyValidation = updateBottleKeepSchema.safeParse(body);
+
+    if (!bodyValidation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request body",
+          details: bodyValidation.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const bottle = await BottleKeepService.updateBottleKeep(
+      paramsValidation.data.id,
+      bodyValidation.data
+    );
     return NextResponse.json(bottle);
   } catch (error) {
     console.error("Failed to update bottle keep:", error);

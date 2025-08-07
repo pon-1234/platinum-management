@@ -1,23 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
+import {
+  createBottleKeepSchema,
+  getBottleKeepsQuerySchema,
+} from "@/lib/validations/bottle-keep";
+import { z } from "zod";
 
 // GET: ボトルキープ一覧取得
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get("status") as
-      | "active"
-      | "consumed"
-      | "expired"
-      | "removed"
-      | null;
-    const customer_id = searchParams.get("customer_id");
 
-    const bottles = await BottleKeepService.getBottleKeeps(
-      status || undefined,
-      customer_id || undefined
-    );
+    // クエリパラメータのバリデーション
+    const queryValidation = getBottleKeepsQuerySchema.safeParse({
+      status: searchParams.get("status"),
+      customer_id: searchParams.get("customer_id"),
+    });
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid query parameters",
+          details: queryValidation.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const { status, customer_id } = queryValidation.data;
+    const bottles = await BottleKeepService.getBottleKeeps(status, customer_id);
 
     return NextResponse.json(bottles);
   } catch (error) {
@@ -33,7 +45,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const bottle = await BottleKeepService.createBottleKeep(body);
+
+    // リクエストボディのバリデーション
+    const validation = createBottleKeepSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request body",
+          details: validation.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const bottle = await BottleKeepService.createBottleKeep(validation.data);
     return NextResponse.json(bottle, { status: 201 });
   } catch (error) {
     console.error("Failed to create bottle keep:", error);
