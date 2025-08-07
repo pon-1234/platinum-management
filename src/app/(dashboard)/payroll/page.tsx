@@ -34,6 +34,11 @@ export default function PayrollPage() {
   const [calculation, setCalculation] =
     useState<PayrollCalculationDetails | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({
+    current: 0,
+    total: 0,
+    castName: "",
+  });
   const [savedCalculations, setSavedCalculations] = useState<unknown[]>([]);
   const { toast } = useToast();
 
@@ -181,30 +186,83 @@ export default function PayrollPage() {
 
   const handleBatchCalculate = async () => {
     setIsCalculating(true);
+    setBatchProgress({ current: 0, total: casts.length, castName: "" });
 
     try {
       const periodStart = startOfMonth(selectedMonth);
       const periodEnd = endOfMonth(selectedMonth);
 
-      for (const cast of casts) {
-        await fetch("/api/payroll/calculate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            hostessId: cast.id,
-            periodStart: periodStart.toISOString(),
-            periodEnd: periodEnd.toISOString(),
-            save: true,
-          }),
+      const results = [];
+      let successCount = 0;
+      let errorCount = 0;
+
+      // 並列処理のバッチサイズ（同時に3件まで処理）
+      const batchSize = 3;
+
+      for (let i = 0; i < casts.length; i += batchSize) {
+        const batch = casts.slice(i, Math.min(i + batchSize, casts.length));
+
+        // バッチ内の計算を並列実行
+        const batchPromises = batch.map(async (cast) => {
+          setBatchProgress((prev) => ({
+            ...prev,
+            castName: cast.display_name || cast.nickname || "Unknown",
+          }));
+
+          try {
+            const response = await fetch("/api/payroll/calculate", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                hostessId: cast.id,
+                periodStart: periodStart.toISOString(),
+                periodEnd: periodEnd.toISOString(),
+                save: true,
+              }),
+            });
+
+            if (response.ok) {
+              successCount++;
+              return { success: true, castId: cast.id };
+            } else {
+              errorCount++;
+              return {
+                success: false,
+                castId: cast.id,
+                error: await response.text(),
+              };
+            }
+          } catch (error) {
+            errorCount++;
+            return { success: false, castId: cast.id, error: String(error) };
+          }
         });
+
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+
+        // 進捗を更新
+        setBatchProgress((prev) => ({
+          ...prev,
+          current: Math.min(i + batchSize, casts.length),
+        }));
       }
 
-      toast({
-        title: "一括計算完了",
-        description: "全キャストの給与計算が完了しました",
-      });
+      // 結果サマリーを表示
+      if (errorCount === 0) {
+        toast({
+          title: "一括計算完了",
+          description: `${successCount}件の給与計算が正常に完了しました`,
+        });
+      } else {
+        toast({
+          title: "一括計算完了（一部エラー）",
+          description: `成功: ${successCount}件, エラー: ${errorCount}件`,
+          variant: "destructive",
+        });
+      }
 
       fetchSavedCalculations();
     } catch (error) {
@@ -216,6 +274,7 @@ export default function PayrollPage() {
       });
     } finally {
       setIsCalculating(false);
+      setBatchProgress({ current: 0, total: 0, castName: "" });
     }
   };
 
@@ -234,6 +293,30 @@ export default function PayrollPage() {
           </Button>
         </div>
       </div>
+
+      {/* 一括計算の進捗表示 */}
+      {isCalculating && batchProgress.total > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>処理中: {batchProgress.castName}</span>
+                <span>
+                  {batchProgress.current} / {batchProgress.total}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${(batchProgress.current / batchProgress.total) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="calculate" className="w-full">
         <TabsList>

@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+// 型定義
+interface SlideRule {
+  minSales: number;
+  maxSales?: number;
+  backPercentage: number;
+}
+
+interface BackRule {
+  category: string;
+  backPercentage: number;
+  minAmount?: number;
+  maxAmount?: number;
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -63,14 +77,12 @@ export async function POST(request: NextRequest) {
 
     // 売上スライドルールを作成
     if (slideRules.length > 0) {
-      const slideRulesData = slideRules.map(
-        (slide: Record<string, unknown>) => ({
-          rule_id: rule.id,
-          min_sales: slide.minSales,
-          max_sales: slide.maxSales,
-          back_percentage: slide.backPercentage,
-        })
-      );
+      const slideRulesData = slideRules.map((slide: SlideRule) => ({
+        rule_id: rule.id,
+        min_sales: slide.minSales,
+        max_sales: slide.maxSales,
+        back_percentage: slide.backPercentage,
+      }));
 
       const { error: slideError } = await supabase
         .from("payroll_slide_rules")
@@ -81,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // 項目別バックルールを作成
     if (backRules.length > 0) {
-      const backRulesData = backRules.map((back: Record<string, unknown>) => ({
+      const backRulesData = backRules.map((back: BackRule) => ({
         rule_id: rule.id,
         category: back.category,
         back_percentage: back.backPercentage,
