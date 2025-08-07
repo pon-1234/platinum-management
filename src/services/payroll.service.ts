@@ -8,6 +8,7 @@ export interface PayrollCalculationDetails {
   hostessId: string;
   periodStart: Date;
   periodEnd: Date;
+  ruleId?: string;
   items: PayrollDetailItem[];
   totalSales: number;
   basePay: number;
@@ -55,7 +56,7 @@ export class PayrollService {
   static async getNominationTypes() {
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("payroll_nomination_types")
+      .from("nomination_types")
       .select("*")
       .eq("is_active", true)
       .order("back_percentage", { ascending: false });
@@ -144,6 +145,7 @@ export class PayrollService {
       hostessId,
       periodStart,
       periodEnd,
+      ruleId: ruleAssignment.payroll_rule_id,
       items,
       totalSales: salesData.totalSales,
       basePay,
@@ -246,7 +248,7 @@ export class PayrollService {
     // 売上スライドルールを取得
     const supabase = createClient();
     const { data: slideRules, error } = await supabase
-      .from("payroll_slide_rules")
+      .from("sales_tiers")
       .select("*")
       .eq("rule_id", ruleId)
       .order("min_sales", { ascending: true });
@@ -294,38 +296,53 @@ export class PayrollService {
     return Math.floor(nominationPay);
   }
 
-  private static async getEffectiveBackRate(totalSales: number) {
-    // 売上に応じた実効バック率を計算（後で詳細実装）
-    if (totalSales >= 1000000) return 60;
-    if (totalSales >= 800000) return 55;
-    if (totalSales >= 600000) return 50;
-    if (totalSales >= 400000) return 45;
-    return 40;
-  }
-
   static async saveCalculation(
     calculation: PayrollCalculationDetails,
     status: "draft" | "confirmed" | "approved" = "draft"
   ) {
     const supabase = createClient();
+
+    // まずpayroll_calculationsにサマリーを保存
     const { data: payrollCalc, error: calcError } = await supabase
       .from("payroll_calculations")
       .insert({
         hostess_id: calculation.hostessId,
-        period_start: format(calculation.periodStart, "yyyy-MM-dd"),
-        period_end: format(calculation.periodEnd, "yyyy-MM-dd"),
-        total_sales: calculation.totalSales,
-        base_pay: calculation.basePay,
-        back_pay: calculation.backPay,
-        nomination_pay: calculation.nominationPay,
-        total_pay: calculation.totalPay,
-        status,
-        calculation_details: calculation.items,
+        calculation_period_start: format(calculation.periodStart, "yyyy-MM-dd"),
+        calculation_period_end: format(calculation.periodEnd, "yyyy-MM-dd"),
+        payroll_rule_id: calculation.ruleId || null,
+        base_salary: calculation.basePay,
+        total_back_amount: calculation.backPay,
+        total_bonus_amount: calculation.nominationPay,
+        total_deductions: 0, // TODO: 控除計算を実装後に更新
+        gross_amount: calculation.totalPay,
+        net_amount: calculation.totalPay, // TODO: 控除適用後の金額を計算
+        calculation_status: status,
       })
       .select()
       .single();
 
     if (calcError) throw calcError;
+
+    // payroll_detailsに詳細項目を保存
+    if (payrollCalc && calculation.items && calculation.items.length > 0) {
+      const details = calculation.items.map((item: any) => ({
+        payroll_calculation_id: payrollCalc.id,
+        detail_type: item.type || "other",
+        item_name: item.name,
+        base_amount: item.baseAmount || 0,
+        rate_percentage: item.rate || null,
+        calculated_amount: item.amount || 0,
+        quantity: item.quantity || null,
+        unit_price: item.unitPrice || null,
+        description: item.description || null,
+      }));
+
+      const { error: detailError } = await supabase
+        .from("payroll_details")
+        .insert(details);
+
+      if (detailError) throw detailError;
+    }
 
     return payrollCalc;
   }
