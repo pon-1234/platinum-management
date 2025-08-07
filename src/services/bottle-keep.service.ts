@@ -444,44 +444,118 @@ export class BottleKeepService {
     if (error) throw error;
   }
 
-  // 統計情報取得
+  // 統計情報取得（RPC関数使用）
   static async getStatistics(): Promise<{
     total_active: number;
     total_expired: number;
     total_consumed: number;
     expiring_soon: number;
+    by_product?: Array<{
+      product_id: string;
+      product_name: string;
+      total: number;
+      active: number;
+      consumed: number;
+    }>;
+    by_customer?: Array<{
+      customer_id: string;
+      customer_name: string;
+      total: number;
+      active: number;
+    }>;
+    recent_serves?: Array<{
+      bottle_id: string;
+      bottle_number: string;
+      product_name: string;
+      customer_name: string;
+      served_date: string;
+      remaining: number;
+    }>;
   }> {
     const supabase = createClient();
 
-    const [active, expired, consumed, expiringSoon] = await Promise.all([
-      supabase
-        .from("bottle_keeps")
-        .select("id", { count: "exact" })
-        .eq("status", "active"),
-      supabase
-        .from("bottle_keeps")
-        .select("id", { count: "exact" })
-        .eq("status", "expired"),
-      supabase
-        .from("bottle_keeps")
-        .select("id", { count: "exact" })
-        .eq("status", "consumed"),
-      supabase
-        .from("bottle_keeps")
-        .select("id", { count: "exact" })
-        .eq("status", "active")
-        .lte(
-          "expiry_date",
-          format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")
-        )
-        .gte("expiry_date", format(new Date(), "yyyy-MM-dd")),
-    ]);
+    const { data, error } = await supabase.rpc("get_bottle_keep_statistics");
 
-    return {
-      total_active: active.count || 0,
-      total_expired: expired.count || 0,
-      total_consumed: consumed.count || 0,
-      expiring_soon: expiringSoon.count || 0,
-    };
+    if (error) throw error;
+
+    return (
+      data || {
+        total_active: 0,
+        total_expired: 0,
+        total_consumed: 0,
+        expiring_soon: 0,
+        by_product: [],
+        by_customer: [],
+        recent_serves: [],
+      }
+    );
+  }
+
+  // 顧客別統計情報取得
+  static async getCustomerStatistics(customerId: string): Promise<{
+    total_bottles: number;
+    active_bottles: number;
+    consumed_bottles: number;
+    total_served: number;
+    bottles: Array<{
+      id: string;
+      bottle_number: string;
+      product_name: string;
+      opened_date: string;
+      expiry_date?: string;
+      remaining_percentage: number;
+      status: string;
+      storage_location?: string;
+      last_served_date?: string;
+    }>;
+  }> {
+    const supabase = createClient();
+
+    const { data, error } = await supabase.rpc(
+      "get_customer_bottle_statistics",
+      { p_customer_id: customerId }
+    );
+
+    if (error) throw error;
+
+    return (
+      data || {
+        total_bottles: 0,
+        active_bottles: 0,
+        consumed_bottles: 0,
+        total_served: 0,
+        bottles: [],
+      }
+    );
+  }
+
+  // 月別統計情報取得
+  static async getMonthlyStatistics(
+    startDate?: string,
+    endDate?: string
+  ): Promise<
+    Array<{
+      month: string;
+      new_bottles: number;
+      consumed_bottles: number;
+      expired_bottles: number;
+      total_serves: number;
+      total_served_amount: number;
+    }>
+  > {
+    const supabase = createClient();
+
+    const params: any = {};
+    if (startDate) params.p_start_date = startDate;
+    if (endDate) params.p_end_date = endDate;
+
+    const { data, error } = await supabase.rpc(
+      "get_bottle_keep_monthly_statistics",
+      params
+    );
+
+    if (error) throw error;
+
+    return data || [];
   }
 }
