@@ -271,8 +271,11 @@ describe("CustomerService", () => {
 
       // Reset mock methods
       Object.keys(mockDbMethods).forEach((method) => {
-        if (typeof mockDbMethods[method].mockReturnThis === "function") {
-          mockDbMethods[method].mockReturnThis();
+        const methodObj = (mockDbMethods as Record<string, unknown>)[
+          method
+        ] as { mockReturnThis?: () => void };
+        if (typeof methodObj?.mockReturnThis === "function") {
+          methodObj.mockReturnThis();
         }
       });
 
