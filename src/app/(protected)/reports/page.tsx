@@ -80,6 +80,65 @@ export default function ReportsPage() {
         <p className="text-gray-600">売上・顧客データの分析と報告</p>
       </div>
 
+      {/* 分析レポートへのリンク */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4">分析レポート</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <a
+            href="/reports/analytics"
+            className="block p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-gray-900">顧客分析レポート</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  リピート率、離反リスク、生涯価値を分析
+                </p>
+              </div>
+              <svg
+                className="w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </a>
+          <a
+            href="/bottle-keep"
+            className="block p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-gray-900">ボトルキープ管理</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  ボトルキープの在庫と期限管理
+                </p>
+              </div>
+              <svg
+                className="w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </a>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">基本統計</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

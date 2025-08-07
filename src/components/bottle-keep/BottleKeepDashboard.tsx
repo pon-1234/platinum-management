@@ -53,13 +53,24 @@ export function BottleKeepDashboard({
       ]);
 
       if (statsResult.success) {
-        setStats(statsResult.data);
+        const data = statsResult.data;
+        setStats({
+          totalBottles:
+            (data.total_active || 0) +
+            (data.total_expired || 0) +
+            (data.total_consumed || 0),
+          activeBottles: data.total_active || 0,
+          expiredBottles: data.total_expired || 0,
+          consumedBottles: data.total_consumed || 0,
+          totalValue: 0,
+          expiringTown: data.expiring_soon || 0,
+        });
       } else {
         toast.error("統計データの取得に失敗しました");
       }
 
       if (alertsResult.success) {
-        setAlerts(alertsResult.data);
+        setAlerts(alertsResult.data as BottleKeepAlert[]);
       } else {
         toast.error("アラートデータの取得に失敗しました");
       }
@@ -79,7 +90,7 @@ export function BottleKeepDashboard({
       const result = await sendBottleKeepExpiryAlerts({});
 
       if (result.success) {
-        toast.success(`アラートを送信しました（${result.data.sentCount}件）`);
+        toast.success(`アラートを送信しました（${result.data.sent || 0}件）`);
         // データを再読み込み
         loadDashboardData();
       } else {

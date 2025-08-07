@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
@@ -8,6 +8,11 @@ import { CustomerForm } from "@/components/customers/CustomerForm";
 import { VisitHistory } from "@/components/customers/VisitHistory";
 import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
 import type { Customer, Visit } from "@/types/customer.types";
+import {
+  BottleKeepService,
+  type BottleKeep,
+} from "@/services/bottle-keep.service";
+import { CustomerBottleKeepSection } from "@/components/customers/CustomerBottleKeepSection";
 import {
   PencilIcon,
   ArrowLeftIcon,
@@ -32,9 +37,30 @@ export function CustomerDetailClient({
 }: CustomerDetailClientProps) {
   const [customer, setCustomer] = useState<Customer | null>(initialCustomer);
   const [visits, setVisits] = useState<Visit[]>(initialVisits);
+  const [bottleKeeps, setBottleKeeps] = useState<BottleKeep[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
+
+  // Load bottle keeps on mount
+  useEffect(() => {
+    if (customer) {
+      loadBottleKeeps();
+    }
+  }, [customer?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadBottleKeeps = async () => {
+    if (!customer) return;
+
+    try {
+      const bottles = await BottleKeepService.getBottleKeeps({
+        customerId: customer.id,
+      });
+      setBottleKeeps(bottles);
+    } catch (err) {
+      console.error("Failed to load bottle keeps:", err);
+    }
+  };
 
   const loadCustomerData = async () => {
     if (!customer) return;
@@ -57,6 +83,9 @@ export function CustomerDetailClient({
         customer.id
       );
       setVisits(visitsData);
+
+      // Reload bottle keeps
+      await loadBottleKeeps();
     } catch (err) {
       setError("データの取得に失敗しました");
       if (process.env.NODE_ENV === "development") {
@@ -259,6 +288,19 @@ export function CustomerDetailClient({
               </div>
             )}
           </dl>
+        </div>
+      </div>
+
+      <div className="bg-white shadow sm:rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+            ボトルキープ
+          </h3>
+          <CustomerBottleKeepSection
+            customerId={customer.id}
+            bottleKeeps={bottleKeeps}
+            onUpdate={loadBottleKeeps}
+          />
         </div>
       </div>
 
