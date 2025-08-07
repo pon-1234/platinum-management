@@ -19,6 +19,7 @@ import {
 } from "@/services/customer-analytics.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CohortAnalysisTable } from "./CohortAnalysisTable";
 
 export function CustomerAnalyticsDashboard() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -230,18 +231,7 @@ function CustomerSegmentsView() {
 
 // リテンション分析ビュー
 function RetentionAnalysisView() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>リテンション分析</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-center text-muted-foreground py-8">
-          コホート分析データを表示
-        </div>
-      </CardContent>
-    </Card>
-  );
+  return <CohortAnalysisTable />;
 }
 
 // RFM分析ビュー

@@ -1,4 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  parseSupabaseError,
+  CustomerNotFoundError,
+  InvalidDateRangeError,
+} from "@/lib/errors/analytics-errors";
 
 // 顧客分析メトリクス
 export interface CustomerMetrics {
@@ -173,7 +178,7 @@ export class CustomerAnalyticsService {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
@@ -189,7 +194,12 @@ export class CustomerAnalyticsService {
       .eq("customer_id", customerId)
       .single();
 
-    if (error && error.code !== "PGRST116") throw error;
+    if (error) {
+      if (error.code === "PGRST116") {
+        throw new CustomerNotFoundError(customerId);
+      }
+      throw parseSupabaseError(error);
+    }
     return data;
   }
 
@@ -213,7 +223,7 @@ export class CustomerAnalyticsService {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
@@ -229,7 +239,7 @@ export class CustomerAnalyticsService {
     if (endDate) params.p_end_date = endDate;
 
     const { data, error } = await supabase.rpc("calculate_rfm_score", params);
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
@@ -242,7 +252,7 @@ export class CustomerAnalyticsService {
       { p_customer_id: customerId }
     );
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || 0;
   }
 
@@ -257,7 +267,7 @@ export class CustomerAnalyticsService {
       { p_customer_id: customerId }
     );
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return (
       data?.[0] || {
         current_value: 0,
@@ -323,72 +333,44 @@ export class CustomerAnalyticsService {
       p_end_month: end,
     });
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
-  // 分析サマリー取得
+  // 分析サマリー取得（RPC関数使用）
   static async getAnalyticsSummary(): Promise<AnalyticsSummary> {
     const supabase = createClient();
 
-    // 複数のクエリを並列実行
-    const [metrics, segments, revenue] = await Promise.all([
-      // 顧客ステータス別カウント
-      supabase
-        .from("customer_analytics_metrics")
-        .select("retention_status")
-        .order("retention_status"),
+    const { data, error } = await supabase.rpc("get_analytics_summary");
 
-      // セグメント別カウント
-      supabase.from("customer_segments").select("segment, risk_level"),
+    if (error) throw parseSupabaseError(error);
 
-      // 総売上と平均顧客価値
-      supabase
-        .from("customer_analytics_metrics")
-        .select("total_revenue, avg_spending_per_visit"),
-    ]);
+    // RPC関数の結果を既存のインターフェースにマッピング
+    if (data) {
+      return {
+        total_customers: data.total_customers || 0,
+        active_customers: data.active_customers || 0,
+        churning_customers: data.churning_customers || 0,
+        churned_customers: data.churned_customers || 0,
+        avg_retention_rate: data.avg_retention_rate || 0,
+        avg_customer_value: data.avg_customer_value || 0,
+        total_revenue: data.total_revenue || 0,
+        vip_count: data.vip_count || 0,
+        at_risk_count: data.at_risk_count || 0,
+      };
+    }
 
-    if (metrics.error) throw metrics.error;
-    if (segments.error) throw segments.error;
-    if (revenue.error) throw revenue.error;
-
-    const statusCounts = (metrics.data || []).reduce((acc: any, curr) => {
-      acc[curr.retention_status] = (acc[curr.retention_status] || 0) + 1;
-      return acc;
-    }, {});
-
-    const vipCount = (segments.data || []).filter(
-      (s) => s.segment === "VIP"
-    ).length;
-    const atRiskCount = (segments.data || []).filter(
-      (s) => s.risk_level === "High Risk" || s.risk_level === "Medium Risk"
-    ).length;
-
-    const totalRevenue = (revenue.data || []).reduce(
-      (sum, r) => sum + (r.total_revenue || 0),
-      0
-    );
-
-    const avgCustomerValue =
-      revenue.data && revenue.data.length > 0
-        ? totalRevenue / revenue.data.length
-        : 0;
-
-    const totalCustomers = (metrics.data || []).length;
-    const activeCustomers = statusCounts.active || 0;
-    const retentionRate =
-      totalCustomers > 0 ? (activeCustomers / totalCustomers) * 100 : 0;
-
+    // フォールバック
     return {
-      total_customers: totalCustomers,
-      active_customers: activeCustomers,
-      churning_customers: statusCounts.churning || 0,
-      churned_customers: statusCounts.churned || 0,
-      avg_retention_rate: retentionRate,
-      avg_customer_value: avgCustomerValue,
-      total_revenue: totalRevenue,
-      vip_count: vipCount,
-      at_risk_count: atRiskCount,
+      total_customers: 0,
+      active_customers: 0,
+      churning_customers: 0,
+      churned_customers: 0,
+      avg_retention_rate: 0,
+      avg_customer_value: 0,
+      total_revenue: 0,
+      vip_count: 0,
+      at_risk_count: 0,
     };
   }
 
@@ -402,7 +384,7 @@ export class CustomerAnalyticsService {
       .in("risk_level", ["High Risk", "Medium Risk"])
       .order("total_revenue", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
@@ -416,7 +398,7 @@ export class CustomerAnalyticsService {
       .in("segment", ["VIP", "Premium"])
       .order("total_revenue", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
@@ -440,7 +422,7 @@ export class CustomerAnalyticsService {
       .gte("check_in_time", startDate.toISOString())
       .order("check_in_time");
 
-    if (visitsError) throw visitsError;
+    if (visitsError) throw parseSupabaseError(visitsError);
 
     const { data: orders, error: ordersError } = await supabase
       .from("visits")
@@ -449,7 +431,7 @@ export class CustomerAnalyticsService {
       .gte("check_in_time", startDate.toISOString())
       .order("check_in_time");
 
-    if (ordersError) throw ordersError;
+    if (ordersError) throw parseSupabaseError(ordersError);
 
     // 月別集計
     const visitsByMonth = new Map<string, number>();
@@ -496,7 +478,7 @@ export class CustomerAnalyticsService {
       params
     );
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return (
       data || {
         channels: [],
@@ -529,7 +511,7 @@ export class CustomerAnalyticsService {
       params
     );
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return data || [];
   }
 
@@ -539,7 +521,7 @@ export class CustomerAnalyticsService {
 
     const { data, error } = await supabase.rpc("analyze_referral_program");
 
-    if (error) throw error;
+    if (error) throw parseSupabaseError(error);
     return (
       data || {
         summary: {
