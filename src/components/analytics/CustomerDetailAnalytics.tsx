@@ -10,16 +10,7 @@ import {
   CustomerLifetimeValue,
   CustomerAnalyticsService,
 } from "@/services/customer-analytics.service";
-import {
-  User,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  AlertTriangle,
-  Wine,
-  Activity,
-  Target,
-} from "lucide-react";
+import { User, AlertTriangle, Wine, Activity, Target } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -39,7 +30,7 @@ export function CustomerDetailAnalytics({
 
   useEffect(() => {
     loadCustomerData();
-  }, [customerId]);
+  }, [customerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCustomerData = async () => {
     try {

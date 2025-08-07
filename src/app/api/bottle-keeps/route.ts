@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
 import {
   createBottleKeepSchema,
   getBottleKeepsQuerySchema,
 } from "@/lib/validations/bottle-keep";
-import { z } from "zod";
 
 // GET: ボトルキープ一覧取得
 export async function GET(request: NextRequest) {
@@ -29,7 +27,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { status, customer_id } = queryValidation.data;
-    const bottles = await BottleKeepService.getBottleKeeps(status, customer_id);
+    const bottles = await BottleKeepService.getBottleKeeps({
+      status,
+      customerId: customer_id,
+    });
 
     return NextResponse.json(bottles);
   } catch (error) {

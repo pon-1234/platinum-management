@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/client";
 import {
   parseSupabaseError,
   CustomerNotFoundError,
-  InvalidDateRangeError,
 } from "@/lib/errors/analytics-errors";
 
 // 顧客分析メトリクス
@@ -234,7 +233,7 @@ export class CustomerAnalyticsService {
   ): Promise<RFMScore[]> {
     const supabase = createClient();
 
-    const params: any = {};
+    const params: { p_start_date?: string; p_end_date?: string } = {};
     if (startDate) params.p_start_date = startDate;
     if (endDate) params.p_end_date = endDate;
 
@@ -287,8 +286,8 @@ export class CustomerAnalyticsService {
     // コホートの初期化
     await supabase.rpc("initialize_customer_cohorts");
 
-    // コホート分析クエリ
-    const query = `
+    // コホート分析クエリ（未使用）
+    /* const query = `
       WITH cohort_data AS (
         SELECT 
           cc.cohort_month,
@@ -319,7 +318,7 @@ export class CustomerAnalyticsService {
       JOIN cohort_sizes cs ON cs.cohort_month = cd.cohort_month
       WHERE cd.month_index >= 0
       ORDER BY cd.cohort_month, cd.month_index
-    `;
+    `; */
 
     const start =
       startMonth ||
@@ -442,7 +441,7 @@ export class CustomerAnalyticsService {
       visitsByMonth.set(month, (visitsByMonth.get(month) || 0) + 1);
     });
 
-    (orders || []).forEach((v: any) => {
+    (orders || []).forEach((v) => {
       const month = new Date(v.check_in_time).toISOString().slice(0, 7);
       const amount = v.orders?.[0]?.total_amount || 0;
       spendingByMonth.set(month, (spendingByMonth.get(month) || 0) + amount);
@@ -469,7 +468,7 @@ export class CustomerAnalyticsService {
   ): Promise<AcquisitionChannelAnalysis> {
     const supabase = createClient();
 
-    const params: any = {};
+    const params: { p_start_date?: string; p_end_date?: string } = {};
     if (startDate) params.p_start_date = startDate;
     if (endDate) params.p_end_date = endDate;
 
@@ -499,7 +498,12 @@ export class CustomerAnalyticsService {
   ): Promise<ChannelComparison[]> {
     const supabase = createClient();
 
-    const params: any = {
+    const params: {
+      p_channel1: string;
+      p_channel2: string;
+      p_start_date?: string;
+      p_end_date?: string;
+    } = {
       p_channel1: channel1,
       p_channel2: channel2,
     };

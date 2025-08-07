@@ -7,6 +7,9 @@
 # testing
 /coverage
 
+# temporary removed files
+src/app/(dashboard)/bottle-keep-removed/
+
 # next.js
 /.next/
 /out/

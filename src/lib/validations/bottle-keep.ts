@@ -48,11 +48,7 @@ export const updateBottleKeepSchema = z.object({
     .uuid("有効なスタッフIDを入力してください")
     .optional(),
   notes: z.string().max(500, "備考は500文字以内で入力してください").optional(),
-  status: z
-    .enum(["active", "consumed", "expired", "removed"], {
-      errorMap: () => ({ message: "無効なステータスです" }),
-    })
-    .optional(),
+  status: z.enum(["active", "consumed", "expired", "removed"]).optional(),
   tags: z.array(z.string()).optional(),
   last_served_date: z
     .string()

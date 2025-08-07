@@ -86,15 +86,22 @@ export class RateLimitError extends AnalyticsError {
 /**
  * Supabaseエラーをカスタムエラーに変換
  */
-export function parseSupabaseError(error: any): AnalyticsError {
+export function parseSupabaseError(error: unknown): AnalyticsError {
   // Supabaseのエラーコードに基づいて適切なエラーを返す
   if (!error) {
     return new AnalyticsError("不明なエラーが発生しました");
   }
 
-  const code = error.code || error.error_code;
+  const errorObj = error as {
+    code?: string;
+    error_code?: string;
+    message?: string;
+    error_description?: string;
+    status?: number;
+  };
+  const code = errorObj.code || errorObj.error_code;
   const message =
-    error.message || error.error_description || "エラーが発生しました";
+    errorObj.message || errorObj.error_description || "エラーが発生しました";
 
   switch (code) {
     case "PGRST116": // Not Found
@@ -106,7 +113,7 @@ export function parseSupabaseError(error: any): AnalyticsError {
 
     case "PGRST503": // Service Unavailable
     case "PGRST504": // Gateway Timeout
-      return new DatabaseConnectionError(error);
+      return new DatabaseConnectionError(new Error(message));
 
     case "22P02": // Invalid text representation
     case "22003": // Numeric value out of range
@@ -124,13 +131,13 @@ export function parseSupabaseError(error: any): AnalyticsError {
 
     default:
       // その他のエラーはステータスコードで判断
-      if (error.status === 404) {
+      if (errorObj.status === 404) {
         return new CustomerNotFoundError("unknown");
       }
-      if (error.status === 403) {
+      if (errorObj.status === 403) {
         return new PermissionDeniedError();
       }
-      if (error.status === 429) {
+      if (errorObj.status === 429) {
         return new RateLimitError();
       }
   }

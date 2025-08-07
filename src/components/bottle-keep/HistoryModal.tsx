@@ -50,7 +50,7 @@ export function HistoryModal({
     if (bottle && open) {
       loadHistories();
     }
-  }, [bottle, open]);
+  }, [bottle, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadHistories = async () => {
     if (!bottle) return;

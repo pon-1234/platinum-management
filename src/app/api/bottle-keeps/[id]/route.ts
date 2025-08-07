@@ -11,11 +11,12 @@ const paramsSchema = z.object({
 // GET: ボトルキープ詳細取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // パラメータのバリデーション
-    const paramsValidation = paramsSchema.safeParse(params);
+    const paramsValidation = paramsSchema.safeParse({ id });
 
     if (!paramsValidation.success) {
       return NextResponse.json(
@@ -51,11 +52,12 @@ export async function GET(
 // PUT: ボトルキープ更新
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // パラメータのバリデーション
-    const paramsValidation = paramsSchema.safeParse(params);
+    const paramsValidation = paramsSchema.safeParse({ id });
 
     if (!paramsValidation.success) {
       return NextResponse.json(

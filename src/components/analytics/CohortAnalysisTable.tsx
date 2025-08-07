@@ -156,12 +156,6 @@ function CohortRow({ cohortMonth, data, maxMonthIndex }: CohortRowProps) {
     });
   };
 
-  const getRetentionColor = (rate: number) => {
-    if (rate >= 80) return "bg-green-100 text-green-900";
-    if (rate >= 40) return "bg-yellow-100 text-yellow-900";
-    return "bg-red-100 text-red-900";
-  };
-
   const getHeatmapIntensity = (rate: number) => {
     // 0-100%を0-1に正規化
     const normalized = rate / 100;

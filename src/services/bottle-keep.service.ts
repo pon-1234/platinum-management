@@ -85,10 +85,17 @@ export interface ServeBottleInput {
 
 export class BottleKeepService {
   // ボトルキープ一覧取得
-  static async getBottleKeeps(
-    status?: "active" | "consumed" | "expired" | "removed",
-    customer_id?: string
-  ): Promise<BottleKeep[]> {
+  static async getBottleKeeps(filter?: {
+    status?: "active" | "consumed" | "expired" | "removed";
+    customerId?: string;
+    productId?: number;
+    storageLocation?: string;
+    expiringWithin?: number;
+    lowAmount?: boolean;
+    searchTerm?: string;
+    sortBy?: "expiryDate" | "openedDate" | "customerName" | "productName";
+    sortOrder?: "asc" | "desc";
+  }): Promise<BottleKeep[]> {
     const supabase = createClient();
     let query = supabase
       .from("bottle_keeps")
@@ -102,11 +109,17 @@ export class BottleKeepService {
       )
       .order("created_at", { ascending: false });
 
-    if (status) {
-      query = query.eq("status", status);
+    if (filter?.status) {
+      query = query.eq("status", filter.status);
     }
-    if (customer_id) {
-      query = query.eq("customer_id", customer_id);
+    if (filter?.customerId) {
+      query = query.eq("customer_id", filter.customerId);
+    }
+    if (filter?.productId) {
+      query = query.eq("product_id", filter.productId);
+    }
+    if (filter?.storageLocation) {
+      query = query.eq("storage_location", filter.storageLocation);
     }
 
     const { data, error } = await query;
@@ -545,7 +558,7 @@ export class BottleKeepService {
   > {
     const supabase = createClient();
 
-    const params: any = {};
+    const params: { p_start_date?: string; p_end_date?: string } = {};
     if (startDate) params.p_start_date = startDate;
     if (endDate) params.p_end_date = endDate;
 

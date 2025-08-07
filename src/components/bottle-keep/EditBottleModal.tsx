@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -178,8 +178,11 @@ export function EditBottleModal({
             <Label htmlFor="status">ステータス</Label>
             <Select
               value={formData.status}
-              onValueChange={(value: any) =>
-                setFormData({ ...formData, status: value })
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  status: value as BottleKeep["status"],
+                })
               }
             >
               <SelectTrigger id="status">

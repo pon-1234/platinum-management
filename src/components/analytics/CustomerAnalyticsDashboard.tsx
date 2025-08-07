@@ -5,13 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users,
-  TrendingUp,
   AlertTriangle,
   Trophy,
   Activity,
   DollarSign,
-  Calendar,
-  UserCheck,
 } from "lucide-react";
 import {
   CustomerAnalyticsService,

@@ -25,11 +25,12 @@ const querySchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // パラメータのバリデーション
-    const paramsValidation = paramsSchema.safeParse(params);
+    const paramsValidation = paramsSchema.safeParse({ id });
 
     if (!paramsValidation.success) {
       return NextResponse.json(
@@ -98,7 +99,7 @@ export async function GET(
         break;
 
       case "engagement":
-        const supabase = createClient();
+        const supabase = await createClient();
         const { data: engagementScore } = await supabase.rpc(
           "calculate_engagement_score",
           { p_customer_id: customerId }
@@ -110,7 +111,7 @@ export async function GET(
         break;
 
       case "recommendations":
-        const supabaseRec = createClient();
+        const supabaseRec = await createClient();
         const { data: recommendations } = await supabaseRec.rpc(
           "get_customer_recommendations",
           { p_customer_id: customerId }

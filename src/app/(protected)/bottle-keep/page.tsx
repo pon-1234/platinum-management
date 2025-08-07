@@ -86,7 +86,7 @@ export default function BottleKeepPage() {
       const result = await getBottleKeeps(filter);
 
       if (result.success) {
-        setBottleKeeps(result.data);
+        setBottleKeeps(result.data as unknown as BottleKeepDetail[]);
       } else {
         toast.error("ボトルキープデータの取得に失敗しました");
       }
