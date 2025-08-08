@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -18,10 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ShoppingCart, User, Users, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { ShoppingCart, User } from "lucide-react";
 import {
   VisitGuestService,
   VisitGuestWithCustomer,
@@ -31,7 +31,7 @@ import {
   GuestOrderWithDetails,
 } from "@/services/multiGuestOrderService";
 import { formatCurrency } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 interface GuestOrderManagementProps {
   visitId: string;
@@ -61,11 +61,7 @@ export function GuestOrderManagement({
   >(new Map());
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchGuestsAndOrders();
-  }, [visitId]);
-
-  const fetchGuestsAndOrders = async () => {
+  const fetchGuestsAndOrders = useCallback(async () => {
     const guestList = await VisitGuestService.getVisitGuests(visitId);
     setGuests(guestList);
 
@@ -84,7 +80,11 @@ export function GuestOrderManagement({
       summaries.push({ guest, orders, total });
     }
     setGuestOrderSummaries(summaries);
-  };
+  }, [visitId, selectedGuestId]);
+
+  useEffect(() => {
+    fetchGuestsAndOrders();
+  }, [visitId, fetchGuestsAndOrders]);
 
   const handleAssignOrder = async () => {
     if (!orderItemId) return;
@@ -108,6 +108,7 @@ export function GuestOrderManagement({
         // Assign to single guest
         if (selectedGuestId) {
           // Get order item details to calculate amount
+          const supabase = createClient();
           const { data: orderItem } = await supabase
             .from("order_items")
             .select("quantity, unit_price")
@@ -168,12 +169,12 @@ export function GuestOrderManagement({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Checkbox
+              <input
+                type="checkbox"
                 id="shared-order"
                 checked={isSharedOrder}
-                onCheckedChange={(checked) =>
-                  setIsSharedOrder(checked as boolean)
-                }
+                onChange={(e) => setIsSharedOrder(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
               <Label htmlFor="shared-order">複数ゲストで共有</Label>
             </div>

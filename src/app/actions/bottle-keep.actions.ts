@@ -23,7 +23,10 @@ const getBottleKeepsSchema = z.object({
 export const getBottleKeeps = createSafeAction(
   getBottleKeepsSchema,
   async (filter) => {
-    const bottleKeeps = await BottleKeepService.getBottleKeeps(filter);
+    const bottleKeeps = await BottleKeepService.getBottleKeeps(
+      filter.status,
+      filter.customerId
+    );
     return bottleKeeps;
   }
 );

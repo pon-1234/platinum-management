@@ -53,9 +53,10 @@ export function CustomerDetailClient({
     if (!customer) return;
 
     try {
-      const bottles = await BottleKeepService.getBottleKeeps({
-        customerId: customer.id,
-      });
+      const bottles = await BottleKeepService.getBottleKeeps(
+        undefined,
+        customer.id
+      );
       setBottleKeeps(bottles);
     } catch (err) {
       console.error("Failed to load bottle keeps:", err);

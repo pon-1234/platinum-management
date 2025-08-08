@@ -81,10 +81,10 @@ export function ActiveVisitsWithBottleKeep() {
           visitsData.map(async (visit) => {
             if (visit.customer?.id) {
               try {
-                const bottles = await BottleKeepService.getBottleKeeps({
-                  customerId: visit.customer.id,
-                  status: "active",
-                });
+                const bottles = await BottleKeepService.getBottleKeeps(
+                  "active",
+                  visit.customer.id
+                );
                 if (bottles.length > 0) {
                   bottleKeepMap.set(visit.customer.id, bottles);
                 }

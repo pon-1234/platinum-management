@@ -47,26 +47,28 @@ export function HistoryModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadHistories = async () => {
+      if (!bottle) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await BottleKeepService.getHistories(bottle.id);
+        setHistories(data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "履歴の取得に失敗しました"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (bottle && open) {
       loadHistories();
     }
   }, [bottle, open]);
-
-  const loadHistories = async () => {
-    if (!bottle) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await BottleKeepService.getHistories(bottle.id);
-      setHistories(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "履歴の取得に失敗しました");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getActionIcon = (actionType: string) => {
     switch (actionType) {

@@ -1,16 +1,11 @@
-import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/database.types";
 import { VisitGuestService } from "./visitGuestService";
 import { MultiGuestOrderService } from "./multiGuestOrderService";
+import { createClient } from "@/lib/supabase/client";
 
 type BillingSplit = Database["public"]["Tables"]["guest_billing_splits"]["Row"];
-type BillingSplitInsert =
-  Database["public"]["Tables"]["guest_billing_splits"]["Insert"];
 type VisitGuest = Database["public"]["Tables"]["visit_guests"]["Row"];
-type PaymentMethod =
-  Database["public"]["Tables"]["guest_billing_splits"]["Row"]["payment_method"];
-type PaymentStatus =
-  Database["public"]["Tables"]["guest_billing_splits"]["Row"]["payment_status"];
+type PaymentMethod = "cash" | "card" | "mixed";
 
 export interface IndividualBill {
   guestId: string;
@@ -19,7 +14,7 @@ export interface IndividualBill {
   serviceCharge: number;
   taxAmount: number;
   total: number;
-  items: any[];
+  items: unknown[];
 }
 
 export interface GroupBill {
@@ -104,6 +99,7 @@ export class MultiGuestBillingService {
       const createdSplits: BillingSplit[] = [];
 
       for (const split of splitData) {
+        const supabase = createClient();
         const { data, error } = await supabase
           .from("guest_billing_splits")
           .insert({
@@ -141,6 +137,7 @@ export class MultiGuestBillingService {
   ): Promise<boolean> {
     try {
       // Get the guest's visit
+      const supabase = createClient();
       const { data: guest, error: guestError } = await supabase
         .from("visit_guests")
         .select("visit_id, individual_total")
@@ -153,7 +150,7 @@ export class MultiGuestBillingService {
       }
 
       // Check if billing split already exists
-      const { data: existingSplit, error: checkError } = await supabase
+      const { data: existingSplit } = await supabase
         .from("guest_billing_splits")
         .select("id")
         .eq("visit_guest_id", guestId)
@@ -221,7 +218,8 @@ export class MultiGuestBillingService {
       );
 
       // Determine billing type based on payment splits
-      const { data: splits, error } = await supabase
+      const supabase = createClient();
+      const { data: splits } = await supabase
         .from("guest_billing_splits")
         .select("split_type")
         .eq("visit_id", visitId);
@@ -261,6 +259,7 @@ export class MultiGuestBillingService {
       const errors: string[] = [];
 
       // Get all guests and their totals
+      const supabase = createClient();
       const { data: guests, error: guestsError } = await supabase
         .from("visit_guests")
         .select("id, individual_total")
@@ -348,6 +347,7 @@ export class MultiGuestBillingService {
   ): Promise<void> {
     try {
       // Get all guests
+      const supabase = createClient();
       const { data: guests, error: guestsError } = await supabase
         .from("visit_guests")
         .select("id")
@@ -386,6 +386,7 @@ export class MultiGuestBillingService {
    */
   static async getVisitBillingSplits(visitId: string): Promise<BillingSplit[]> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("guest_billing_splits")
         .select("*")
@@ -409,6 +410,7 @@ export class MultiGuestBillingService {
    */
   static async cancelBillingSplit(splitId: string): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("guest_billing_splits")
         .update({ payment_status: "cancelled" })

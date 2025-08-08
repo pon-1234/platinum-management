@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,12 +17,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Users, User } from "lucide-react";
+import { Trash2, Plus, Users } from "lucide-react";
 import { Database } from "@/types/database.types";
 import { VisitGuestService } from "@/services/visitGuestService";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
 type VisitGuest = Database["public"]["Tables"]["visit_guests"]["Row"];
@@ -64,6 +64,7 @@ export function MultiGuestReceptionForm({
   }, []);
 
   const fetchCustomers = async () => {
+    const supabase = createClient();
     const { data, error } = await supabase
       .from("customers")
       .select("*")
@@ -124,11 +125,12 @@ export function MultiGuestReceptionForm({
 
         // Create new customer if needed
         if (guest.isNewCustomer && guest.customerName) {
+          const supabase = createClient();
           const { data: newCustomer, error } = await supabase
             .from("customers")
             .insert({
               name: guest.customerName,
-              status: "active" as any,
+              status: "active",
             })
             .select()
             .single();
@@ -220,8 +222,10 @@ export function MultiGuestReceptionForm({
                   <Label>顧客タイプ</Label>
                   <Select
                     value={guest.guestType}
-                    onValueChange={(value: any) =>
-                      updateGuest(index, { guestType: value })
+                    onValueChange={(value) =>
+                      updateGuest(index, {
+                        guestType: value as "main" | "companion" | "additional",
+                      })
                     }
                     disabled={index === 0}
                   >

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+
 import { BottleKeepService } from "@/services/bottle-keep.service";
 import {
   createBottleKeepSchema,
   getBottleKeepsQuerySchema,
 } from "@/lib/validations/bottle-keep";
-import { z } from "zod";
 
 // GET: ボトルキープ一覧取得
 export async function GET(request: NextRequest) {

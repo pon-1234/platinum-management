@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Database } from "@/types/database.types";
 
 type VisitGuest = Database["public"]["Tables"]["visit_guests"]["Row"];
@@ -26,6 +26,7 @@ export class VisitGuestService {
     additionalData?: Partial<VisitGuestInsert>
   ): Promise<VisitGuest | null> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase.rpc("add_guest_to_visit", {
         p_visit_id: visitId,
         p_customer_id: customerId,
@@ -68,6 +69,7 @@ export class VisitGuestService {
     updateData: VisitGuestUpdate
   ): Promise<VisitGuest | null> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("visit_guests")
         .update(updateData)
@@ -94,6 +96,7 @@ export class VisitGuestService {
     visitId: string
   ): Promise<VisitGuestWithCustomer[]> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("visit_guests")
         .select(
@@ -126,6 +129,7 @@ export class VisitGuestService {
     checkOutTime: Date = new Date()
   ): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("visit_guests")
         .update({
@@ -153,6 +157,7 @@ export class VisitGuestService {
     newVisitId: string
   ): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("visit_guests")
         .update({ visit_id: newVisitId })
@@ -178,6 +183,7 @@ export class VisitGuestService {
    */
   static async updateVisitGuestCount(visitId: string): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { data: guestCount, error: countError } = await supabase
         .from("visit_guests")
         .select("id", { count: "exact", head: true })
@@ -215,6 +221,7 @@ export class VisitGuestService {
     total: number;
   } | null> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase.rpc("calculate_guest_bill", {
         p_visit_guest_id: guestId,
       });
@@ -240,6 +247,7 @@ export class VisitGuestService {
   ): Promise<boolean> {
     try {
       // First, unset all other guests as primary payer
+      const supabase = createClient();
       const { error: unsetError } = await supabase
         .from("visit_guests")
         .update({ is_primary_payer: false })
@@ -275,6 +283,7 @@ export class VisitGuestService {
     guestId: string
   ): Promise<VisitGuestWithCustomer | null> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("visit_guests")
         .select(
@@ -303,6 +312,7 @@ export class VisitGuestService {
    */
   static async removeGuest(guestId: string): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("visit_guests")
         .delete()

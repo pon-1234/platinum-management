@@ -677,6 +677,8 @@ export class BillingService extends BaseService {
       notes: data.notes,
       createdBy: data.created_by,
       createdAt: data.created_at,
+      isSharedItem: data.is_shared_item,
+      targetGuestId: data.target_guest_id,
     };
   }
 
@@ -700,8 +702,10 @@ export class BillingService extends BaseService {
       unit_price: number;
       total_price: number;
       notes: string | null;
-      created_by: string;
+      created_by: string | null;
       created_at: string;
+      is_shared_item: boolean;
+      target_guest_id: string | null;
       product?: Database["public"]["Tables"]["products"]["Row"];
       cast?: { id: string; full_name: string };
     }> | null;

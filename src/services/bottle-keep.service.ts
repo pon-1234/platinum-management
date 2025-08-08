@@ -545,7 +545,7 @@ export class BottleKeepService {
   > {
     const supabase = createClient();
 
-    const params: any = {};
+    const params: Record<string, string> = {};
     if (startDate) params.p_start_date = startDate;
     if (endDate) params.p_end_date = endDate;
 

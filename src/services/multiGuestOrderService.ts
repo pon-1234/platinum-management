@@ -1,8 +1,8 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Database } from "@/types/database.types";
 
 type GuestOrder = Database["public"]["Tables"]["guest_orders"]["Row"];
-type GuestOrderInsert = Database["public"]["Tables"]["guest_orders"]["Insert"];
+
 type GuestOrderUpdate = Database["public"]["Tables"]["guest_orders"]["Update"];
 type OrderItem = Database["public"]["Tables"]["order_items"]["Row"];
 type Product = Database["public"]["Tables"]["products"]["Row"];
@@ -39,6 +39,7 @@ export class MultiGuestOrderService {
     sharedPercentage?: number
   ): Promise<GuestOrder | null> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("guest_orders")
         .insert({
@@ -74,6 +75,7 @@ export class MultiGuestOrderService {
     amount: number
   ): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { error } = await supabase.from("guest_orders").upsert(
         {
           visit_guest_id: guestId,
@@ -128,6 +130,7 @@ export class MultiGuestOrderService {
       }
 
       // Get the order item details
+      const supabase = createClient();
       const { data: orderItem, error: fetchError } = await supabase
         .from("order_items")
         .select("*")
@@ -165,6 +168,7 @@ export class MultiGuestOrderService {
     updateData: GuestOrderUpdate
   ): Promise<GuestOrder | null> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("guest_orders")
         .update(updateData)
@@ -191,6 +195,7 @@ export class MultiGuestOrderService {
     visitGuestId: string
   ): Promise<GuestOrderWithDetails[]> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("guest_orders")
         .select(
@@ -225,6 +230,7 @@ export class MultiGuestOrderService {
   ): Promise<Map<string, GuestOrderWithDetails[]>> {
     try {
       // First get all guests for the visit
+      const supabase = createClient();
       const { data: guests, error: guestsError } = await supabase
         .from("visit_guests")
         .select("id")
@@ -279,6 +285,7 @@ export class MultiGuestOrderService {
    */
   static async removeGuestOrder(guestOrderId: string): Promise<boolean> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("guest_orders")
         .delete()
@@ -305,6 +312,7 @@ export class MultiGuestOrderService {
     orderIds?: string[]
   ): Promise<boolean> {
     try {
+      const supabase = createClient();
       let query = supabase
         .from("guest_orders")
         .update({ visit_guest_id: toGuestId })
@@ -333,6 +341,7 @@ export class MultiGuestOrderService {
    */
   static async calculateGuestOrderTotal(visitGuestId: string): Promise<number> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("guest_orders")
         .select("amount_for_guest")

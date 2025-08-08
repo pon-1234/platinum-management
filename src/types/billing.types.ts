@@ -114,6 +114,8 @@ export interface OrderItem {
   notes: string | null;
   createdBy: string | null;
   createdAt: string;
+  isSharedItem: boolean;
+  targetGuestId: string | null;
 }
 
 export interface CreateOrderItemData {
