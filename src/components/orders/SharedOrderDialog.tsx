@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
 import { toast } from "sonner";
-import type { VisitGuestWithCustomer } from "@/lib/services/visit-guest.service";
+import type { VisitGuestWithCustomer } from "@/services/visit-guest.service";
 
 interface GuestShare {
   guestId: string;

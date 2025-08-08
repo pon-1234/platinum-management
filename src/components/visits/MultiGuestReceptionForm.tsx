@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Users, User, CreditCard } from "lucide-react";
 import { toast } from "sonner";
-import { VisitGuestService } from "@/lib/services/visit-guest.service";
+import { VisitGuestService } from "@/services/visit-guest.service";
 import type { Database } from "@/types/database.types";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];

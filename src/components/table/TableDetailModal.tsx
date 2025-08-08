@@ -12,7 +12,7 @@ import { billingService } from "@/services/billing.service";
 import {
   CastAssignmentService,
   type VisitCastAssignment,
-} from "@/lib/services/cast-assignment.service";
+} from "@/services/cast-assignment.service";
 
 interface TableDetailModalProps {
   isOpen: boolean;

@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Users } from "lucide-react";
 import { Database } from "@/types/database.types";
-import { VisitGuestService } from "@/services/visitGuestService";
+import { VisitGuestService } from "@/services/visit-guest.service";
 import { createClient } from "@/lib/supabase/client";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
@@ -148,7 +148,7 @@ export function MultiGuestReceptionForm({
         // Add guest to visit
         const addedGuest = await VisitGuestService.addGuestToVisit(
           visitId,
-          customerId,
+          { customerId },
           guest.guestType,
           {
             seat_position: index + 1,

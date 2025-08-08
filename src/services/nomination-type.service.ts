@@ -2,34 +2,14 @@ import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
 
-export interface NominationType {
-  id: string;
-  type_name: string;
-  display_name: string;
-  price: number;
-  back_rate: number;
-  priority: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import type {
+  NominationType,
+  CreateNominationTypeInput,
+  UpdateNominationTypeInput,
+} from "@/types/cast-assignment.types";
 
-export interface CreateNominationTypeInput {
-  type_name: string;
-  display_name: string;
-  price: number;
-  back_rate: number;
-  priority?: number;
-  is_active?: boolean;
-}
-
-export interface UpdateNominationTypeInput {
-  display_name?: string;
-  price?: number;
-  back_rate?: number;
-  priority?: number;
-  is_active?: boolean;
-}
+// 型の再エクスポート（既存のインポートとの互換性維持）
+export type { NominationType };
 
 export class NominationTypeService {
   /**

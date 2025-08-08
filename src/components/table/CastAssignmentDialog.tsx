@@ -5,11 +5,11 @@ import { X, User, Plus, Crown, Clock } from "lucide-react";
 import {
   CastAssignmentService,
   type VisitCastAssignment,
-} from "@/lib/services/cast-assignment.service";
+} from "@/services/cast-assignment.service";
 import {
   NominationTypeService,
   type NominationType,
-} from "@/lib/services/nomination-type.service";
+} from "@/services/nomination-type.service";
 import { formatCurrency } from "@/lib/utils/formatting";
 
 interface CastAssignmentDialogProps {

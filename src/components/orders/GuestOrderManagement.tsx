@@ -17,11 +17,11 @@ import { toast } from "sonner";
 import {
   VisitGuestService,
   type VisitGuestWithCustomer,
-} from "@/lib/services/visit-guest.service";
+} from "@/services/visit-guest.service";
 import {
   MultiGuestOrderService,
   type GuestOrderWithDetails,
-} from "@/lib/services/multi-guest-order.service";
+} from "@/services/multi-guest-order.service";
 import { formatCurrency } from "@/lib/utils";
 // import { ProductSelectModal } from "./ProductSelectModal";
 import { SharedOrderDialog } from "./SharedOrderDialog";

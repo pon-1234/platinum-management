@@ -25,11 +25,11 @@ import { ShoppingCart, User } from "lucide-react";
 import {
   VisitGuestService,
   VisitGuestWithCustomer,
-} from "@/services/visitGuestService";
+} from "@/services/visit-guest.service";
 import {
   MultiGuestOrderService,
   GuestOrderWithDetails,
-} from "@/services/multiGuestOrderService";
+} from "@/services/multi-guest-order.service";
 import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
@@ -92,16 +92,30 @@ export function GuestOrderManagement({
     setLoading(true);
     try {
       if (isSharedOrder) {
+        // Get order item details
+        const supabase = createClient();
+        const { data: orderItem } = await supabase
+          .from("order_items")
+          .select("product_id, quantity")
+          .eq("id", orderItemId)
+          .single();
+
+        if (!orderItem) {
+          throw new Error("Order item not found");
+        }
+
         // Create shared order with percentages
         const guestShares = Array.from(sharedPercentages.entries()).map(
-          ([guest_id, percentage]) => ({
-            guest_id,
+          ([guestId, percentage]) => ({
+            guestId,
             percentage,
           })
         );
 
         await MultiGuestOrderService.createSharedOrder(
-          orderItemId,
+          visitId,
+          orderItem.product_id,
+          orderItem.quantity,
           guestShares
         );
       } else {

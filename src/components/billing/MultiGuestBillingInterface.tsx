@@ -27,11 +27,11 @@ import { toast } from "sonner";
 import {
   MultiGuestBillingService,
   type IndividualBill,
-} from "@/lib/services/multi-guest-billing.service";
+} from "@/services/multi-guest-billing.service";
 import {
   VisitGuestService,
   type VisitGuestWithCustomer,
-} from "@/lib/services/visit-guest.service";
+} from "@/services/visit-guest.service";
 import { formatCurrency } from "@/lib/utils";
 
 type PaymentMethod =
