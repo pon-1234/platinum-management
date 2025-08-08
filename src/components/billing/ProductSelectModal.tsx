@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { billingService } from "@/services/billing.service";
-import { castService } from "@/services/cast.service";
+
 import type { Product, CreateOrderItemData } from "@/types/billing.types";
-import type { Cast } from "@/types/cast.types";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -24,7 +23,6 @@ interface CartItem {
   product: Product;
   quantity: number;
   notes?: string;
-  castId?: string;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -42,7 +40,6 @@ export default function ProductSelectModal({
   onItemsAdded,
 }: ProductSelectModalProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [casts, setCasts] = useState<Cast[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,9 +50,8 @@ export default function ProductSelectModal({
   useEffect(() => {
     if (isOpen) {
       loadProducts();
-      loadCasts();
     }
-  }, [isOpen]); // loadProducts and loadCasts don't depend on any external variables
+  }, [isOpen]); // loadProducts doesn't depend on any external variables
 
   useEffect(() => {
     filterProducts();
@@ -75,18 +71,6 @@ export default function ProductSelectModal({
       toast.error("商品の読み込みに失敗しました");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadCasts = async () => {
-    try {
-      const data = await castService.searchCasts({ isActive: true });
-      setCasts(data);
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to load casts:", error);
-      }
-      toast.error("キャスト一覧の読み込みに失敗しました");
     }
   };
 
@@ -146,14 +130,6 @@ export default function ProductSelectModal({
     );
   };
 
-  const updateCast = (productId: number, castId: string) => {
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.product.id === productId ? { ...item, castId } : item
-      )
-    );
-  };
-
   const getTotalAmount = () => {
     return cart.reduce(
       (total, item) => total + item.product.price * item.quantity,
@@ -177,7 +153,6 @@ export default function ProductSelectModal({
         unitPrice: item.product.price,
         totalPrice: item.product.price * item.quantity,
         notes: item.notes,
-        castId: item.castId,
       }));
 
       await Promise.all(
@@ -365,27 +340,6 @@ export default function ProductSelectModal({
                       className="w-full text-sm border rounded px-2 py-1"
                       onClick={(e) => e.stopPropagation()}
                     />
-
-                    <div>
-                      <label className="text-xs text-gray-500">
-                        担当キャスト
-                      </label>
-                      <select
-                        value={item.castId || ""}
-                        onChange={(e) =>
-                          updateCast(item.product.id, e.target.value)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full text-sm border rounded px-2 py-1 mt-1"
-                      >
-                        <option value="">指名なし</option>
-                        {casts.map((cast) => (
-                          <option key={cast.id} value={cast.id}>
-                            {cast.stageName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
                 ))}
               </div>

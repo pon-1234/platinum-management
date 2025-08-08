@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { tableService } from "@/services/table.service";
+import TableDetailModal from "./TableDetailModal";
 import type { Table, TableStatus } from "@/types/reservation.types";
 import {
   ArrowPathIcon as RefreshIcon,
@@ -125,6 +126,8 @@ export default function RealTimeTableDashboard({
   const [connectionStatus, setConnectionStatus] = useState<
     "connected" | "disconnected" | "connecting"
   >("connecting");
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [showTableDetail, setShowTableDetail] = useState(false);
 
   // Convert Map to sorted array
   const tables = useMemo(() => {
@@ -244,6 +247,15 @@ export default function RealTimeTableDashboard({
     []
   );
 
+  const handleTableSelect = useCallback(
+    (table: Table) => {
+      setSelectedTable(table);
+      setShowTableDetail(true);
+      onTableSelect?.(table);
+    },
+    [onTableSelect]
+  );
+
   const statusCounts = useMemo(() => {
     return tables.reduce(
       (counts, table) => {
@@ -328,7 +340,7 @@ export default function RealTimeTableDashboard({
           <TableCard
             key={table.id}
             table={table}
-            onSelect={onTableSelect}
+            onSelect={handleTableSelect}
             onStatusChange={handleStatusChange}
           />
         ))}
@@ -354,6 +366,13 @@ export default function RealTimeTableDashboard({
           })}
         </div>
       </div>
+
+      {/* Table Detail Modal */}
+      <TableDetailModal
+        isOpen={showTableDetail}
+        onClose={() => setShowTableDetail(false)}
+        table={selectedTable}
+      />
     </div>
   );
 }

@@ -457,6 +457,7 @@ export class BillingService extends BaseService {
   // ============= BILLING CALCULATIONS =============
 
   async calculateBill(visitId: string): Promise<BillCalculation> {
+    // 商品の合計を計算
     const { data, error } = await this.supabase.rpc("calculate_visit_totals", {
       visit_id_param: visitId,
     });
@@ -465,16 +466,39 @@ export class BillingService extends BaseService {
       this.handleError(error, "料金計算に失敗しました");
     }
 
+    // 指名料を計算
+    const { data: nominationData, error: nominationError } =
+      await this.supabase.rpc("calculate_nomination_fees", {
+        p_visit_id: visitId,
+      });
+
+    if (nominationError) {
+      console.error("Error calculating nomination fees:", nominationError);
+    }
+
+    const nominationFee = nominationData?.[0]?.total_nomination_fee || 0;
+
     if (!data || data.length === 0) {
       return {
-        subtotal: 0,
+        subtotal: nominationFee,
         serviceCharge: 0,
-        taxAmount: 0,
-        totalAmount: 0,
+        taxAmount: Math.floor(nominationFee * 0.1), // 10%税金
+        totalAmount: nominationFee + Math.floor(nominationFee * 0.1),
       };
     }
 
-    return data[0];
+    // 商品合計に指名料を加算
+    const subtotal = (data[0].subtotal || 0) + nominationFee;
+    const serviceCharge = data[0].serviceCharge || 0;
+    const taxAmount = Math.floor((subtotal + serviceCharge) * 0.1);
+    const totalAmount = subtotal + serviceCharge + taxAmount;
+
+    return {
+      subtotal,
+      serviceCharge,
+      taxAmount,
+      totalAmount,
+    };
   }
 
   async processPayment(
