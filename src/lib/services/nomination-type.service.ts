@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 export interface NominationType {
   id: string;
@@ -139,7 +141,7 @@ export class NominationTypeService {
     id: string,
     input: UpdateNominationTypeInput
   ): Promise<NominationType> {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
 
@@ -269,7 +271,15 @@ export class NominationTypeService {
     }
 
     // データを集計
-    const stats = new Map<string, any>();
+    const stats = new Map<
+      string,
+      {
+        nomination_type: NominationType;
+        count: number;
+        total_revenue: number;
+        total_back: number;
+      }
+    >();
 
     (data || []).forEach((item) => {
       const typeId = item.nomination_type_id;

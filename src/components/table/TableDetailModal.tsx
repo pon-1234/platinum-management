@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Users, Clock, CreditCard, User, Plus } from "lucide-react";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency } from "@/lib/utils/formatting";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import CastAssignmentDialog from "./CastAssignmentDialog";
@@ -37,6 +37,7 @@ export default function TableDetailModal({
     if (isOpen && table?.currentVisitId) {
       loadVisitDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, table]);
 
   const loadVisitDetails = async () => {

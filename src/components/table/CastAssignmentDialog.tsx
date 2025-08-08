@@ -10,7 +10,7 @@ import {
   NominationTypeService,
   type NominationType,
 } from "@/lib/services/nomination-type.service";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency } from "@/lib/utils/formatting";
 
 interface CastAssignmentDialogProps {
   isOpen: boolean;
@@ -45,6 +45,7 @@ export default function CastAssignmentDialog({
     if (isOpen && visitId) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, visitId]);
 
   const loadData = async () => {
