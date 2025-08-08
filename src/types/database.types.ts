@@ -411,7 +411,6 @@ export interface Database {
           id: number;
           visit_id: string;
           product_id: number;
-          cast_id: string | null;
           quantity: number;
           unit_price: number;
           total_price: number;
@@ -425,7 +424,6 @@ export interface Database {
           id?: number;
           visit_id: string;
           product_id: number;
-          cast_id?: string | null;
           quantity: number;
           unit_price: number;
           notes?: string | null;
@@ -438,7 +436,6 @@ export interface Database {
           id?: number;
           visit_id?: string;
           product_id?: number;
-          cast_id?: string | null;
           quantity?: number;
           unit_price?: number;
           notes?: string | null;
