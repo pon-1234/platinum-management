@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
 import { toast } from "sonner";
@@ -138,7 +137,7 @@ export function SharedOrderDialog({
                 <div className="flex items-center gap-4">
                   <Checkbox
                     checked={selectedGuests.has(guest.id)}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked: boolean | "indeterminate") =>
                       handleGuestToggle(guest.id, checked as boolean)
                     }
                   />

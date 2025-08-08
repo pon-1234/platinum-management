@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type VisitGuest = Database["public"]["Tables"]["visit_guests"]["Row"];
@@ -25,6 +25,7 @@ export class VisitGuestService {
     additionalData?: Partial<VisitGuestInsert>
   ): Promise<VisitGuest> {
     try {
+      const supabase = createClient();
       let customerId = customerData.customerId;
 
       // 新規顧客の場合は作成
@@ -74,6 +75,7 @@ export class VisitGuestService {
     updateData: VisitGuestUpdate
   ): Promise<VisitGuest> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("visit_guests")
         .update(updateData)
@@ -96,6 +98,7 @@ export class VisitGuestService {
     visitId: string
   ): Promise<VisitGuestWithCustomer[]> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("visit_guests")
         .select(
@@ -124,6 +127,7 @@ export class VisitGuestService {
     checkOutTime?: Date
   ): Promise<void> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("visit_guests")
         .update({
@@ -146,6 +150,7 @@ export class VisitGuestService {
     newVisitId: string
   ): Promise<void> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("visit_guests")
         .update({
@@ -172,6 +177,7 @@ export class VisitGuestService {
     total: number;
   }> {
     try {
+      const supabase = createClient();
       // ゲストの注文を集計
       const { data: orders, error: ordersError } = await supabase
         .from("guest_orders")
@@ -217,6 +223,7 @@ export class VisitGuestService {
     guestId: string
   ): Promise<void> {
     try {
+      const supabase = createClient();
       // 既存の主要支払者をリセット
       await supabase
         .from("visit_guests")

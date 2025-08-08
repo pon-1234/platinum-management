@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,9 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Label } from "@/components/ui/label";
 import {
-  CreditCard,
   Users,
   User,
   Receipt,
@@ -33,9 +33,13 @@ import {
   type VisitGuestWithCustomer,
 } from "@/lib/services/visit-guest.service";
 import { formatCurrency } from "@/lib/utils";
-import type { Database } from "@/types/database.types";
 
-type PaymentMethod = Database["public"]["Enums"]["payment_method"];
+type PaymentMethod =
+  | "cash"
+  | "credit_card"
+  | "debit_card"
+  | "e_money"
+  | "qr_payment";
 
 interface MultiGuestBillingInterfaceProps {
   visitId: string;
@@ -59,6 +63,7 @@ export function MultiGuestBillingInterface({
 
   useEffect(() => {
     loadBillingData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
 
   const loadBillingData = async () => {
@@ -221,7 +226,9 @@ export function MultiGuestBillingInterface({
 
         <Tabs
           value={billingMode}
-          onValueChange={(v) => setBillingMode(v as any)}
+          onValueChange={(v) =>
+            setBillingMode(v as "individual" | "group" | "split")
+          }
         >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="individual">
@@ -251,7 +258,9 @@ export function MultiGuestBillingInterface({
                         <div className="flex items-center gap-3">
                           <Checkbox
                             checked={selectedGuests.has(bill.guestId)}
-                            onCheckedChange={(checked) =>
+                            onCheckedChange={(
+                              checked: boolean | "indeterminate"
+                            ) =>
                               handleGuestToggle(
                                 bill.guestId,
                                 checked as boolean

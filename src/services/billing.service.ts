@@ -342,7 +342,6 @@ export class BillingService extends BaseService {
       .insert({
         visit_id: data.visitId,
         product_id: data.productId,
-        cast_id: data.castId || null,
         quantity: data.quantity,
         unit_price: unitPrice,
         total_price: totalPrice,
@@ -392,10 +391,6 @@ export class BillingService extends BaseService {
       query = query.eq("product_id", params.productId);
     }
 
-    if (params.castId) {
-      query = query.eq("cast_id", params.castId);
-    }
-
     if (params.startDate) {
       query = query.gte("created_at", params.startDate);
     }
@@ -432,7 +427,6 @@ export class BillingService extends BaseService {
 
     if (data.quantity !== undefined) updateData.quantity = data.quantity;
     if (data.unitPrice !== undefined) updateData.unit_price = data.unitPrice;
-    if (data.castId !== undefined) updateData.cast_id = data.castId;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
     const { data: orderItem, error } = await this.supabase
@@ -670,7 +664,6 @@ export class BillingService extends BaseService {
       id: data.id,
       visitId: data.visit_id,
       productId: data.product_id,
-      castId: data.cast_id,
       quantity: data.quantity,
       unitPrice: data.unit_price,
       totalPrice: data.total_price,

@@ -107,7 +107,6 @@ export interface OrderItem {
   id: number;
   visitId: string;
   productId: number;
-  castId: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -121,7 +120,6 @@ export interface OrderItem {
 export interface CreateOrderItemData {
   visitId: string;
   productId: number;
-  castId?: string;
   quantity: number;
   unitPrice?: number; // If not provided, will use product price
   notes?: string;
@@ -130,14 +128,12 @@ export interface CreateOrderItemData {
 export interface UpdateOrderItemData {
   quantity?: number;
   unitPrice?: number;
-  castId?: string;
   notes?: string;
 }
 
 export interface OrderItemSearchParams {
   visitId?: string;
   productId?: number;
-  castId?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -172,10 +168,6 @@ export interface VisitWithDetails extends Visit {
 
 export interface OrderItemWithDetails extends OrderItem {
   product?: Product;
-  cast?: {
-    id: string;
-    fullName: string;
-  };
 }
 
 // Daily report types

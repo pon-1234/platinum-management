@@ -1,8 +1,8 @@
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type GuestOrder = Database["public"]["Tables"]["guest_orders"]["Row"];
-type GuestOrderInsert = Database["public"]["Tables"]["guest_orders"]["Insert"];
+// type GuestOrderInsert = Database["public"]["Tables"]["guest_orders"]["Insert"];
 type OrderItem = Database["public"]["Tables"]["order_items"]["Row"];
 type Product = Database["public"]["Tables"]["products"]["Row"];
 
@@ -29,6 +29,7 @@ export class MultiGuestOrderService {
     notes?: string
   ): Promise<{ orderItem: OrderItem; guestOrder: GuestOrder }> {
     try {
+      const supabase = createClient();
       // 商品情報を取得
       const { data: product, error: productError } = await supabase
         .from("products")
@@ -91,6 +92,7 @@ export class MultiGuestOrderService {
     amount?: number
   ): Promise<GuestOrder> {
     try {
+      const supabase = createClient();
       // 注文情報を取得
       const { data: orderItem, error: orderError } = await supabase
         .from("order_items")
@@ -135,6 +137,7 @@ export class MultiGuestOrderService {
     notes?: string
   ): Promise<{ orderItem: OrderItem; guestOrders: GuestOrder[] }> {
     try {
+      const supabase = createClient();
       // 割合の合計が100%になることを確認
       const totalPercentage = guestShares.reduce(
         (sum, share) => sum + share.percentage,
@@ -211,6 +214,7 @@ export class MultiGuestOrderService {
     visitGuestId: string
   ): Promise<GuestOrderWithDetails[]> {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("guest_orders")
         .select(
@@ -240,6 +244,7 @@ export class MultiGuestOrderService {
     visitId: string
   ): Promise<Map<string, GuestOrderWithDetails[]>> {
     try {
+      const supabase = createClient();
       const { data: guests, error: guestsError } = await supabase
         .from("visit_guests")
         .select("id")
@@ -271,6 +276,7 @@ export class MultiGuestOrderService {
     newAmount?: number
   ): Promise<GuestOrder> {
     try {
+      const supabase = createClient();
       const updateData: Partial<GuestOrder> = {
         visit_guest_id: newGuestId,
       };
@@ -303,6 +309,7 @@ export class MultiGuestOrderService {
    */
   static async deleteGuestOrder(guestOrderId: string): Promise<void> {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("guest_orders")
         .delete()

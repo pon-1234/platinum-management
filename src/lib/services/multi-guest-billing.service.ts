@@ -1,14 +1,18 @@
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
 import { VisitGuestService } from "./visit-guest.service";
 import { MultiGuestOrderService } from "./multi-guest-order.service";
 
 type BillingSplit = Database["public"]["Tables"]["guest_billing_splits"]["Row"];
-type BillingSplitInsert =
-  Database["public"]["Tables"]["guest_billing_splits"]["Insert"];
+// type BillingSplitInsert = Database["public"]["Tables"]["guest_billing_splits"]["Insert"];
 type VisitGuest = Database["public"]["Tables"]["visit_guests"]["Row"];
-type PaymentMethod = Database["public"]["Enums"]["payment_method"];
-type PaymentStatus = Database["public"]["Enums"]["payment_status"];
+type PaymentMethod =
+  | "cash"
+  | "credit_card"
+  | "debit_card"
+  | "e_money"
+  | "qr_payment";
+// type PaymentStatus = Database["public"]["Enums"]["payment_status"];
 
 export interface IndividualBill {
   guestId: string;
@@ -17,7 +21,7 @@ export interface IndividualBill {
   serviceCharge: number;
   taxAmount: number;
   total: number;
-  orders: any[];
+  orders: unknown[];
 }
 
 export interface GroupBill {
@@ -86,6 +90,7 @@ export class MultiGuestBillingService {
     try {
       const billingSplits: BillingSplit[] = [];
 
+      const supabase = createClient();
       for (const split of splitData) {
         const { data, error } = await supabase
           .from("guest_billing_splits")
@@ -119,6 +124,7 @@ export class MultiGuestBillingService {
     paymentData: PaymentInput
   ): Promise<void> {
     try {
+      const supabase = createClient();
       // ゲスト情報を取得
       const { data: guest, error: guestError } = await supabase
         .from("visit_guests")
@@ -165,6 +171,7 @@ export class MultiGuestBillingService {
       );
 
       // 会計タイプを判定
+      const supabase = createClient();
       const { data: splits, error } = await supabase
         .from("guest_billing_splits")
         .select("*")
@@ -212,6 +219,7 @@ export class MultiGuestBillingService {
       );
 
       // 来店の合計金額を取得
+      const supabase = createClient();
       const { data: visit, error: visitError } = await supabase
         .from("visits")
         .select("total_amount")
@@ -279,6 +287,7 @@ export class MultiGuestBillingService {
       }
 
       // 残りのゲストがいるか確認
+      const supabase = createClient();
       const { data: remainingGuests, error } = await supabase
         .from("visit_guests")
         .select("id")

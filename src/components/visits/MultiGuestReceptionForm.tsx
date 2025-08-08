@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Users, User, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -289,7 +289,7 @@ export function MultiGuestReceptionForm({
                   <Checkbox
                     id={`primary-payer-${index}`}
                     checked={guest.isPrimaryPayer}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked: boolean | "indeterminate") =>
                       updateGuest(index, { isPrimaryPayer: checked as boolean })
                     }
                   />
