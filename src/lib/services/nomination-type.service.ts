@@ -281,9 +281,10 @@ export class NominationTypeService {
       }
     >();
 
-    (data || []).forEach((item) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (data || []).forEach((item: any) => {
       const typeId = item.nomination_type_id;
-      const nominationType = item.nomination_types;
+      const nominationType = item.nomination_types as NominationType;
 
       if (!stats.has(typeId)) {
         stats.set(typeId, {
@@ -295,10 +296,12 @@ export class NominationTypeService {
       }
 
       const stat = stats.get(typeId);
-      stat.count += 1;
-      stat.total_revenue += nominationType.price;
-      stat.total_back +=
-        (nominationType.price * nominationType.back_rate) / 100;
+      if (stat) {
+        stat.count += 1;
+        stat.total_revenue += nominationType.price;
+        stat.total_back +=
+          (nominationType.price * nominationType.back_rate) / 100;
+      }
     });
 
     return Array.from(stats.values());
