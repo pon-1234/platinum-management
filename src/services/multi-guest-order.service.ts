@@ -75,6 +75,18 @@ export class MultiGuestOrderService {
 
       if (guestOrderError) throw guestOrderError;
 
+      // 自動でキャストへの売上貢献度（attribution）を計算
+      try {
+        const { VisitSessionService } = await import("./visit-session.service");
+        await VisitSessionService.calculateAutoAttribution(
+          visitId,
+          orderItem.id
+        );
+      } catch (attrError) {
+        console.warn("Attribution calculation failed, continuing:", attrError);
+        // Attributionの計算に失敗しても注文作成は成功とする
+      }
+
       return { orderItem, guestOrder };
     } catch (error) {
       console.error("Error creating guest order:", error);
@@ -198,6 +210,18 @@ export class MultiGuestOrderService {
 
         if (guestOrderError) throw guestOrderError;
         guestOrders.push(guestOrder);
+      }
+
+      // 自動でキャストへの売上貢献度（attribution）を計算
+      try {
+        const { VisitSessionService } = await import("./visit-session.service");
+        await VisitSessionService.calculateAutoAttribution(
+          visitId,
+          orderItem.id
+        );
+      } catch (attrError) {
+        console.warn("Attribution calculation failed, continuing:", attrError);
+        // Attributionの計算に失敗しても注文作成は成功とする
       }
 
       return { orderItem, guestOrders };

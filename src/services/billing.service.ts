@@ -478,6 +478,36 @@ export class BillingService extends BaseService {
 
     const nominationFee = nominationData?.[0]?.total_nomination_fee || 0;
 
+    // bill_item_attributionsを考慮したキャスト別売上を計算
+    const { data: attributions } = await this.supabase
+      .from("bill_item_attributions")
+      .select(
+        `
+        order_item_id,
+        cast_id,
+        attribution_percentage,
+        order_items!inner(
+          total_price
+        )
+      `
+      )
+      .eq("order_items.visit_id", visitId);
+
+    // キャスト別の売上を集計
+    const castAttributions = new Map<string, number>();
+    if (attributions) {
+      for (const attr of attributions) {
+        const castId = attr.cast_id;
+        const amount = Math.floor(
+          (attr.order_items?.total_price || 0) *
+            (attr.attribution_percentage / 100)
+        );
+
+        const current = castAttributions.get(castId) || 0;
+        castAttributions.set(castId, current + amount);
+      }
+    }
+
     if (!data || data.length === 0) {
       return {
         subtotal: nominationFee,

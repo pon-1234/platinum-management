@@ -79,11 +79,42 @@ export class TableService extends BaseService {
       return null;
     }
 
-    // Get current reservation if table is reserved
-    if (
-      table.currentStatus === "reserved" ||
-      table.currentStatus === "occupied"
-    ) {
+    // visit_table_segmentsから現在アクティブな来店を取得
+    const tableIdNumber = parseInt(id, 10);
+    if (!isNaN(tableIdNumber)) {
+      const { data: activeSegment } = await this.supabase
+        .from("visit_table_segments")
+        .select(
+          `
+          *,
+          visits(
+            id,
+            customer_id,
+            num_guests,
+            check_in_at,
+            status
+          )
+        `
+        )
+        .eq("table_id", tableIdNumber)
+        .is("ended_at", null)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (activeSegment?.visits) {
+        // アクティブな来店がある場合、テーブルは使用中
+        return {
+          ...table,
+          currentStatus: "occupied",
+          currentVisitId: activeSegment.visit_id,
+          currentReservation: null, // visitとreservationは別概念
+        };
+      }
+    }
+
+    // 予約情報のチェック（既存ロジック）
+    if (table.currentStatus === "reserved") {
       const { data: reservations } = await this.supabase
         .from("reservations")
         .select("*")
@@ -224,6 +255,39 @@ export class TableService extends BaseService {
       visitId,
     });
 
+    // 新しいvisit_table_segmentsベースの更新
+    if (visitId && status === "occupied") {
+      // テーブルが使用中になった場合、visit_table_segmentsに記録
+      const tableIdNumber = parseInt(id, 10);
+      if (!isNaN(tableIdNumber)) {
+        // 既存のアクティブなセグメントを終了
+        await this.supabase
+          .from("visit_table_segments")
+          .update({ ended_at: new Date().toISOString() })
+          .eq("table_id", tableIdNumber)
+          .is("ended_at", null);
+
+        // 新しいセグメントを作成
+        await this.supabase.from("visit_table_segments").insert({
+          visit_id: visitId,
+          table_id: tableIdNumber,
+          reason: "check_in",
+          started_at: new Date().toISOString(),
+        });
+      }
+    } else if (status === "available") {
+      // テーブルが空席になった場合、アクティブなセグメントを終了
+      const tableIdNumber = parseInt(id, 10);
+      if (!isNaN(tableIdNumber)) {
+        await this.supabase
+          .from("visit_table_segments")
+          .update({ ended_at: new Date().toISOString() })
+          .eq("table_id", tableIdNumber)
+          .is("ended_at", null);
+      }
+    }
+
+    // 既存のtablesテーブルも更新（互換性のため）
     return this.updateTable(id, {
       currentStatus: validatedData.status,
       currentVisitId: validatedData.visitId,
@@ -383,8 +447,8 @@ export class TableService extends BaseService {
     onDelete: (tableId: string) => void,
     onInitialLoad: (allTables: Table[]) => void
   ): () => void {
-    // Initial load
-    this.searchTables({ isActive: true }).then(onInitialLoad);
+    // Initial load with visit_table_segments status
+    this.getTablesWithActiveVisits().then(onInitialLoad);
 
     this.realtimeChannel = this.supabase
       .channel("table-differential-updates")
@@ -429,6 +493,28 @@ export class TableService extends BaseService {
           onDelete(oldData.id);
         }
       )
+      // visit_table_segmentsの変更も監視
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visit_table_segments",
+        },
+        async (payload) => {
+          // セグメントが変更されたテーブルの情報を更新
+          const tableId =
+            (payload.new as any)?.table_id || (payload.old as any)?.table_id;
+          if (tableId) {
+            const updatedTable = await this.getTableWithActiveVisit(
+              String(tableId)
+            );
+            if (updatedTable) {
+              onUpdate(updatedTable);
+            }
+          }
+        }
+      )
       .subscribe();
 
     // Return unsubscribe function
@@ -438,6 +524,69 @@ export class TableService extends BaseService {
         this.realtimeChannel = null;
       }
     };
+  }
+
+  // 新しいヘルパーメソッド：アクティブな来店情報を含むテーブルリストを取得
+  private async getTablesWithActiveVisits(): Promise<Table[]> {
+    const { data: tables } = await this.supabase
+      .from("tables")
+      .select(
+        `
+        *,
+        visit_table_segments!left(
+          visit_id,
+          ended_at
+        )
+      `
+      )
+      .eq("is_active", true)
+      .order("display_order");
+
+    if (!tables) return [];
+
+    return tables.map((table) => {
+      // アクティブなセグメントを見つける
+      const activeSegment = (table.visit_table_segments as any[])?.find(
+        (seg) => seg.ended_at === null
+      );
+
+      return this.mapToTable({
+        ...table,
+        current_status: activeSegment ? "occupied" : table.current_status,
+        current_visit_id: activeSegment?.visit_id || table.current_visit_id,
+      });
+    });
+  }
+
+  // 新しいヘルパーメソッド：特定のテーブルのアクティブな来店情報を取得
+  private async getTableWithActiveVisit(
+    tableId: string
+  ): Promise<Table | null> {
+    const { data: table } = await this.supabase
+      .from("tables")
+      .select(
+        `
+        *,
+        visit_table_segments!left(
+          visit_id,
+          ended_at
+        )
+      `
+      )
+      .eq("id", tableId)
+      .single();
+
+    if (!table) return null;
+
+    const activeSegment = (table.visit_table_segments as any[])?.find(
+      (seg) => seg.ended_at === null
+    );
+
+    return this.mapToTable({
+      ...table,
+      current_status: activeSegment ? "occupied" : table.current_status,
+      current_visit_id: activeSegment?.visit_id || table.current_visit_id,
+    });
   }
 
   // Helper methods

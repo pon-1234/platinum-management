@@ -41,18 +41,39 @@ export default function TableDetailModal({
   }, [isOpen, table]);
 
   const loadVisitDetails = async () => {
-    if (!table?.currentVisitId) return;
+    if (!table) return;
 
     setIsLoading(true);
     try {
+      // visit_table_segmentsから現在アクティブな来店IDを取得
+      const supabase = createClient();
+      const tableIdNumber = parseInt(table.id, 10);
+
+      let visitId = table.currentVisitId;
+
+      if (!isNaN(tableIdNumber)) {
+        const { data: activeSegment } = await supabase
+          .from("visit_table_segments")
+          .select("visit_id")
+          .eq("table_id", tableIdNumber)
+          .is("ended_at", null)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (activeSegment) {
+          visitId = activeSegment.visit_id;
+        }
+      }
+
+      if (!visitId) return;
+
       // 来店情報を取得
-      const visit = await billingService.getVisitById(table.currentVisitId);
+      const visit = await billingService.getVisitById(visitId);
       setCurrentVisit(visit);
 
       // キャストエンゲージメント情報を取得
-      const session = await VisitSessionService.getSessionDetails(
-        table.currentVisitId
-      );
+      const session = await VisitSessionService.getSessionDetails(visitId);
       if (session?.cast_engagements) {
         const activeEngagements = session.cast_engagements.filter(
           (e) => e.is_active
