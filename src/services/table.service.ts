@@ -503,8 +503,9 @@ export class TableService extends BaseService {
         },
         async (payload) => {
           // セグメントが変更されたテーブルの情報を更新
-          const tableId =
-            (payload.new as any)?.table_id || (payload.old as any)?.table_id;
+          const newData = payload.new as { table_id?: number } | null;
+          const oldData = payload.old as { table_id?: number } | null;
+          const tableId = newData?.table_id || oldData?.table_id;
           if (tableId) {
             const updatedTable = await this.getTableWithActiveVisit(
               String(tableId)
@@ -546,9 +547,13 @@ export class TableService extends BaseService {
 
     return tables.map((table) => {
       // アクティブなセグメントを見つける
-      const activeSegment = (table.visit_table_segments as any[])?.find(
-        (seg) => seg.ended_at === null
-      );
+      const segments = table.visit_table_segments as
+        | Array<{
+            visit_id: string;
+            ended_at: string | null;
+          }>
+        | undefined;
+      const activeSegment = segments?.find((seg) => seg.ended_at === null);
 
       return this.mapToTable({
         ...table,
@@ -578,9 +583,13 @@ export class TableService extends BaseService {
 
     if (!table) return null;
 
-    const activeSegment = (table.visit_table_segments as any[])?.find(
-      (seg) => seg.ended_at === null
-    );
+    const segments = table.visit_table_segments as
+      | Array<{
+          visit_id: string;
+          ended_at: string | null;
+        }>
+      | undefined;
+    const activeSegment = segments?.find((seg) => seg.ended_at === null);
 
     return this.mapToTable({
       ...table,

@@ -9,7 +9,6 @@ import CastEngagementDialog from "./CastEngagementDialog";
 import type { Table } from "@/types/reservation.types";
 import type { Visit } from "@/types/billing.types";
 import { billingService } from "@/services/billing.service";
-import { tableService } from "@/services/table.service";
 import {
   VisitSessionService,
   type CastEngagement,
