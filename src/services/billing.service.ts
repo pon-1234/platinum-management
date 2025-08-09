@@ -498,9 +498,14 @@ export class BillingService extends BaseService {
     if (attributions) {
       for (const attr of attributions) {
         const castId = attr.cast_id;
+        // order_items is returned as an array in nested selects; take the first row
+        const orderItemTotal = Array.isArray(attr.order_items)
+          ? attr.order_items[0]?.total_price || 0
+          : // Fallback for potential object typing
+            // @ts-expect-error - runtime may return object depending on relation inference
+            attr.order_items?.total_price || 0;
         const amount = Math.floor(
-          (attr.order_items?.total_price || 0) *
-            (attr.attribution_percentage / 100)
+          orderItemTotal * (attr.attribution_percentage / 100)
         );
 
         const current = castAttributions.get(castId) || 0;
