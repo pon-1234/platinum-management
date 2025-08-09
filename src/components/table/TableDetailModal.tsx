@@ -5,7 +5,7 @@ import { X, Users, Clock, CreditCard, User, Plus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/formatting";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import CastAssignmentDialog from "./CastAssignmentDialog";
+import CastEngagementDialog from "./CastEngagementDialog";
 import type { Table } from "@/types/reservation.types";
 import type { Visit } from "@/types/billing.types";
 import { billingService } from "@/services/billing.service";
@@ -262,11 +262,11 @@ export default function TableDetailModal({
 
       {/* キャスト割り当てダイアログ */}
       {currentVisit && (
-        <CastAssignmentDialog
+        <CastEngagementDialog
           isOpen={showCastAssignment}
           onClose={() => setShowCastAssignment(false)}
           visitId={currentVisit.id}
-          onAssignmentChange={handleCastAssignmentChange}
+          onEngagementChange={handleCastAssignmentChange}
         />
       )}
     </>
