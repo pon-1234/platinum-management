@@ -14,7 +14,7 @@ import {
   VisitSessionService,
   type CastEngagement,
 } from "@/services/visit-session.service";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 interface TableDetailModalProps {
   isOpen: boolean;
@@ -84,6 +84,7 @@ export default function TableDetailModal({
     try {
       // TODO: 将来的には顧客選択・人数入力のダイアログを実装
       // 一時的にデフォルトのゲスト顧客を作成または取得
+      const supabase = createClient();
       const { data: customers, error: fetchError } = await supabase
         .from("customers")
         .select("id")
