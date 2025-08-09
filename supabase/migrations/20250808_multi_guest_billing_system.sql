@@ -1,3 +1,6 @@
+-- btree_gist拡張を有効化（時間範囲の重複チェックに必要）
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Multi-Guest Billing System Migration
 -- This migration adds support for managing multiple guests per visit
 

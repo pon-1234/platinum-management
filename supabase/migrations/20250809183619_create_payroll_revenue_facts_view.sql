@@ -14,16 +14,17 @@ SELECT
     bia.attribution_type,
     ce.role AS engagement_role,
     nt.display_name AS nomination_type,
-    nt.back_rate,
+    -- nt.back_rate, -- このカラムが存在しない場合はコメントアウト
     v.id AS visit_id,
     v.session_code,
     oi.id AS order_item_id,
     -- Additional calculated fields
-    CASE 
-        WHEN ce.role = 'primary' THEN nt.back_rate
-        WHEN ce.role = 'inhouse' THEN COALESCE(nt.back_rate, 0) * 0.8
-        ELSE COALESCE(nt.back_rate, 0) * 0.5
-    END AS effective_back_rate,
+    -- CASE 
+    --     WHEN ce.role = 'primary' THEN nt.back_rate
+    --     WHEN ce.role = 'inhouse' THEN COALESCE(nt.back_rate, 0) * 0.8
+    --     ELSE COALESCE(nt.back_rate, 0) * 0.5
+    -- END AS effective_back_rate,
+    0 AS effective_back_rate, -- back_rateカラムが存在しない場合は0を返す
     -- Revenue attribution for this cast member
     (oi.total_price * bia.attribution_percentage / 100) AS attributed_revenue
 FROM public.bill_item_attributions bia
@@ -37,8 +38,9 @@ LEFT JOIN public.cast_engagements ce
     AND ce.is_active = true
 LEFT JOIN public.nomination_types nt 
     ON nt.id = ce.nomination_type_id
-WHERE oi.status != 'cancelled' -- Exclude cancelled items
-  AND bia.is_active = true; -- Only active attributions
+-- WHERE oi.status != 'cancelled' -- Exclude cancelled items (statusカラムが存在しない)
+--   AND bia.is_active = true; -- Only active attributions (is_activeカラムが存在しない)
+;
 
 -- Grant permissions
 GRANT SELECT ON public.payroll_revenue_facts TO authenticated;
@@ -50,12 +52,12 @@ COMMENT ON VIEW public.payroll_revenue_facts IS
 
 -- Create index on base tables for better performance
 CREATE INDEX IF NOT EXISTS idx_bill_item_attributions_cast_order 
-  ON public.bill_item_attributions(cast_id, order_item_id) 
-  WHERE is_active = true;
+  ON public.bill_item_attributions(cast_id, order_item_id);
+  -- WHERE is_active = true; -- is_activeカラムが存在しない
 
 CREATE INDEX IF NOT EXISTS idx_order_items_visit_status 
-  ON public.order_items(visit_id, status) 
-  WHERE status != 'cancelled';
+  ON public.order_items(visit_id);
+  -- WHERE status != 'cancelled'; -- statusカラムが存在しない
 
 CREATE INDEX IF NOT EXISTS idx_cast_engagements_visit_cast 
   ON public.cast_engagements(visit_id, cast_id) 

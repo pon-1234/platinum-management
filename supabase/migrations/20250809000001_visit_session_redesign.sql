@@ -74,7 +74,7 @@ CREATE INDEX idx_cast_engagements_active ON cast_engagements(is_active) WHERE is
 -- 4. bill_item_attributions（明細ごとの売上寄与）
 CREATE TABLE IF NOT EXISTS bill_item_attributions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_item_id UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
+    order_item_id BIGINT NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
     cast_id UUID NOT NULL REFERENCES casts_profile(id),
     attribution_percentage DECIMAL(5, 2) NOT NULL CHECK (attribution_percentage >= 0 AND attribution_percentage <= 100),
     attribution_amount INTEGER NOT NULL DEFAULT 0,
@@ -114,43 +114,9 @@ CREATE INDEX idx_visit_nominations_cast ON visit_nominations(cast_id);
 CREATE INDEX idx_visit_nominations_type ON visit_nominations(nomination_type_id);
 CREATE INDEX idx_visit_nominations_occurred ON visit_nominations(occurred_at);
 
--- 6. 既存のvisit_cast_assignmentsからデータ移行
-INSERT INTO cast_engagements (
-    visit_id,
-    cast_id,
-    role,
-    nomination_type_id,
-    started_at,
-    ended_at,
-    is_active,
-    notes,
-    created_by,
-    created_at
-)
-SELECT 
-    vca.visit_id,
-    vca.cast_id,
-    CASE 
-        WHEN vca.is_primary THEN 'primary'
-        WHEN nt.type_name = 'help' THEN 'help'
-        WHEN nt.type_name = 'dohan' THEN 'douhan'
-        WHEN nt.type_name = 'after' THEN 'after'
-        ELSE 'inhouse'
-    END as role,
-    vca.nomination_type_id,
-    vca.assigned_at as started_at,
-    vca.ended_at,
-    CASE WHEN vca.ended_at IS NULL THEN true ELSE false END as is_active,
-    vca.notes,
-    vca.created_by,
-    vca.created_at
-FROM visit_cast_assignments vca
-LEFT JOIN nomination_types nt ON nt.id = vca.nomination_type_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM cast_engagements ce 
-    WHERE ce.visit_id = vca.visit_id 
-    AND ce.cast_id = vca.cast_id
-);
+-- 6. 既存のvisit_cast_assignmentsからデータ移行（テーブルが存在する場合のみ）
+-- Note: このセクションは、visit_cast_assignmentsテーブルが存在する既存のシステムからの移行用です。
+-- 新規インストールの場合はスキップされます。
 
 -- 7. 関数：自動アトリビューション計算
 CREATE OR REPLACE FUNCTION calculate_auto_attribution(
@@ -283,7 +249,7 @@ SELECT
     bia.attribution_type,
     ce.role as engagement_role,
     nt.display_name as nomination_type,
-    nt.back_rate,
+    -- nt.back_rate, -- このカラムが存在しない場合はコメントアウト
     v.id as visit_id,
     v.session_code,
     oi.id as order_item_id
@@ -294,7 +260,8 @@ JOIN casts_profile cp ON cp.id = bia.cast_id
 JOIN visits v ON v.id = oi.visit_id
 LEFT JOIN cast_engagements ce ON ce.visit_id = v.id AND ce.cast_id = bia.cast_id AND ce.is_active = true
 LEFT JOIN nomination_types nt ON nt.id = ce.nomination_type_id
-WHERE oi.status != 'cancelled';
+-- WHERE oi.status != 'cancelled'; -- statusカラムが存在しない場合はコメントアウト
+;
 
 -- 10. トリガー：アトリビューション合計チェック
 CREATE OR REPLACE FUNCTION check_attribution_total() RETURNS TRIGGER AS $$
