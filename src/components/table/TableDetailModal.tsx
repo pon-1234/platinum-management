@@ -14,6 +14,7 @@ import {
   VisitSessionService,
   type CastEngagement,
 } from "@/services/visit-session.service";
+import { supabase } from "@/lib/supabase/client";
 
 interface TableDetailModalProps {
   isOpen: boolean;
@@ -81,13 +82,41 @@ export default function TableDetailModal({
 
     setIsLoading(true);
     try {
-      // デフォルト値を使用した簡易的な来店受付
-      // 将来的には顧客選択・人数入力のダイアログを実装
-      const defaultCustomerId = "customer-1";
+      // TODO: 将来的には顧客選択・人数入力のダイアログを実装
+      // 一時的にデフォルトのゲスト顧客を作成または取得
+      const { data: customers, error: fetchError } = await supabase
+        .from("customers")
+        .select("id")
+        .limit(1);
+
+      let customerId: string;
+
+      if (fetchError || !customers || customers.length === 0) {
+        // ゲスト顧客を作成
+        const { data: newCustomer, error: createError } = await supabase
+          .from("customers")
+          .insert({
+            name: "ゲスト",
+            name_kana: "ゲスト",
+            gender: "other" as const,
+            age_group: "unknown" as const,
+            is_visitor: true,
+          })
+          .select()
+          .single();
+
+        if (createError || !newCustomer) {
+          throw new Error("顧客の作成に失敗しました");
+        }
+        customerId = newCustomer.id;
+      } else {
+        customerId = customers[0].id;
+      }
+
       const defaultGuestCount = 1;
 
       await VisitSessionService.createSession(
-        defaultCustomerId,
+        customerId,
         parseInt(table.id, 10),
         defaultGuestCount
       );
