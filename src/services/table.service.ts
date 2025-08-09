@@ -531,37 +531,73 @@ export class TableService extends BaseService {
 
   // 新しいヘルパーメソッド：アクティブな来店情報を含むテーブルリストを取得
   private async getTablesWithActiveVisits(): Promise<Table[]> {
-    const { data: tables } = await this.supabase
+    // 1) tables を取得
+    const { data: tables, error: tblError } = await this.supabase
       .from("tables")
-      .select(
-        `
-        *,
-        visit_table_segments!left(
-          visit_id,
-          ended_at
-        )
-      `
-      )
+      .select("*")
       .eq("is_active", true)
       .order("table_number", { ascending: true });
 
-    if (!tables) return [];
+    if (tblError || !tables) return [];
 
+    // 2) 有効なテーブルIDを整数化してセグメントをまとめて取得
+    const tableIdNumbers = tables
+      .map((t) => parseInt((t as { id: string }).id, 10))
+      .filter((n) => !Number.isNaN(n));
+
+    let activeSegByTable = new Map<number, { visit_id: string }>();
+    if (tableIdNumbers.length > 0) {
+      const { data: segments } = await this.supabase
+        .from("visit_table_segments")
+        .select("table_id, visit_id, ended_at, started_at")
+        .in("table_id", tableIdNumbers)
+        .is("ended_at", null);
+
+      if (segments) {
+        // 最新のstarted_atを優先
+        const grouped = new Map<
+          number,
+          { visit_id: string; started_at?: string }
+        >();
+        for (const seg of segments as Array<{
+          table_id: number;
+          visit_id: string;
+          started_at?: string;
+        }>) {
+          const current = grouped.get(seg.table_id);
+          if (
+            !current ||
+            (seg.started_at &&
+              (!current.started_at || seg.started_at > current.started_at))
+          ) {
+            grouped.set(seg.table_id, {
+              visit_id: seg.visit_id,
+              started_at: seg.started_at,
+            });
+          }
+        }
+        activeSegByTable = new Map(
+          Array.from(grouped.entries()).map(([k, v]) => [
+            k,
+            { visit_id: v.visit_id },
+          ])
+        );
+      }
+    }
+
+    // 3) マージして返却
     return tables.map((table) => {
-      // アクティブなセグメントを見つける
-      const segments = table.visit_table_segments as
-        | Array<{
-            visit_id: string;
-            ended_at: string | null;
-          }>
-        | undefined;
-      const activeSegment = segments?.find((seg) => seg.ended_at === null);
-
+      const idNum = parseInt((table as { id: string }).id, 10);
+      const active = activeSegByTable.get(idNum);
       return this.mapToTable({
         ...table,
-        current_status: activeSegment ? "occupied" : table.current_status,
-        current_visit_id: activeSegment?.visit_id || table.current_visit_id,
-      });
+        current_status: active
+          ? "occupied"
+          : (table as { current_status: string }).current_status,
+        current_visit_id: active
+          ? active.visit_id
+          : (table as { current_visit_id: string | null }).current_visit_id,
+      } as Database["public"]["Tables"]["tables"]["Row"]);
     });
   }
 
@@ -571,33 +607,35 @@ export class TableService extends BaseService {
   ): Promise<Table | null> {
     const { data: table } = await this.supabase
       .from("tables")
-      .select(
-        `
-        *,
-        visit_table_segments!left(
-          visit_id,
-          ended_at
-        )
-      `
-      )
+      .select("*")
       .eq("id", tableId)
       .maybeSingle();
 
     if (!table) return null;
 
-    const segments = table.visit_table_segments as
-      | Array<{
-          visit_id: string;
-          ended_at: string | null;
-        }>
-      | undefined;
-    const activeSegment = segments?.find((seg) => seg.ended_at === null);
+    const tableIdNum = parseInt(tableId, 10);
+    let activeVisitId: string | null = null;
+    if (!Number.isNaN(tableIdNum)) {
+      const { data: seg } = await this.supabase
+        .from("visit_table_segments")
+        .select("visit_id, started_at")
+        .eq("table_id", tableIdNum)
+        .is("ended_at", null)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      activeVisitId = (seg as { visit_id?: string } | null)?.visit_id || null;
+    }
 
     return this.mapToTable({
       ...table,
-      current_status: activeSegment ? "occupied" : table.current_status,
-      current_visit_id: activeSegment?.visit_id || table.current_visit_id,
-    });
+      current_status: activeVisitId
+        ? "occupied"
+        : (table as { current_status: string }).current_status,
+      current_visit_id:
+        activeVisitId ||
+        (table as { current_visit_id: string | null }).current_visit_id,
+    } as Database["public"]["Tables"]["tables"]["Row"]);
   }
 
   // Helper methods
