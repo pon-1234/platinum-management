@@ -15,6 +15,7 @@ import {
   type CastEngagement,
 } from "@/services/visit-session.service";
 import { createClient } from "@/lib/supabase/client";
+import { checkInAction } from "@/app/(protected)/tables/actions";
 
 interface TableDetailModalProps {
   isOpen: boolean;
@@ -128,7 +129,9 @@ export default function TableDetailModal({
           .single();
 
         if (createError || !newCustomer) {
-          throw new Error("顧客の作成に失敗しました");
+          alert("顧客の作成に失敗しました");
+          setIsLoading(false);
+          return;
         }
         customerId = newCustomer.id;
       } else {
@@ -137,23 +140,26 @@ export default function TableDetailModal({
 
       const defaultGuestCount = 1;
 
-      await VisitSessionService.createSession(
+      // Server Actionを呼び出してチェックイン処理
+      const result = await checkInAction(
+        table.id,
         customerId,
-        parseInt(table.id, 10),
         defaultGuestCount
       );
 
-      // テーブルステータスを更新
-      await tableService.updateTableStatus(table.id, "occupied");
-
-      // 来店情報を再読み込み
-      const newVisit = await billingService.getVisitById(table.id);
-      if (newVisit) {
-        setCurrentVisit(newVisit);
-        await loadVisitDetails();
+      if (result.success) {
+        // 成功した場合、来店情報を再読み込み
+        if (result.visitId) {
+          const newVisit = await billingService.getVisitById(result.visitId);
+          if (newVisit) {
+            setCurrentVisit(newVisit);
+            await loadVisitDetails();
+          }
+        }
+        onClose();
+      } else {
+        alert(result.error || "来店受付に失敗しました");
       }
-
-      onClose();
     } catch (error) {
       console.error("Check-in failed:", error);
       alert("来店受付に失敗しました");
