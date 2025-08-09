@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { TableLayout } from "@/components/table/TableLayout";
-// import { TableStatusModal } from "@/components/table/TableStatusModal";
 import { TableManagementModal } from "@/components/table/TableManagementModal";
 import { TableFilters } from "@/components/table/TableFilters";
 import { TableDashboard } from "@/components/table/TableDashboard";
@@ -15,15 +14,8 @@ import type { Table, TableSearchParams } from "@/types/reservation.types";
 
 export default function TablesPage() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  // const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
 
-  // Debug: Log modal state
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("Management modal state:", isManagementModalOpen);
-    }
-  }, [isManagementModalOpen]);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,10 +38,8 @@ export default function TablesPage() {
       };
       const allTables = await tableService.searchTables(searchParams);
       setTables(allTables);
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to load tables:", error);
-      }
+    } catch {
+      // エラーは静かに処理
     } finally {
       setIsLoading(false);
     }
@@ -57,13 +47,7 @@ export default function TablesPage() {
 
   const handleTableSelect = (table: Table) => {
     setSelectedTable(table);
-    // setIsStatusModalOpen(true);
   };
-
-  // const handleStatusModalClose = () => {
-  //   setIsStatusModalOpen(false);
-  //   setSelectedTable(null);
-  // };
 
   const handleCreateTable = () => {
     setEditingTable(null);
@@ -86,12 +70,6 @@ export default function TablesPage() {
     setEditingTable(null);
     loadTables(); // Refresh the table list
   };
-
-  // const handleStatusUpdate = () => {
-  //   setIsStatusModalOpen(false);
-  //   setSelectedTable(null);
-  //   loadTables(); // Refresh the table list
-  // };
 
   const handleFilterChange = (newFilters: TableSearchParams) => {
     setFilters(newFilters);
@@ -148,16 +126,6 @@ export default function TablesPage() {
           showStatus={true}
           isLoading={isLoading}
         />
-
-        {/* Status Modal - Commented out to avoid conflict with TableDetailModal */}
-        {/* {selectedTable && (
-          <TableStatusModal
-            table={selectedTable}
-            isOpen={isStatusModalOpen}
-            onClose={handleStatusModalClose}
-            onStatusUpdate={handleStatusUpdate}
-          />
-        )} */}
 
         {/* Management Modal */}
         {isManagementModalOpen && (

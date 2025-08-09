@@ -67,27 +67,18 @@ export default function CastEngagementDialog({
       setNominationTypes(types);
 
       // 利用可能なキャストを取得（実際のAPIに合わせて調整が必要）
-      // TODO: 実際のキャスト取得APIを実装
-      setAvailableCasts([
-        {
-          id: "cast1",
-          stage_name: "あゆみ",
-          staff_code: "C001",
+      // キャストを取得
+      const { castService } = await import("@/services/cast.service");
+      const castsResponse = await castService.getAllCasts();
+      const workingCasts = castsResponse.data
+        .filter((cast) => cast.isActive)
+        .map((cast) => ({
+          id: cast.id,
+          stage_name: cast.stageName,
+          staff_code: cast.staffId || undefined,
           is_working: true,
-        },
-        {
-          id: "cast2",
-          stage_name: "みさき",
-          staff_code: "C002",
-          is_working: true,
-        },
-        {
-          id: "cast3",
-          stage_name: "れいな",
-          staff_code: "C003",
-          is_working: true,
-        },
-      ]);
+        }));
+      setAvailableCasts(workingCasts);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {

@@ -286,40 +286,6 @@ export class CustomerAnalyticsService {
     // コホートの初期化
     await supabase.rpc("initialize_customer_cohorts");
 
-    // コホート分析クエリ（未使用）
-    /* const query = `
-      WITH cohort_data AS (
-        SELECT 
-          cc.cohort_month,
-          date_part('month', age(date_trunc('month', v.check_in_time), cc.cohort_month)) as month_index,
-          COUNT(DISTINCT cc.customer_id) as customers
-        FROM customer_cohorts cc
-        LEFT JOIN visits v ON v.customer_id = cc.customer_id
-        WHERE cc.cohort_month >= $1::date
-          AND cc.cohort_month <= $2::date
-        GROUP BY cc.cohort_month, month_index
-      ),
-      cohort_sizes AS (
-        SELECT 
-          cohort_month,
-          COUNT(DISTINCT customer_id) as total_customers
-        FROM customer_cohorts
-        WHERE cohort_month >= $1::date
-          AND cohort_month <= $2::date
-        GROUP BY cohort_month
-      )
-      SELECT 
-        cd.cohort_month,
-        cd.month_index::integer,
-        cd.customers as retained_customers,
-        cs.total_customers,
-        (cd.customers::numeric / cs.total_customers * 100)::numeric(5,2) as retention_rate
-      FROM cohort_data cd
-      JOIN cohort_sizes cs ON cs.cohort_month = cd.cohort_month
-      WHERE cd.month_index >= 0
-      ORDER BY cd.cohort_month, cd.month_index
-    `; */
-
     const start =
       startMonth ||
       new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
