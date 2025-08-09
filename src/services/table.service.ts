@@ -451,7 +451,9 @@ export class TableService extends BaseService {
     this.getTablesWithActiveVisits().then(onInitialLoad);
 
     this.realtimeChannel = this.supabase
-      .channel("table-differential-updates")
+      .channel("table-differential-updates", {
+        config: { broadcast: { ack: true }, presence: { key: "tables" } },
+      })
       .on(
         "postgres_changes",
         {
@@ -541,7 +543,7 @@ export class TableService extends BaseService {
       `
       )
       .eq("is_active", true)
-      .order("display_order");
+      .order("table_number", { ascending: true });
 
     if (!tables) return [];
 
@@ -579,7 +581,7 @@ export class TableService extends BaseService {
       `
       )
       .eq("id", tableId)
-      .single();
+      .maybeSingle();
 
     if (!table) return null;
 
