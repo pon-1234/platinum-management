@@ -81,19 +81,28 @@ export default function TableDetailModal({
 
     setIsLoading(true);
     try {
-      // 簡易的な来店受付（実際は顧客選択画面などが必要）
+      // デフォルト値を使用した簡易的な来店受付
+      // 将来的には顧客選択・人数入力のダイアログを実装
+      const defaultCustomerId = "customer-1";
+      const defaultGuestCount = 1;
+
       await VisitSessionService.createSession(
-        "customer-1", // TODO: 実際は顧客選択が必要
-        parseInt(table.id, 10), // table.idがstringなのでnumberに変換
-        1 // TODO: 人数入力が必要
+        defaultCustomerId,
+        parseInt(table.id, 10),
+        defaultGuestCount
       );
 
       // テーブルステータスを更新
       await tableService.updateTableStatus(table.id, "occupied");
 
-      // モーダルを閉じて再読み込み
+      // 来店情報を再読み込み
+      const newVisit = await billingService.getVisitById(table.id);
+      if (newVisit) {
+        setCurrentVisit(newVisit);
+        await loadVisitDetails();
+      }
+
       onClose();
-      window.location.reload(); // 一時的な対応
     } catch (error) {
       console.error("Check-in failed:", error);
       alert("来店受付に失敗しました");

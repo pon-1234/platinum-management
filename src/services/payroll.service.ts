@@ -204,45 +204,50 @@ export class PayrollService {
     periodEnd: Date
   ): Promise<SalesData> {
     const supabase = createClient();
-    const { data: orders, error } = await supabase
-      .from("order_items")
-      .select(
-        `
-        *,
-        visits!inner(
-          cast_id,
-          check_in_time
-        ),
-        nomination_types:nomination_type_id(*)
-      `
-      )
-      .eq("visits.cast_id", hostessId)
-      .gte("visits.check_in_time", periodStart.toISOString())
-      .lte("visits.check_in_time", periodEnd.toISOString());
+
+    // Use the new payroll_revenue_facts view
+    const { data: revenueData, error } = await supabase
+      .from("payroll_revenue_facts")
+      .select("*")
+      .eq("cast_id", hostessId)
+      .gte("work_date", periodStart.toISOString().split("T")[0])
+      .lte("work_date", periodEnd.toISOString().split("T")[0]);
 
     if (error) throw error;
 
-    const typedOrders = (orders || []) as OrderItem[];
+    const totalSales =
+      revenueData?.reduce(
+        (sum, record) => sum + (record.attributed_revenue || 0),
+        0
+      ) || 0;
 
-    const totalSales = typedOrders.reduce(
-      (sum, order) => sum + order.price * order.quantity,
-      0
-    );
+    const nominationCount =
+      revenueData?.filter((record) => record.nomination_type).length || 0;
 
-    const nominationCount = typedOrders.filter(
-      (o) => o.nomination_type_id
-    ).length;
+    const nominationFees =
+      revenueData?.reduce(
+        (sum, record) =>
+          sum +
+          (record.attribution_type === "nomination"
+            ? record.attribution_amount
+            : 0),
+        0
+      ) || 0;
 
-    const nominationFees = typedOrders.reduce(
-      (sum, order) => sum + (order.nomination_fee || 0),
-      0
-    );
+    // Calculate effective back rate (weighted average)
+    const effectiveBackRate = revenueData?.length
+      ? revenueData.reduce(
+          (sum, record) => sum + (record.effective_back_rate || 0),
+          0
+        ) / revenueData.length
+      : 0;
 
     return {
       totalSales,
       nominationCount,
       nominationFees,
-      orders: typedOrders,
+      effectiveBackRate,
+      orders: [], // Orders are now handled through the view
     };
   }
 

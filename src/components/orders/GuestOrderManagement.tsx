@@ -1,318 +1,374 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { User, ShoppingCart, Plus, Share2 } from "lucide-react";
-import { toast } from "sonner";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/Input";
+import { ShoppingCart, User } from "lucide-react";
 import {
   VisitGuestService,
-  type VisitGuestWithCustomer,
+  VisitGuestWithCustomer,
 } from "@/services/visit-guest.service";
 import {
   MultiGuestOrderService,
-  type GuestOrderWithDetails,
+  GuestOrderWithDetails,
 } from "@/services/multi-guest-order.service";
 import { formatCurrency } from "@/lib/utils";
-// import { ProductSelectModal } from "./ProductSelectModal";
-import { SharedOrderDialog } from "./SharedOrderDialog";
+import { createClient } from "@/lib/supabase/client";
 
 interface GuestOrderManagementProps {
   visitId: string;
-  onOrdersUpdated?: () => void;
+  orderItemId?: number;
+  onOrderAssigned?: () => void;
+}
+
+interface GuestOrderSummary {
+  guest: VisitGuestWithCustomer;
+  orders: GuestOrderWithDetails[];
+  total: number;
 }
 
 export function GuestOrderManagement({
   visitId,
-  onOrdersUpdated,
+  orderItemId,
+  onOrderAssigned,
 }: GuestOrderManagementProps) {
   const [guests, setGuests] = useState<VisitGuestWithCustomer[]>([]);
   const [selectedGuestId, setSelectedGuestId] = useState<string>("");
-  const [guestOrders, setGuestOrders] = useState<
-    Map<string, GuestOrderWithDetails[]>
+  const [guestOrderSummaries, setGuestOrderSummaries] = useState<
+    GuestOrderSummary[]
+  >([]);
+  const [isSharedOrder, setIsSharedOrder] = useState(false);
+  const [sharedPercentages, setSharedPercentages] = useState<
+    Map<string, number>
   >(new Map());
-  const [isLoading, setIsLoading] = useState(true);
-  const [showProductSelect, setShowProductSelect] = useState(false);
-  const [showSharedOrder, setShowSharedOrder] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<{ id: number } | null>(
-    null
-  );
+  const [loading, setLoading] = useState(false);
+
+  const fetchGuestsAndOrders = useCallback(async () => {
+    const guestList = await VisitGuestService.getVisitGuests(visitId);
+    setGuests(guestList);
+
+    if (guestList.length > 0 && !selectedGuestId) {
+      setSelectedGuestId(guestList[0].id);
+    }
+
+    // Fetch orders for each guest
+    const summaries: GuestOrderSummary[] = [];
+    for (const guest of guestList) {
+      const orders = await MultiGuestOrderService.getGuestOrders(guest.id);
+      const total = orders.reduce(
+        (sum, order) => sum + order.amount_for_guest,
+        0
+      );
+      summaries.push({ guest, orders, total });
+    }
+    setGuestOrderSummaries(summaries);
+  }, [visitId, selectedGuestId]);
 
   useEffect(() => {
-    loadGuestsAndOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visitId]);
+    fetchGuestsAndOrders();
+  }, [visitId, fetchGuestsAndOrders]);
 
-  const loadGuestsAndOrders = async () => {
+  const handleAssignOrder = async () => {
+    if (!orderItemId) return;
+
+    setLoading(true);
     try {
-      setIsLoading(true);
+      if (isSharedOrder) {
+        // Get order item details
+        const supabase = createClient();
+        const { data: orderItem } = await supabase
+          .from("order_items")
+          .select("product_id, quantity")
+          .eq("id", orderItemId)
+          .single();
 
-      // ゲスト一覧を取得
-      const guestList = await VisitGuestService.getVisitGuests(visitId);
-      setGuests(guestList);
+        if (!orderItem) {
+          throw new Error("Order item not found");
+        }
 
-      if (guestList.length > 0 && !selectedGuestId) {
-        setSelectedGuestId(guestList[0].id);
+        // Create shared order with percentages
+        const guestShares = Array.from(sharedPercentages.entries()).map(
+          ([guestId, percentage]) => ({
+            guestId,
+            percentage,
+          })
+        );
+
+        await MultiGuestOrderService.createSharedOrder(
+          visitId,
+          orderItem.product_id,
+          orderItem.quantity,
+          guestShares
+        );
+      } else {
+        // Assign to single guest
+        if (selectedGuestId) {
+          // Get order item details to calculate amount
+          const supabase = createClient();
+          const { data: orderItem } = await supabase
+            .from("order_items")
+            .select("quantity, unit_price")
+            .eq("id", orderItemId)
+            .single();
+
+          if (orderItem) {
+            const amount = orderItem.quantity * orderItem.unit_price;
+            await MultiGuestOrderService.assignOrderToGuest(
+              orderItemId,
+              selectedGuestId,
+              orderItem.quantity,
+              amount
+            );
+          }
+        }
       }
 
-      // 各ゲストの注文を取得
-      const ordersMap = new Map<string, GuestOrderWithDetails[]>();
-      for (const guest of guestList) {
-        const orders = await MultiGuestOrderService.getGuestOrders(guest.id);
-        ordersMap.set(guest.id, orders);
+      if (onOrderAssigned) {
+        onOrderAssigned();
       }
-      setGuestOrders(ordersMap);
+
+      await fetchGuestsAndOrders();
     } catch (error) {
-      console.error("Error loading guests and orders:", error);
-      toast.error("データの読み込みに失敗しました");
+      console.error("Error assigning order:", error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleProductSelect = async (
-    product: { id: number; name: string; price: number },
-    quantity: number
-  ) => {
-    if (!selectedGuestId) {
-      toast.error("ゲストを選択してください");
-      return;
+  const updateSharedPercentage = (guestId: string, percentage: number) => {
+    const newPercentages = new Map(sharedPercentages);
+    if (percentage > 0) {
+      newPercentages.set(guestId, percentage);
+    } else {
+      newPercentages.delete(guestId);
     }
-
-    try {
-      await MultiGuestOrderService.createGuestOrder(
-        visitId,
-        selectedGuestId,
-        product.id,
-        quantity
-      );
-
-      toast.success("注文を追加しました");
-      loadGuestsAndOrders();
-      onOrdersUpdated?.();
-      setShowProductSelect(false);
-    } catch (error) {
-      console.error("Error creating order:", error);
-      toast.error("注文の追加に失敗しました");
-    }
+    setSharedPercentages(newPercentages);
   };
 
-  const handleSharedOrder = async (
-    guestShares: { guestId: string; percentage: number }[]
-  ) => {
-    if (!selectedProduct) return;
-
-    try {
-      await MultiGuestOrderService.createSharedOrder(
-        visitId,
-        selectedProduct.id,
-        1,
-        guestShares
-      );
-
-      toast.success("共有注文を作成しました");
-      loadGuestsAndOrders();
-      onOrdersUpdated?.();
-      setShowSharedOrder(false);
-      setSelectedProduct(null);
-    } catch (error) {
-      console.error("Error creating shared order:", error);
-      toast.error("共有注文の作成に失敗しました");
-    }
-  };
-
-  const selectedGuest = guests.find((g) => g.id === selectedGuestId);
-  // const selectedGuestOrders = guestOrders.get(selectedGuestId) || [];
-
-  const calculateGuestTotal = (orders: GuestOrderWithDetails[]) => {
-    return orders.reduce((sum, order) => sum + order.amount_for_guest, 0);
-  };
-
-  const getGuestTypeColor = (type: string) => {
-    switch (type) {
-      case "main":
-        return "default";
-      case "companion":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
-  if (isLoading) {
-    return <div>読み込み中...</div>;
-  }
+  const totalPercentage = Array.from(sharedPercentages.values()).reduce(
+    (sum, p) => sum + p,
+    0
+  );
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            ゲスト別注文管理
-          </span>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowSharedOrder(true)}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              共有注文
-            </Button>
-            <Button size="sm" onClick={() => setShowProductSelect(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              注文追加
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={selectedGuestId} onValueChange={setSelectedGuestId}>
-          <TabsList
-            className="grid w-full"
-            style={{
-              gridTemplateColumns: `repeat(${Math.min(guests.length, 4)}, 1fr)`,
-            }}
-          >
-            {guests.map((guest) => (
-              <TabsTrigger
-                key={guest.id}
-                value={guest.id}
-                className="flex items-center gap-2"
-              >
-                <User className="h-4 w-4" />
-                <span className="truncate">{guest.customer.name}</span>
-                <Badge
-                  variant={getGuestTypeColor(guest.guest_type)}
-                  className="ml-1"
+    <div className="space-y-4">
+      {orderItemId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              注文の割り当て
+            </CardTitle>
+            <CardDescription>
+              この注文をどのゲストに割り当てますか？
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="shared-order"
+                checked={isSharedOrder}
+                onChange={(e) => setIsSharedOrder(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <Label htmlFor="shared-order">複数ゲストで共有</Label>
+            </div>
+
+            {!isSharedOrder ? (
+              <div className="space-y-2">
+                <Label>割り当て先のゲスト</Label>
+                <Select
+                  value={selectedGuestId}
+                  onValueChange={setSelectedGuestId}
                 >
-                  {guest.guest_type === "main"
-                    ? "主"
-                    : guest.guest_type === "companion"
-                      ? "同"
-                      : "追"}
-                </Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {guests.map((guest) => (
-            <TabsContent key={guest.id} value={guest.id}>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">{guest.customer.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={getGuestTypeColor(guest.guest_type)}>
-                          {guest.guest_type === "main"
-                            ? "主要顧客"
-                            : guest.guest_type === "companion"
-                              ? "同伴者"
-                              : "追加ゲスト"}
-                        </Badge>
-                        {guest.is_primary_payer && (
-                          <Badge variant="outline">支払者</Badge>
-                        )}
-                        {guest.relationship_to_main && (
-                          <span className="text-sm text-muted-foreground">
-                            ({guest.relationship_to_main})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">小計</p>
-                      <p className="text-xl font-bold">
-                        {formatCurrency(
-                          calculateGuestTotal(guestOrders.get(guest.id) || [])
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[300px]">
-                    <div className="space-y-2">
-                      {(guestOrders.get(guest.id) || []).map((order) => (
-                        <div
-                          key={order.id}
-                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">
-                              {order.order_item.product.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-sm text-muted-foreground">
-                                数量: {order.quantity_for_guest}
-                              </span>
-                              {order.is_shared_item && (
-                                <Badge variant="secondary" className="text-xs">
-                                  共有 ({order.shared_percentage}%)
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <p className="font-semibold">
-                            {formatCurrency(order.amount_for_guest)}
-                          </p>
+                  <SelectTrigger>
+                    <SelectValue placeholder="ゲストを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {guests.map((guest) => (
+                      <SelectItem key={guest.id} value={guest.id}>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          {guest.customer.name}
+                          {guest.guest_type === "main" && (
+                            <Badge variant="default" className="ml-2">
+                              主要
+                            </Badge>
+                          )}
                         </div>
-                      ))}
-                      {(guestOrders.get(guest.id) || []).length === 0 && (
-                        <p className="text-center text-muted-foreground py-8">
-                          注文がありません
-                        </p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Label>各ゲストの負担割合 (%)</Label>
+                {guests.map((guest) => (
+                  <div key={guest.id} className="flex items-center gap-2">
+                    <Label className="w-32">{guest.customer.name}</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={sharedPercentages.get(guest.id) || 0}
+                      onChange={(e) =>
+                        updateSharedPercentage(
+                          guest.id,
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className="w-24"
+                    />
+                    <span>%</span>
+                  </div>
+                ))}
+                {totalPercentage !== 100 && totalPercentage > 0 && (
+                  <p className="text-sm text-destructive">
+                    合計が100%になるように調整してください（現在:{" "}
+                    {totalPercentage}%）
+                  </p>
+                )}
+              </div>
+            )}
+
+            <Button
+              onClick={handleAssignOrder}
+              disabled={loading || (isSharedOrder && totalPercentage !== 100)}
+              className="w-full"
+            >
+              {loading ? "処理中..." : "注文を割り当て"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="summary">ゲスト別サマリー</TabsTrigger>
+          <TabsTrigger value="details">注文詳細</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary" className="space-y-4">
+          {guestOrderSummaries.map((summary) => (
+            <Card key={summary.guest.id}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {summary.guest.customer.name}
+                    {summary.guest.guest_type === "main" && (
+                      <Badge variant="default">主要</Badge>
+                    )}
+                    {summary.guest.is_primary_payer && (
+                      <Badge variant="destructive">支払者</Badge>
+                    )}
+                  </div>
+                  <span className="text-lg font-bold">
+                    {formatCurrency(summary.total)}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>注文数:</span>
+                    <span>{summary.orders.length}件</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>小計:</span>
+                    <span>
+                      {formatCurrency(summary.guest.individual_subtotal)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>サービス料:</span>
+                    <span>
+                      {formatCurrency(summary.guest.individual_service_charge)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>税額:</span>
+                    <span>
+                      {formatCurrency(summary.guest.individual_tax_amount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold pt-2 border-t">
+                    <span>合計:</span>
+                    <span>
+                      {formatCurrency(summary.guest.individual_total)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
-        </Tabs>
+        </TabsContent>
 
-        {/* 商品選択モーダル */}
-        <Dialog open={showProductSelect} onOpenChange={setShowProductSelect}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>
-                商品選択 - {selectedGuest?.customer.name}
-              </DialogTitle>
-            </DialogHeader>
-            {/* <ProductSelectModal
-              onSelect={handleProductSelect}
-              onClose={() => setShowProductSelect(false)}
-            /> */}
-            <div>商品選択機能は開発中です</div>
-          </DialogContent>
-        </Dialog>
-
-        {/* 共有注文ダイアログ */}
-        <Dialog open={showSharedOrder} onOpenChange={setShowSharedOrder}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>共有注文</DialogTitle>
-            </DialogHeader>
-            <SharedOrderDialog
-              guests={guests}
-              onConfirm={handleSharedOrder}
-              onCancel={() => setShowSharedOrder(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+        <TabsContent value="details" className="space-y-4">
+          {guestOrderSummaries.map((summary) => (
+            <Card key={summary.guest.id}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {summary.guest.customer.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {summary.orders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex justify-between items-center p-2 border rounded"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {order.order_item.product.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          数量: {order.quantity_for_guest}
+                          {order.is_shared_item && (
+                            <Badge variant="outline" className="ml-2">
+                              共有 ({order.shared_percentage}%)
+                            </Badge>
+                          )}
+                        </p>
+                      </div>
+                      <span className="font-medium">
+                        {formatCurrency(order.amount_for_guest)}
+                      </span>
+                    </div>
+                  ))}
+                  {summary.orders.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      注文がありません
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
