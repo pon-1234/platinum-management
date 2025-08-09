@@ -82,9 +82,9 @@ export default function TableDetailModal({
     setIsLoading(true);
     try {
       // 簡易的な来店受付（実際は顧客選択画面などが必要）
-      const visitId = await VisitSessionService.createSession(
+      await VisitSessionService.createSession(
         "customer-1", // TODO: 実際は顧客選択が必要
-        table.id,
+        parseInt(table.id, 10), // table.idがstringなのでnumberに変換
         1 // TODO: 人数入力が必要
       );
 
