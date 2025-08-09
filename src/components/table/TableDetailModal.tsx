@@ -9,6 +9,7 @@ import CastEngagementDialog from "./CastEngagementDialog";
 import type { Table } from "@/types/reservation.types";
 import type { Visit } from "@/types/billing.types";
 import { billingService } from "@/services/billing.service";
+import { tableService } from "@/services/table.service";
 import {
   VisitSessionService,
   type CastEngagement,
@@ -73,6 +74,32 @@ export default function TableDetailModal({
 
   const handleCastAssignmentChange = () => {
     loadVisitDetails();
+  };
+
+  const handleCheckIn = async () => {
+    if (!table) return;
+
+    setIsLoading(true);
+    try {
+      // 簡易的な来店受付（実際は顧客選択画面などが必要）
+      const visitId = await VisitSessionService.createSession(
+        "customer-1", // TODO: 実際は顧客選択が必要
+        table.id,
+        1 // TODO: 人数入力が必要
+      );
+
+      // テーブルステータスを更新
+      await tableService.updateTableStatus(table.id, "occupied");
+
+      // モーダルを閉じて再読み込み
+      onClose();
+      window.location.reload(); // 一時的な対応
+    } catch (error) {
+      console.error("Check-in failed:", error);
+      alert("来店受付に失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen || !table) return null;
@@ -254,7 +281,10 @@ export default function TableDetailModal({
               <div className="text-center py-8">
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">現在空席です</p>
-                <button className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <button
+                  onClick={handleCheckIn}
+                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
                   来店受付
                 </button>
               </div>

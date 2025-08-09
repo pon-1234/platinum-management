@@ -149,15 +149,15 @@ export default function TablesPage() {
           isLoading={isLoading}
         />
 
-        {/* Status Modal */}
-        {selectedTable && (
+        {/* Status Modal - Commented out to avoid conflict with TableDetailModal */}
+        {/* {selectedTable && (
           <TableStatusModal
             table={selectedTable}
             isOpen={isStatusModalOpen}
             onClose={handleStatusModalClose}
             onStatusUpdate={handleStatusUpdate}
           />
-        )}
+        )} */}
 
         {/* Management Modal */}
         {isManagementModalOpen && (
