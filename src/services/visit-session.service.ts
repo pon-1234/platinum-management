@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Database } from "@/types/database.types";
 
 const supabase = createClient();
 
@@ -63,6 +62,10 @@ export interface BillItemAttribution {
     | "auto";
   reason?: string;
   is_primary: boolean;
+  cast?: {
+    id: string;
+    stage_name?: string;
+  };
 }
 
 export class VisitSessionService {
@@ -418,7 +421,7 @@ export class VisitSessionService {
     castId: string,
     startDate: string,
     endDate: string
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     const { data, error } = await supabase
       .from("payroll_revenue_facts")
       .select("*")

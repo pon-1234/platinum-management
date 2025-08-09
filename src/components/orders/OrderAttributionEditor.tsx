@@ -301,7 +301,7 @@ export default function OrderAttributionEditor({
           ) : (
             // 表示モード
             <>
-              {attributions.map((attr: any) => (
+              {attributions.map((attr) => (
                 <div
                   key={attr.id}
                   className="flex items-center justify-between p-2 bg-gray-50 rounded"

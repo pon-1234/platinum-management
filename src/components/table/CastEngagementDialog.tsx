@@ -11,8 +11,6 @@ import {
   type NominationType,
 } from "@/services/nomination-type.service";
 import { formatCurrency } from "@/lib/utils/formatting";
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
 
 interface CastEngagementDialogProps {
   isOpen: boolean;
@@ -115,8 +113,12 @@ export default function CastEngagementDialog({
       setSelectedNominationTypeId("");
       setShowAddForm(false);
       onEngagementChange?.();
-    } catch (error: any) {
-      alert(error.message || "キャストの割り当てに失敗しました");
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "キャストの割り当てに失敗しました"
+      );
     } finally {
       setIsLoading(false);
     }
