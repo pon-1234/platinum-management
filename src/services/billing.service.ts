@@ -518,34 +518,40 @@ export class BillingService extends BaseService {
     const nominationFee = nominationData?.[0]?.total_nomination_fee || 0;
 
     // bill_item_attributionsを考慮したキャスト別売上を計算
-    const { data: attributions } = await this.supabase
-      .from("bill_item_attributions")
-      .select(
-        `
-        order_item_id,
-        cast_id,
-        attribution_percentage,
-        order_items!inner(
-          total_price
-        )
-      `
-      )
-      .eq("order_items.visit_id", visitId);
+    // まず対象のorder_items（id, total_price）を取得
+    const { data: visitOrderItems } = await this.supabase
+      .from("order_items")
+      .select("id, total_price")
+      .eq("visit_id", visitId);
+
+    const orderItemIdToTotal = new Map<number, number>();
+    const orderItemIds: number[] = [];
+    (visitOrderItems || []).forEach((oi) => {
+      orderItemIdToTotal.set(oi.id as number, oi.total_price as number);
+      orderItemIds.push(oi.id as number);
+    });
+
+    let attributions: Array<{
+      order_item_id: number;
+      cast_id: string;
+      attribution_percentage: number;
+    }> = [];
+
+    if (orderItemIds.length > 0) {
+      const { data: attrs } = await this.supabase
+        .from("bill_item_attributions")
+        .select("order_item_id, cast_id, attribution_percentage")
+        .in("order_item_id", orderItemIds);
+      if (attrs) attributions = attrs as typeof attributions;
+    }
 
     // キャスト別の売上を集計
     const castAttributions = new Map<string, number>();
     if (attributions) {
       for (const attr of attributions) {
         const castId = attr.cast_id;
-        // order_items is returned as an array in nested selects; take the first row
-        const orderItemTotal = Array.isArray(attr.order_items)
-          ? attr.order_items[0]?.total_price || 0
-          : // Fallback for potential object typing
-            // @ts-expect-error - runtime may return object depending on relation inference
-            attr.order_items?.total_price || 0;
-        const amount = Math.floor(
-          orderItemTotal * (attr.attribution_percentage / 100)
-        );
+        const total = orderItemIdToTotal.get(attr.order_item_id) || 0;
+        const amount = Math.floor(total * (attr.attribution_percentage / 100));
 
         const current = castAttributions.get(castId) || 0;
         castAttributions.set(castId, current + amount);
