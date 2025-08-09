@@ -202,29 +202,69 @@ export class BillingService extends BaseService {
   }
 
   async getVisitWithDetails(id: string): Promise<VisitWithDetails | null> {
-    const { data, error } = await this.supabase
+    // 1) Visit 本体を取得
+    const { data: visitRow, error: visitError } = await this.supabase
       .from("visits")
-      .select(
-        `
-        *,
-        customer:customers(id, name, phone_number),
-        order_items(
-          *,
-          product:products(*)
-        )
-      `
-      )
+      .select("*")
       .eq("id", id)
       .single();
 
-    if (error) {
-      if (error.code === "PGRST116") {
+    if (visitError) {
+      if (visitError.code === "PGRST116") {
         return null;
       }
-      this.handleError(error, "来店記録の詳細取得に失敗しました");
+      this.handleError(visitError, "来店記録の詳細取得に失敗しました");
     }
 
-    return this.mapToVisitWithDetails(data);
+    const visit = this.mapToVisit(visitRow);
+
+    // 2) 顧客情報
+    let customer:
+      | { id: string; name: string; phoneNumber: string | null }
+      | undefined;
+    if (visit.customerId) {
+      const { data: customerRow } = await this.supabase
+        .from("customers")
+        .select("id, name, phone_number")
+        .eq("id", visit.customerId)
+        .maybeSingle();
+      if (customerRow) {
+        customer = {
+          id: customerRow.id,
+          name: customerRow.name,
+          phoneNumber: customerRow.phone_number,
+        };
+      }
+    }
+
+    // 3) 注文一覧（商品詳細付き）
+    const { data: orderItemsRows, error: orderItemsError } = await this.supabase
+      .from("order_items")
+      .select(
+        `
+        *,
+        product:products(*)
+      `
+      )
+      .eq("visit_id", id)
+      .order("created_at", { ascending: true });
+
+    if (orderItemsError) {
+      this.handleError(orderItemsError, "注文項目の取得に失敗しました");
+    }
+
+    const orderItems = (orderItemsRows || []).map((item) => ({
+      ...this.mapToOrderItem(
+        item as Database["public"]["Tables"]["order_items"]["Row"]
+      ),
+      product: item.product ? this.mapToProduct(item.product) : undefined,
+    }));
+
+    return {
+      ...visit,
+      customer,
+      orderItems,
+    };
   }
 
   async searchVisits(params: VisitSearchParams = {}): Promise<Visit[]> {
