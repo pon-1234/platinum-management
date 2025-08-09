@@ -10,9 +10,9 @@ import type { Table } from "@/types/reservation.types";
 import type { Visit } from "@/types/billing.types";
 import { billingService } from "@/services/billing.service";
 import {
-  CastAssignmentService,
-  type VisitCastAssignment,
-} from "@/services/cast-assignment.service";
+  VisitSessionService,
+  type CastEngagement,
+} from "@/services/visit-session.service";
 
 interface TableDetailModalProps {
   isOpen: boolean;
@@ -26,9 +26,7 @@ export default function TableDetailModal({
   table,
 }: TableDetailModalProps) {
   const [currentVisit, setCurrentVisit] = useState<Visit | null>(null);
-  const [castAssignments, setCastAssignments] = useState<VisitCastAssignment[]>(
-    []
-  );
+  const [castEngagements, setCastEngagements] = useState<CastEngagement[]>([]);
   const [nominationFeeTotal, setNominationFeeTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showCastAssignment, setShowCastAssignment] = useState(false);
@@ -49,17 +47,23 @@ export default function TableDetailModal({
       const visit = await billingService.getVisitById(table.currentVisitId);
       setCurrentVisit(visit);
 
-      // キャスト割り当て情報を取得
-      const assignments = await CastAssignmentService.getVisitAssignments(
+      // キャストエンゲージメント情報を取得
+      const session = await VisitSessionService.getSessionDetails(
         table.currentVisitId
       );
-      setCastAssignments(assignments);
+      if (session?.cast_engagements) {
+        const activeEngagements = session.cast_engagements.filter(
+          (e) => e.is_active
+        );
+        setCastEngagements(activeEngagements);
 
-      // 指名料合計を取得
-      const fees = await CastAssignmentService.calculateNominationFees(
-        table.currentVisitId
-      );
-      setNominationFeeTotal(fees.total);
+        // 指名料合計を計算
+        const total = activeEngagements.reduce(
+          (sum, e) => sum + e.fee_amount,
+          0
+        );
+        setNominationFeeTotal(total);
+      }
     } catch (error) {
       console.error("Error loading visit details:", error);
     } finally {
@@ -149,15 +153,15 @@ export default function TableDetailModal({
                     </button>
                   </div>
 
-                  {castAssignments.length === 0 ? (
+                  {castEngagements.length === 0 ? (
                     <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500 text-sm">
                       キャストが割り当てられていません
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {castAssignments.map((assignment) => (
+                      {castEngagements.map((engagement) => (
                         <div
-                          key={assignment.id}
+                          key={engagement.id}
                           className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
                         >
                           <div className="flex items-center gap-3">
@@ -166,12 +170,13 @@ export default function TableDetailModal({
                             </div>
                             <div>
                               <span className="font-medium">
-                                {assignment.cast?.name}
+                                {engagement.cast?.stage_name || "Unknown"}
                               </span>
                               <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
-                                {assignment.nomination_type?.display_name}
+                                {engagement.nomination_type?.display_name ||
+                                  engagement.role}
                               </span>
-                              {assignment.is_primary && (
+                              {engagement.role === "primary" && (
                                 <span className="ml-1 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">
                                   メイン
                                 </span>
@@ -179,9 +184,7 @@ export default function TableDetailModal({
                             </div>
                           </div>
                           <span className="text-sm font-medium">
-                            {formatCurrency(
-                              assignment.nomination_type?.price || 0
-                            )}
+                            {formatCurrency(engagement.fee_amount)}
                           </span>
                         </div>
                       ))}
