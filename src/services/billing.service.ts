@@ -210,8 +210,7 @@ export class BillingService extends BaseService {
         customer:customers(id, name, phone_number),
         order_items(
           *,
-          product:products(*),
-          cast:staffs!cast_id(id, full_name)
+          product:products(*)
         )
       `
       )
@@ -641,7 +640,6 @@ export class BillingService extends BaseService {
         `
         *,
         product:products(*),
-        cast:staffs!cast_id(id, full_name),
         visit:visits!visit_id(check_in_at)
       `
       )
