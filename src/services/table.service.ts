@@ -531,74 +531,17 @@ export class TableService extends BaseService {
 
   // 新しいヘルパーメソッド：アクティブな来店情報を含むテーブルリストを取得
   private async getTablesWithActiveVisits(): Promise<Table[]> {
-    // 1) tables を取得
-    const { data: tables, error: tblError } = await this.supabase
+    const { data: tables } = await this.supabase
       .from("tables")
       .select("*")
       .eq("is_active", true)
       .order("table_number", { ascending: true });
 
-    if (tblError || !tables) return [];
+    if (!tables) return [];
 
-    // 2) 有効なテーブルIDを整数化してセグメントをまとめて取得
-    const tableIdNumbers = tables
-      .map((t) => parseInt((t as { id: string }).id, 10))
-      .filter((n) => !Number.isNaN(n));
-
-    let activeSegByTable = new Map<number, { visit_id: string }>();
-    if (tableIdNumbers.length > 0) {
-      const { data: segments } = await this.supabase
-        .from("visit_table_segments")
-        .select("table_id, visit_id, ended_at, started_at")
-        .in("table_id", tableIdNumbers)
-        .is("ended_at", null);
-
-      if (segments) {
-        // 最新のstarted_atを優先
-        const grouped = new Map<
-          number,
-          { visit_id: string; started_at?: string }
-        >();
-        for (const seg of segments as Array<{
-          table_id: number;
-          visit_id: string;
-          started_at?: string;
-        }>) {
-          const current = grouped.get(seg.table_id);
-          if (
-            !current ||
-            (seg.started_at &&
-              (!current.started_at || seg.started_at > current.started_at))
-          ) {
-            grouped.set(seg.table_id, {
-              visit_id: seg.visit_id,
-              started_at: seg.started_at,
-            });
-          }
-        }
-        activeSegByTable = new Map(
-          Array.from(grouped.entries()).map(([k, v]) => [
-            k,
-            { visit_id: v.visit_id },
-          ])
-        );
-      }
-    }
-
-    // 3) マージして返却
-    return tables.map((table) => {
-      const idNum = parseInt((table as { id: string }).id, 10);
-      const active = activeSegByTable.get(idNum);
-      return this.mapToTable({
-        ...table,
-        current_status: active
-          ? "occupied"
-          : (table as { current_status: string }).current_status,
-        current_visit_id: active
-          ? active.visit_id
-          : (table as { current_visit_id: string | null }).current_visit_id,
-      } as Database["public"]["Tables"]["tables"]["Row"]);
-    });
+    return tables.map((t) =>
+      this.mapToTable(t as Database["public"]["Tables"]["tables"]["Row"])
+    );
   }
 
   // 新しいヘルパーメソッド：特定のテーブルのアクティブな来店情報を取得
@@ -613,29 +556,9 @@ export class TableService extends BaseService {
 
     if (!table) return null;
 
-    const tableIdNum = parseInt(tableId, 10);
-    let activeVisitId: string | null = null;
-    if (!Number.isNaN(tableIdNum)) {
-      const { data: seg } = await this.supabase
-        .from("visit_table_segments")
-        .select("visit_id, started_at")
-        .eq("table_id", tableIdNum)
-        .is("ended_at", null)
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      activeVisitId = (seg as { visit_id?: string } | null)?.visit_id || null;
-    }
-
-    return this.mapToTable({
-      ...table,
-      current_status: activeVisitId
-        ? "occupied"
-        : (table as { current_status: string }).current_status,
-      current_visit_id:
-        activeVisitId ||
-        (table as { current_visit_id: string | null }).current_visit_id,
-    } as Database["public"]["Tables"]["tables"]["Row"]);
+    return this.mapToTable(
+      table as Database["public"]["Tables"]["tables"]["Row"]
+    );
   }
 
   // Helper methods
