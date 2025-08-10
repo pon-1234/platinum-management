@@ -110,7 +110,7 @@ export default function PayrollPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          hostessId: selectedCast,
+          castId: selectedCast,
           periodStart: periodStart.toISOString(),
           periodEnd: periodEnd.toISOString(),
           save: false,
@@ -126,7 +126,7 @@ export default function PayrollPage() {
       // キャスト名を追加
       const cast = casts.find((c) => c.id === selectedCast);
       if (cast && cast.staffs) {
-        data.hostessName = cast.staffs.full_name;
+        data.castName = cast.staffs.full_name;
       }
 
       setCalculation(data);
@@ -157,7 +157,7 @@ export default function PayrollPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          hostessId: calculation.hostessId,
+          castId: calculation.castId,
           periodStart: calculation.periodStart,
           periodEnd: calculation.periodEnd,
           save: true,
@@ -221,7 +221,7 @@ export default function PayrollPage() {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                hostessId: cast.id,
+                castId: cast.id,
                 periodStart: periodStart.toISOString(),
                 periodEnd: periodEnd.toISOString(),
                 save: true,
