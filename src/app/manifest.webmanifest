@@ -1,0 +1,14 @@
+{
+  "name": "Platinum Management",
+  "short_name": "Platinum",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "48x48",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#6D28D9",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}

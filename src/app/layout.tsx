@@ -7,6 +7,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Platinum Management",
   description: "ラウンジ運営管理システム",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
