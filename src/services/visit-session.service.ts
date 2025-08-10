@@ -85,7 +85,6 @@ export class VisitSessionService {
       .insert({
         customer_id: customerId,
         primary_customer_id: customerId,
-        table_id: tableId,
         num_guests: numGuests,
         is_group_visit: numGuests > 1,
         session_code: sessionCode,
@@ -96,8 +95,8 @@ export class VisitSessionService {
 
     if (error) throw error;
 
-    // テーブルセグメントを作成
-    await this.addTableSegment(visit.id, tableId, "initial");
+    // Note: Creating table segments should be done on the server side
+    // Use VisitSessionServerService.createSession via server actions
 
     return visit.id;
   }
