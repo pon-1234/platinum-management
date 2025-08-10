@@ -7,6 +7,9 @@ import { billingService } from "@/services/billing.service";
 import { ShoppingCartIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import ProductSelectModal from "@/components/billing/ProductSelectModal";
 import { toast } from "react-hot-toast";
+import { tableService } from "@/services/table.service";
+import { VisitSessionService } from "@/services/visit-session.service";
+import { createClient } from "@/lib/supabase/client";
 
 interface VisitSessionDrawerProps {
   open: boolean;
@@ -35,6 +38,15 @@ export default function VisitSessionDrawer({
     taxAmount: number;
     totalAmount: number;
   } | null>(null);
+  const [availableTables, setAvailableTables] = useState<
+    Array<{ id: string; label: string }>
+  >([]);
+  const [moveToTableId, setMoveToTableId] = useState<string>("");
+  const [assignCast, setAssignCast] = useState<{
+    castId: string;
+    role: "primary" | "inhouse" | "help" | "douhan" | "after";
+    nominationTypeId?: string;
+  }>({ castId: "", role: "inhouse" });
 
   const formattedTotal = (n: number) =>
     new Intl.NumberFormat("ja-JP", {
@@ -66,6 +78,61 @@ export default function VisitSessionDrawer({
 
   useEffect(() => {
     if (open) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, visitId]);
+
+  // Load available tables for move
+  useEffect(() => {
+    const loadTables = async () => {
+      if (!open) return;
+      const tables = await tableService.searchTables();
+      const options = tables
+        .filter(
+          (t) => t.currentStatus === "available" || t.id === (table?.id || "")
+        )
+        .map((t) => ({ id: t.id, label: `${t.tableName} (${t.capacity}席)` }));
+      setAvailableTables(options);
+      if (table?.id) setMoveToTableId(table.id);
+    };
+    loadTables();
+  }, [open, table]);
+
+  // Realtime reload for order/attribution/cast changes
+  useEffect(() => {
+    if (!open || !visitId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`visit-${visitId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "order_items",
+          filter: `visit_id=eq.${visitId}`,
+        },
+        () => load()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bill_item_attributions" },
+        () => load()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cast_engagements",
+          filter: `visit_id=eq.${visitId}`,
+        },
+        () => load()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, visitId]);
 
@@ -110,6 +177,40 @@ export default function VisitSessionDrawer({
       toast.error("お会計に失敗しました");
     } finally {
       setIsPaying(false);
+    }
+  };
+
+  const handleMoveTable = async () => {
+    if (!visit || !moveToTableId || !table?.id) return;
+    try {
+      await VisitSessionService.moveTable(
+        visit.id,
+        Number(table.id),
+        Number(moveToTableId)
+      );
+      toast.success("テーブルを移動しました");
+      await load();
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") console.error(e);
+      toast.error("テーブル移動に失敗しました");
+    }
+  };
+
+  const handleAssignCast = async () => {
+    if (!visit || !assignCast.castId) return;
+    try {
+      await VisitSessionService.addCastEngagement(
+        visit.id,
+        assignCast.castId,
+        assignCast.role,
+        assignCast.nominationTypeId
+      );
+      toast.success("キャストを割り当てました");
+      setAssignCast({ castId: "", role: "inhouse" });
+      await load();
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") console.error(e);
+      toast.error("キャスト割当に失敗しました");
     }
   };
 
@@ -271,6 +372,78 @@ export default function VisitSessionDrawer({
           </>
         )}
       </div>
+
+      {/* Operations: move table & assign cast */}
+      {visitId && (
+        <div className="p-4 border-t space-y-4">
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">テーブル移動</div>
+            <div className="flex gap-2">
+              <select
+                className="flex-1 border rounded px-2 py-1 text-sm"
+                value={moveToTableId}
+                onChange={(e) => setMoveToTableId(e.target.value)}
+              >
+                {availableTables.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleMoveTable}
+                className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-800"
+              >
+                移動
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">キャスト割り当て</div>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="border rounded px-2 py-1 text-sm col-span-2"
+                placeholder="キャストID"
+                value={assignCast.castId}
+                onChange={(e) =>
+                  setAssignCast((p) => ({ ...p, castId: e.target.value }))
+                }
+              />
+              <select
+                className="border rounded px-2 py-1 text-sm"
+                value={assignCast.role}
+                onChange={(e) =>
+                  setAssignCast((p) => ({ ...p, role: e.target.value as any }))
+                }
+              >
+                <option value="primary">メイン</option>
+                <option value="inhouse">在籍</option>
+                <option value="help">ヘルプ</option>
+                <option value="douhan">同伴</option>
+                <option value="after">アフター</option>
+              </select>
+              <input
+                className="border rounded px-2 py-1 text-sm"
+                placeholder="指名種別ID(任意)"
+                value={assignCast.nominationTypeId || ""}
+                onChange={(e) =>
+                  setAssignCast((p) => ({
+                    ...p,
+                    nominationTypeId: e.target.value || undefined,
+                  }))
+                }
+              />
+            </div>
+            <button
+              onClick={handleAssignCast}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
+            >
+              追加
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Product picker */}
       {visit && (
