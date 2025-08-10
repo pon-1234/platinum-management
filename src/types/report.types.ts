@@ -104,6 +104,12 @@ export interface CustomerReport {
     productName: string;
     orderCount: number;
   }>;
+  favoriteCasts?: Array<{
+    castId: string;
+    castName: string;
+    nominationCount: number;
+    attributedRevenue: number;
+  }>;
 }
 
 export interface InventoryReport {

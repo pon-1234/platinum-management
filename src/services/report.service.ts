@@ -247,7 +247,7 @@ export class ReportService extends BaseService {
       this.handleError(customerError, "顧客情報の取得に失敗しました");
     }
 
-    // Get customer visits
+    // Get customer visits with orders, cast engagements, and basic bill attributions
     const { data: visits, error: visitsError } = await this.supabase
       .from("visits")
       .select(
@@ -259,13 +259,25 @@ export class ReportService extends BaseService {
         num_guests,
         status,
         order_items (
+          id,
           product_id,
           quantity,
           total_price,
           product:products (
             id,
             name
+          ),
+          bill_item_attributions (
+            cast_id,
+            attribution_percentage,
+            attribution_amount
           )
+        ),
+        cast_engagements (
+          cast_id,
+          role,
+          nomination_type_id,
+          fee_amount
         )
       `
       )
@@ -299,12 +311,23 @@ export class ReportService extends BaseService {
 
     // Calculate favorite products
     const productCounts = new Map<string, { name: string; count: number }>();
+    // Calculate cast engagements and attribution summaries
+    const castCounts = new Map<
+      string,
+      { name?: string; count: number; totalAttributed: number }
+    >();
     visits?.forEach((visit: Record<string, unknown>) => {
       const orderItems = visit.order_items as
         | Array<{
+            id: number;
             product_id?: number;
             quantity?: number;
             product?: { name?: string };
+            bill_item_attributions?: Array<{
+              cast_id: string;
+              attribution_percentage?: number;
+              attribution_amount?: number;
+            }>;
           }>
         | undefined;
 
@@ -320,6 +343,41 @@ export class ReportService extends BaseService {
             });
           }
         }
+        // Aggregate cast attributions
+        if (item.bill_item_attributions) {
+          item.bill_item_attributions.forEach((attr) => {
+            const key = attr.cast_id;
+            const prev = castCounts.get(key) || {
+              name: undefined,
+              count: 0,
+              totalAttributed: 0,
+            };
+            castCounts.set(key, {
+              ...prev,
+              totalAttributed:
+                prev.totalAttributed + (attr.attribution_amount || 0),
+            });
+          });
+        }
+      });
+
+      // Count engaged casts (nominations, inhouse etc.)
+      const engagements = visit.cast_engagements as
+        | Array<{
+            cast_id: string;
+            role?: string;
+            nomination_type_id?: string;
+            fee_amount?: number;
+          }>
+        | undefined;
+      engagements?.forEach((eng) => {
+        const key = eng.cast_id;
+        const prev = castCounts.get(key) || {
+          name: undefined,
+          count: 0,
+          totalAttributed: 0,
+        };
+        castCounts.set(key, { ...prev, count: prev.count + 1 });
       });
     });
 
@@ -332,6 +390,17 @@ export class ReportService extends BaseService {
       .sort((a, b) => b.orderCount - a.orderCount)
       .slice(0, 5); // Top 5 products
 
+    // Build favorite casts by engagements and attributed revenue
+    const favoriteCasts = Array.from(castCounts.entries())
+      .map(([castId, data]) => ({
+        castId,
+        castName: data.name || "", // could be filled by a join if needed
+        nominationCount: data.count,
+        attributedRevenue: data.totalAttributed,
+      }))
+      .sort((a, b) => b.attributedRevenue - a.attributedRevenue)
+      .slice(0, 5);
+
     return {
       customerId,
       customerName: customer.name,
@@ -341,6 +410,7 @@ export class ReportService extends BaseService {
       lastVisit:
         ((visits?.[0] as Record<string, unknown>)?.check_in_at as string) || "",
       favoriteProducts,
+      favoriteCasts,
     };
   }
 
