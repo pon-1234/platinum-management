@@ -255,7 +255,7 @@ export class VisitSessionService {
         cast_engagements:cast_engagements(
           *,
           cast:casts_profile(id, stage_name),
-          nomination_type:nomination_types(display_name)
+          nomination_type:nomination_types(display_name, price, back_rate)
         )
       `
       )
