@@ -218,6 +218,19 @@ export class BillingService extends BaseService {
 
     const visit = this.mapToVisit(visitRow);
 
+    // Override tableId with active segment if present
+    const { data: activeSeg } = await this.supabase
+      .from("visit_table_segments")
+      .select("table_id")
+      .eq("visit_id", id)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeSeg?.table_id !== undefined && activeSeg?.table_id !== null) {
+      visit.tableId = Number(activeSeg.table_id);
+    }
+
     // 2) 顧客情報
     let customer:
       | { id: string; name: string; phoneNumber: string | null }
@@ -268,6 +281,7 @@ export class BillingService extends BaseService {
   }
 
   async searchVisits(params: VisitSearchParams = {}): Promise<Visit[]> {
+    // Base visits query
     let query = this.supabase
       .from("visits")
       .select("*")
@@ -275,10 +289,6 @@ export class BillingService extends BaseService {
 
     if (params.customerId) {
       query = query.eq("customer_id", params.customerId);
-    }
-
-    if (params.tableId) {
-      query = query.eq("table_id", params.tableId);
     }
 
     if (params.status) {
@@ -295,6 +305,23 @@ export class BillingService extends BaseService {
 
     if (params.endDate) {
       query = query.lte("check_in_at", params.endDate);
+    }
+
+    // If filtering by table, constrain visits by active segments
+    if (params.tableId !== undefined) {
+      const { data: segs, error: segErr } = await this.supabase
+        .from("visit_table_segments")
+        .select("visit_id")
+        .eq("table_id", params.tableId)
+        .is("ended_at", null);
+      if (segErr) {
+        this.handleError(segErr, "テーブル別の来店検索に失敗しました");
+      }
+      const visitIds = (segs || []).map((s) => s.visit_id as string);
+      if (visitIds.length === 0) {
+        return [];
+      }
+      query = query.in("id", visitIds);
     }
 
     if (params.limit) {
@@ -314,7 +341,27 @@ export class BillingService extends BaseService {
       this.handleError(error, "来店記録の検索に失敗しました");
     }
 
-    return data.map(this.mapToVisit);
+    const visits = data.map(this.mapToVisit);
+
+    // Override tableId with active segment if available
+    const ids = visits.map((v) => v.id);
+    if (ids.length > 0) {
+      const { data: activeSegs } = await this.supabase
+        .from("visit_table_segments")
+        .select("visit_id, table_id")
+        .in("visit_id", ids)
+        .is("ended_at", null);
+      const visitIdToTableId = new Map<string, number>();
+      (activeSegs || []).forEach((s) => {
+        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
+      });
+      visits.forEach((v) => {
+        const t = visitIdToTableId.get(v.id);
+        if (t !== undefined) v.tableId = t;
+      });
+    }
+
+    return visits;
   }
 
   async updateVisit(id: string, data: UpdateVisitData): Promise<Visit> {
