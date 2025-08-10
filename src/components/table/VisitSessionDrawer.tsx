@@ -359,7 +359,7 @@ export default function VisitSessionDrawer({
                 <option value="card">カード</option>
                 <option value="mixed">混合</option>
               </select>
-              {payment.method === "cash" && (
+              {(payment.method === "cash" || payment.method === "mixed") && (
                 <div className="space-y-1">
                   <label className="text-sm font-medium">お預かり金額</label>
                   <input
