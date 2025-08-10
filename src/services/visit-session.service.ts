@@ -222,10 +222,7 @@ export class VisitSessionService {
       .select(
         `
         *,
-        table_segments:visit_table_segments(
-          *,
-          table:tables(id, table_name)
-        ),
+        table_segments:visit_table_segments(*),
         cast_engagements:cast_engagements(
           *,
           cast:casts_profile(id, stage_name, staff_code),
@@ -254,10 +251,7 @@ export class VisitSessionService {
         `
         *,
         customer:customers(name, phone),
-        table_segments:visit_table_segments!inner(
-          *,
-          table:tables(id, table_name)
-        ),
+        table_segments:visit_table_segments!inner(*),
         cast_engagements:cast_engagements(
           *,
           cast:casts_profile(id, stage_name),

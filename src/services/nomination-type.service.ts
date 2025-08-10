@@ -21,7 +21,7 @@ export class NominationTypeService {
     let query = supabase
       .from("nomination_types")
       .select("*")
-      .order("priority", { ascending: true })
+      .order("display_order", { ascending: true })
       .order("display_name", { ascending: true });
 
     if (!includeInactive) {
@@ -129,7 +129,7 @@ export class NominationTypeService {
       updateData.display_name = input.display_name;
     if (input.price !== undefined) updateData.price = input.price;
     if (input.back_rate !== undefined) updateData.back_rate = input.back_rate;
-    if (input.priority !== undefined) updateData.priority = input.priority;
+    if (input.priority !== undefined) updateData.display_order = input.priority;
     if (input.is_active !== undefined) updateData.is_active = input.is_active;
 
     const { data, error } = await supabase

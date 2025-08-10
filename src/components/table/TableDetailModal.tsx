@@ -45,27 +45,8 @@ export default function TableDetailModal({
 
     setIsLoading(true);
     try {
-      // visit_table_segmentsから現在アクティブな来店IDを取得
-      const supabase = createClient();
-      const tableIdNumber = parseInt(table.id, 10);
-
-      let visitId = table.currentVisitId;
-
-      if (!isNaN(tableIdNumber)) {
-        const { data: activeSegment } = await supabase
-          .from("visit_table_segments")
-          .select("visit_id")
-          .eq("table_id", tableIdNumber)
-          .is("ended_at", null)
-          .order("started_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (activeSegment) {
-          visitId = activeSegment.visit_id;
-        }
-      }
-
+      // tables.currentVisitId を信頼して使用（RLS回避のためセグメント直接参照しない）
+      const visitId = table.currentVisitId;
       if (!visitId) return;
 
       // 来店情報を取得
