@@ -5,7 +5,7 @@ import { startOfMonth, endOfMonth, format, differenceInHours } from "date-fns";
 type PayrollRule = Database["public"]["Tables"]["payroll_rules"]["Row"];
 
 export interface PayrollCalculationDetails {
-  hostessId: string;
+  castId: string;
   periodStart: Date;
   periodEnd: Date;
   ruleId?: string;
@@ -71,10 +71,7 @@ export interface PayrollDetailItem {
 }
 
 export class PayrollService {
-  static async getActivePayrollRule(
-    hostessId: string,
-    date: Date = new Date()
-  ) {
+  static async getActivePayrollRule(castId: string, date: Date = new Date()) {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("hostess_payroll_rules")
@@ -84,7 +81,7 @@ export class PayrollService {
         payroll_rules!inner(*)
       `
       )
-      .eq("hostess_id", hostessId)
+      .eq("hostess_id", castId)
       .eq("is_active", true)
       .lte("assigned_from", format(date, "yyyy-MM-dd"))
       .or(
@@ -109,15 +106,12 @@ export class PayrollService {
   }
 
   static async calculatePayroll(
-    hostessId: string,
+    castId: string,
     periodStart: Date,
     periodEnd: Date
   ): Promise<PayrollCalculationDetails> {
     // 適用される給与ルールを取得
-    const ruleAssignment = await this.getActivePayrollRule(
-      hostessId,
-      periodEnd
-    );
+    const ruleAssignment = await this.getActivePayrollRule(castId, periodEnd);
     if (!ruleAssignment) {
       throw new Error("給与ルールが設定されていません");
     }
@@ -125,15 +119,11 @@ export class PayrollService {
     const rule = ruleAssignment.payroll_rules;
 
     // 期間中の売上データを取得
-    const salesData = await this.getSalesData(
-      hostessId,
-      periodStart,
-      periodEnd
-    );
+    const salesData = await this.getSalesData(castId, periodStart, periodEnd);
 
     // 期間中の勤務時間を取得
     const workingHours = await this.getWorkingHours(
-      hostessId,
+      castId,
       periodStart,
       periodEnd
     );
@@ -185,7 +175,7 @@ export class PayrollService {
     ];
 
     return {
-      hostessId,
+      castId,
       periodStart,
       periodEnd,
       ruleId: ruleAssignment.payroll_rule_id,
@@ -199,7 +189,7 @@ export class PayrollService {
   }
 
   private static async getSalesData(
-    hostessId: string,
+    castId: string,
     periodStart: Date,
     periodEnd: Date
   ): Promise<SalesData> {
@@ -209,7 +199,7 @@ export class PayrollService {
     const { data: revenueData, error } = await supabase
       .from("payroll_revenue_facts")
       .select("*")
-      .eq("cast_id", hostessId)
+      .eq("cast_id", castId)
       .gte("work_date", periodStart.toISOString().split("T")[0])
       .lte("work_date", periodEnd.toISOString().split("T")[0]);
 
@@ -252,7 +242,7 @@ export class PayrollService {
   }
 
   private static async getWorkingHours(
-    hostessId: string,
+    castId: string,
     periodStart: Date,
     periodEnd: Date
   ): Promise<number> {
@@ -260,7 +250,7 @@ export class PayrollService {
     const { data: attendance, error } = await supabase
       .from("cast_attendance")
       .select("check_in_time, check_out_time")
-      .eq("cast_id", hostessId)
+      .eq("cast_id", castId)
       .gte("check_in_time", periodStart.toISOString())
       .lte("check_in_time", periodEnd.toISOString())
       .not("check_out_time", "is", null);
@@ -358,7 +348,7 @@ export class PayrollService {
     const { data: calculationId, error } = await supabase.rpc(
       "save_payroll_calculation",
       {
-        p_hostess_id: calculation.hostessId,
+        p_hostess_id: calculation.castId,
         p_period_start: format(calculation.periodStart, "yyyy-MM-dd"),
         p_period_end: format(calculation.periodEnd, "yyyy-MM-dd"),
         p_rule_id: calculation.ruleId || null,
@@ -388,7 +378,7 @@ export class PayrollService {
   }
 
   static async getCalculations(
-    hostessId?: string,
+    castId?: string,
     periodStart?: Date,
     periodEnd?: Date
   ) {
@@ -405,8 +395,8 @@ export class PayrollService {
         )
       `);
 
-    if (hostessId) {
-      query = query.eq("hostess_id", hostessId);
+    if (castId) {
+      query = query.eq("hostess_id", castId);
     }
 
     if (periodStart && periodEnd) {

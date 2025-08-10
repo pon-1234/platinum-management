@@ -18,25 +18,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface Visit {
-  id: string;
-  customer_id: string;
-  table_id: string;
-  check_in_time: string;
-  check_out_time?: string;
-  customer?: {
-    id: string;
-    name: string;
-    phone_number?: string;
-  };
-  table?: {
-    id: string;
-    name: string;
-  };
+interface ActiveVisitCardData {
+  visitId: string;
+  customerId: string;
+  customerName?: string;
+  tableId: string;
+  tableName?: string;
+  checkInTime: string;
 }
 
 export function ActiveVisitsWithBottleKeep() {
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const [visits, setVisits] = useState<ActiveVisitCardData[]>([]);
   const [bottleKeeps, setBottleKeeps] = useState<Map<string, BottleKeep[]>>(
     new Map()
   );
@@ -56,41 +48,108 @@ export function ActiveVisitsWithBottleKeep() {
 
       const supabase = createClient();
 
-      // アクティブな来店を取得
-      const { data: visitsData, error: visitsError } = await supabase
-        .from("visits")
-        .select(
-          `
-          *,
-          customer:customers(id, name, phone_number),
-          table:tables(id, name)
-        `
-        )
-        .is("check_out_time", null)
-        .order("check_in_time", { ascending: false });
+      // アクティブなテーブルセグメントを取得（ended_at が null）
+      const { data: segments, error: segError } = await supabase
+        .from("visit_table_segments")
+        .select("id, visit_id, table_id, started_at")
+        .is("ended_at", null)
+        .order("started_at", { ascending: false });
 
+      if (segError) throw segError;
+
+      const visitIds = Array.from(
+        new Set((segments || []).map((s) => s.visit_id as string))
+      );
+      const tableIds = Array.from(
+        new Set((segments || []).map((s) => String(s.table_id)))
+      );
+
+      // visit 情報をまとめて取得
+      const { data: visitsRows, error: visitsError } = await supabase
+        .from("visits")
+        .select("id, customer_id, check_in_at, status")
+        .in("id", visitIds);
       if (visitsError) throw visitsError;
 
-      setVisits(visitsData || []);
+      // 顧客名を表示するために customers を取得
+      const customerIds = Array.from(
+        new Set((visitsRows || []).map((v) => v.customer_id as string))
+      );
+      const { data: customers } = await supabase
+        .from("customers")
+        .select("id, name")
+        .in("id", customerIds);
+      const customerMap = new Map<string, string>(
+        (customers || []).map((c) => [c.id as string, c.name as string])
+      );
+
+      // テーブル名を取得
+      const { data: tablesRows } = await supabase
+        .from("tables")
+        .select("id, name")
+        .in("id", tableIds);
+      const tableMap = new Map(
+        (tablesRows || []).map((t) => [String(t.id), t.name as string])
+      );
+
+      // 最新セグメントのみを採用する（visit ごとに一つ）
+      const latestByVisit = new Map<
+        string,
+        {
+          visit_id: string;
+          table_id: string;
+          started_at: string;
+        }
+      >();
+      for (const seg of segments || []) {
+        const vId = seg.visit_id as string;
+        if (!latestByVisit.has(vId)) {
+          latestByVisit.set(vId, {
+            visit_id: vId,
+            table_id: String(seg.table_id),
+            started_at: seg.started_at as string,
+          });
+        }
+      }
+
+      const visitRowMap = new Map(
+        (visitsRows || []).map((v) => [v.id as string, v])
+      );
+
+      const cards: ActiveVisitCardData[] = [];
+      for (const [vId, seg] of latestByVisit.entries()) {
+        const v = visitRowMap.get(vId);
+        if (!v) continue;
+        cards.push({
+          visitId: vId,
+          customerId: v.customer_id as string,
+          customerName: customerMap.get(v.customer_id as string),
+          tableId: seg.table_id,
+          tableName: tableMap.get(seg.table_id),
+          checkInTime: v.check_in_at as string,
+        });
+      }
+
+      setVisits(cards);
 
       // 各顧客のボトルキープを取得
-      if (visitsData && visitsData.length > 0) {
+      if (visits && visits.length > 0) {
         const bottleKeepMap = new Map<string, BottleKeep[]>();
 
         await Promise.all(
-          visitsData.map(async (visit) => {
-            if (visit.customer?.id) {
+          visits.map(async (visit) => {
+            if (visit.customerId) {
               try {
                 const bottles = await BottleKeepService.getBottleKeeps(
                   "active",
-                  visit.customer.id
+                  visit.customerId
                 );
                 if (bottles.length > 0) {
-                  bottleKeepMap.set(visit.customer.id, bottles);
+                  bottleKeepMap.set(visit.customerId, bottles);
                 }
               } catch (err) {
                 console.error(
-                  `Failed to load bottles for customer ${visit.customer.id}:`,
+                  `Failed to load bottles for customer ${visit.customerId}:`,
                   err
                 );
               }
@@ -193,32 +252,32 @@ export function ActiveVisitsWithBottleKeep() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {visits.map((visit) => {
-          const customerBottles = visit.customer?.id
-            ? bottleKeeps.get(visit.customer.id) || []
+          const customerBottles = visit.customerId
+            ? bottleKeeps.get(visit.customerId) || []
             : [];
           const expiringBottles = getExpiringBottles(customerBottles);
 
           return (
             <div
-              key={visit.id}
+              key={visit.visitId}
               className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">
-                    {visit.customer?.name || "名前なし"}
+                    {visit.customerName || "名前なし"}
                   </h3>
                   <p className="text-xs text-gray-500 mt-1">
-                    テーブル: {visit.table?.name || "-"}
+                    テーブル: {visit.tableName || "-"}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500">
                     <ClockIcon className="inline h-3 w-3 mr-1" />
-                    {formatTime(visit.check_in_time)}
+                    {formatTime(visit.checkInTime)}
                   </p>
                   <p className="text-xs text-gray-600 font-medium">
-                    {calculateStayDuration(visit.check_in_time)}
+                    {calculateStayDuration(visit.checkInTime)}
                   </p>
                 </div>
               </div>
@@ -273,7 +332,7 @@ export function ActiveVisitsWithBottleKeep() {
 
                   <div className="mt-3 flex justify-between">
                     <Link
-                      href={`/bottle-keep?customerId=${visit.customer?.id}`}
+                      href={`/bottle-keep?customerId=${visit.customerId}`}
                       className="text-xs text-indigo-600 hover:text-indigo-500"
                     >
                       ボトル管理
@@ -281,7 +340,7 @@ export function ActiveVisitsWithBottleKeep() {
                     <button
                       onClick={() => {
                         // TODO: ボトル使用モーダルを開く
-                        console.log("Use bottle for visit", visit.id);
+                        console.log("Use bottle for visit", visit.visitId);
                       }}
                       className="text-xs text-green-600 hover:text-green-500 font-medium"
                     >
@@ -295,7 +354,7 @@ export function ActiveVisitsWithBottleKeep() {
                     ボトルキープなし
                   </p>
                   <Link
-                    href={`/bottle-keep?customerId=${visit.customer?.id}`}
+                    href={`/bottle-keep?customerId=${visit.customerId}`}
                     className="block mt-2 text-xs text-center text-indigo-600 hover:text-indigo-500"
                   >
                     新規登録

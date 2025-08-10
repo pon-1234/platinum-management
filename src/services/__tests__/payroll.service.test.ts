@@ -87,7 +87,7 @@ describe("PayrollService", () => {
 
   describe("calculatePayroll", () => {
     it("給与計算を正しく実行できる", async () => {
-      const hostessId = "test-hostess-id";
+      const castId = "test-hostess-id";
       const periodStart = new Date("2024-01-01");
       const periodEnd = new Date("2024-01-31");
 
@@ -143,12 +143,12 @@ describe("PayrollService", () => {
       });
 
       const result = await PayrollService.calculatePayroll(
-        hostessId,
+        castId,
         periodStart,
         periodEnd
       );
 
-      expect(result).toHaveProperty("hostessId", hostessId);
+      expect(result).toHaveProperty("castId", castId);
       expect(result).toHaveProperty("totalSales", 10000);
       expect(result).toHaveProperty("basePay", 24000); // 8時間 × 3000円
       expect(result).toHaveProperty("totalPay");
@@ -170,7 +170,7 @@ describe("PayrollService", () => {
   describe("saveCalculation", () => {
     it("計算結果を正しく保存できる", async () => {
       const calculation = {
-        hostessId: "test-id",
+        castId: "test-id",
         periodStart: new Date("2024-01-01"),
         periodEnd: new Date("2024-01-31"),
         ruleId: "rule-id",
@@ -220,7 +220,7 @@ describe("PayrollService", () => {
 
     it("保存エラー時に例外をスローする", async () => {
       const calculation = {
-        hostessId: "test-id",
+        castId: "test-id",
         periodStart: new Date(),
         periodEnd: new Date(),
         items: [],

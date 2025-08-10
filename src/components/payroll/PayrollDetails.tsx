@@ -26,7 +26,7 @@ interface PayrollDetailsProps {
   calculation: PayrollCalculationDetails & {
     id?: string;
     status?: string;
-    hostessName?: string;
+    castName?: string;
   };
 }
 
@@ -72,10 +72,10 @@ export function PayrollDetails({ calculation }: PayrollDetailsProps) {
           </div>
           {getStatusBadge(calculation.status)}
         </div>
-        {calculation.hostessName && (
+        {calculation.castName && (
           <div className="mt-2">
             <span className="text-sm text-muted-foreground">対象者: </span>
-            <span className="font-medium">{calculation.hostessName}</span>
+            <span className="font-medium">{calculation.castName}</span>
           </div>
         )}
       </CardHeader>

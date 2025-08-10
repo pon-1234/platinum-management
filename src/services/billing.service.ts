@@ -181,6 +181,29 @@ export class BillingService extends BaseService {
       this.handleError(error, "来店記録の作成に失敗しました");
     }
 
+    // Create initial table segment as the source of truth
+    try {
+      await this.supabase.from("visit_table_segments").insert({
+        visit_id: visit.id,
+        table_id: data.tableId,
+        reason: "initial",
+        started_at: new Date().toISOString(),
+      });
+      // Update table occupancy status for compatibility
+      await this.supabase
+        .from("tables")
+        .update({
+          current_status: "occupied",
+          current_visit_id: visit.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.tableId);
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Failed to create initial table segment:", e);
+      }
+    }
+
     return this.mapToVisit(visit);
   }
 
@@ -198,7 +221,22 @@ export class BillingService extends BaseService {
       this.handleError(error, "来店記録の取得に失敗しました");
     }
 
-    return this.mapToVisit(data);
+    const visit = this.mapToVisit(data);
+
+    // Override tableId with active segment if present
+    const { data: activeSeg } = await this.supabase
+      .from("visit_table_segments")
+      .select("table_id")
+      .eq("visit_id", id)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeSeg?.table_id !== undefined && activeSeg?.table_id !== null) {
+      visit.tableId = Number(activeSeg.table_id);
+    }
+
+    return visit;
   }
 
   async getVisitWithDetails(id: string): Promise<VisitWithDetails | null> {
@@ -217,6 +255,19 @@ export class BillingService extends BaseService {
     }
 
     const visit = this.mapToVisit(visitRow);
+
+    // Override tableId with active segment if present
+    const { data: activeSeg } = await this.supabase
+      .from("visit_table_segments")
+      .select("table_id")
+      .eq("visit_id", id)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeSeg?.table_id !== undefined && activeSeg?.table_id !== null) {
+      visit.tableId = Number(activeSeg.table_id);
+    }
 
     // 2) 顧客情報
     let customer:
@@ -268,6 +319,7 @@ export class BillingService extends BaseService {
   }
 
   async searchVisits(params: VisitSearchParams = {}): Promise<Visit[]> {
+    // Base visits query
     let query = this.supabase
       .from("visits")
       .select("*")
@@ -275,10 +327,6 @@ export class BillingService extends BaseService {
 
     if (params.customerId) {
       query = query.eq("customer_id", params.customerId);
-    }
-
-    if (params.tableId) {
-      query = query.eq("table_id", params.tableId);
     }
 
     if (params.status) {
@@ -295,6 +343,23 @@ export class BillingService extends BaseService {
 
     if (params.endDate) {
       query = query.lte("check_in_at", params.endDate);
+    }
+
+    // If filtering by table, constrain visits by active segments
+    if (params.tableId !== undefined) {
+      const { data: segs, error: segErr } = await this.supabase
+        .from("visit_table_segments")
+        .select("visit_id")
+        .eq("table_id", params.tableId)
+        .is("ended_at", null);
+      if (segErr) {
+        this.handleError(segErr, "テーブル別の来店検索に失敗しました");
+      }
+      const visitIds = (segs || []).map((s) => s.visit_id as string);
+      if (visitIds.length === 0) {
+        return [];
+      }
+      query = query.in("id", visitIds);
     }
 
     if (params.limit) {
@@ -314,7 +379,27 @@ export class BillingService extends BaseService {
       this.handleError(error, "来店記録の検索に失敗しました");
     }
 
-    return data.map(this.mapToVisit);
+    const visits = data.map(this.mapToVisit);
+
+    // Override tableId with active segment if available
+    const ids = visits.map((v) => v.id);
+    if (ids.length > 0) {
+      const { data: activeSegs } = await this.supabase
+        .from("visit_table_segments")
+        .select("visit_id, table_id")
+        .in("visit_id", ids)
+        .is("ended_at", null);
+      const visitIdToTableId = new Map<string, number>();
+      (activeSegs || []).forEach((s) => {
+        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
+      });
+      visits.forEach((v) => {
+        const t = visitIdToTableId.get(v.id);
+        if (t !== undefined) v.tableId = t;
+      });
+    }
+
+    return visits;
   }
 
   async updateVisit(id: string, data: UpdateVisitData): Promise<Visit> {
@@ -350,6 +435,43 @@ export class BillingService extends BaseService {
 
     if (error) {
       this.handleError(error, "来店記録の更新に失敗しました");
+    }
+
+    // If tableId changed, update segments and table occupancy
+    try {
+      if (data.tableId !== undefined) {
+        await this.supabase
+          .from("visit_table_segments")
+          .update({ ended_at: new Date().toISOString() })
+          .eq("visit_id", id)
+          .is("ended_at", null);
+
+        await this.supabase.from("visit_table_segments").insert({
+          visit_id: id,
+          table_id: data.tableId,
+          reason: "move",
+          started_at: new Date().toISOString(),
+        });
+
+        // Update table statuses
+        await this.supabase
+          .from("tables")
+          .update({ current_status: "available", current_visit_id: null })
+          .eq("current_visit_id", id);
+
+        await this.supabase
+          .from("tables")
+          .update({
+            current_status: "occupied",
+            current_visit_id: id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", data.tableId);
+      }
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Failed to update table segments on visit update:", e);
+      }
     }
 
     return this.mapToVisit(visit);
@@ -600,6 +722,24 @@ export class BillingService extends BaseService {
       checkOutAt: new Date().toISOString(),
       notes: paymentData.notes,
     });
+
+    // Close active segments and free table occupancy
+    try {
+      await this.supabase
+        .from("visit_table_segments")
+        .update({ ended_at: new Date().toISOString() })
+        .eq("visit_id", visitId)
+        .is("ended_at", null);
+
+      await this.supabase
+        .from("tables")
+        .update({ current_status: "available", current_visit_id: null })
+        .eq("current_visit_id", visitId);
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Failed to finalize segments/table on payment:", e);
+      }
+    }
 
     return updatedVisit;
   }

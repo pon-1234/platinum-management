@@ -1236,44 +1236,7 @@ export interface Database {
           created_at?: string;
         };
       };
-      guest_cast_assignments: {
-        Row: {
-          id: string;
-          visit_guest_id: string;
-          cast_id: string;
-          assignment_type: "shimei" | "dohan" | "after" | "help";
-          start_time: string;
-          end_time: string | null;
-          is_primary_assignment: boolean;
-          notes: string | null;
-          created_by: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          visit_guest_id: string;
-          cast_id: string;
-          assignment_type: "shimei" | "dohan" | "after" | "help";
-          start_time?: string;
-          end_time?: string | null;
-          is_primary_assignment?: boolean;
-          notes?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          visit_guest_id?: string;
-          cast_id?: string;
-          assignment_type?: "shimei" | "dohan" | "after" | "help";
-          start_time?: string;
-          end_time?: string | null;
-          is_primary_assignment?: boolean;
-          notes?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-        };
-      };
+      // guest_cast_assignments is deprecated in favor of cast_engagements
       guest_billing_splits: {
         Row: {
           id: string;

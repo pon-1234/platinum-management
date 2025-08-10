@@ -4,9 +4,9 @@ import { PayrollService } from "@/services/payroll.service";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { hostessId, periodStart, periodEnd, save = false } = body;
+    const { castId, periodStart, periodEnd, save = false } = body;
 
-    if (!hostessId || !periodStart || !periodEnd) {
+    if (!castId || !periodStart || !periodEnd) {
       return NextResponse.json(
         { error: "Missing required parameters" },
         { status: 400 }
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const calculation = await PayrollService.calculatePayroll(
-      hostessId,
+      castId,
       new Date(periodStart),
       new Date(periodEnd)
     );
@@ -39,12 +39,12 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const hostessId = searchParams.get("hostessId") || undefined;
+    const castId = searchParams.get("castId") || undefined;
     const periodStart = searchParams.get("periodStart");
     const periodEnd = searchParams.get("periodEnd");
 
     const calculations = await PayrollService.getCalculations(
-      hostessId,
+      castId,
       periodStart ? new Date(periodStart) : undefined,
       periodEnd ? new Date(periodEnd) : undefined
     );
