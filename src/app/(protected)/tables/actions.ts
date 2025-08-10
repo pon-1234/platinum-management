@@ -43,8 +43,6 @@ export async function checkInAction(
         is_group_visit: numGuests > 1,
         session_code: sessionCode,
         status: "active",
-        created_by: user.id,
-        updated_by: user.id,
       })
       .select()
       .single();
@@ -124,7 +122,6 @@ export async function checkOutAction(
       .update({
         status: "completed",
         check_out_at: new Date().toISOString(),
-        updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", visitId);
@@ -200,7 +197,6 @@ export async function moveTableAction(
       .from("visits")
       .update({
         table_id: newTableIdNumber,
-        updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", visitId);
