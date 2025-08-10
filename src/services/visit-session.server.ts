@@ -67,13 +67,6 @@ export class VisitSessionServerService {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("認証されていません");
 
-    const { data: visit, error: visitFetchError } = await supabase
-      .from("visits")
-      .select("table_id")
-      .eq("id", visitId)
-      .single();
-    if (visitFetchError) throw visitFetchError;
-
     const { error: segmentError } = await supabase
       .from("visit_table_segments")
       .update({ ended_at: new Date().toISOString() })
