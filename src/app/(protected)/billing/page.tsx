@@ -11,6 +11,8 @@ import {
 import { toast } from "react-hot-toast";
 import { StatCard } from "@/components/ui/StatCard";
 import OrderTicketManagement from "@/components/billing/OrderTicketManagement";
+import { useState as useReactState } from "react";
+import { Modal } from "@/components/ui/Modal";
 
 export default function BillingPage() {
   const [todayReport, setTodayReport] = useState<DailyReport | null>(null);
@@ -21,6 +23,10 @@ export default function BillingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAlreadyClosed, setIsAlreadyClosed] = useState(false);
+  // Backoffice delegated checkout (by session id)
+  const [delegateOpen, setDelegateOpen] = useReactState(false);
+  const [delegateVisitId, setDelegateVisitId] = useReactState("");
+  const [delegateLoading, setDelegateLoading] = useReactState(false);
 
   const loadBillingData = useCallback(async () => {
     try {
@@ -129,6 +135,12 @@ export default function BillingPage() {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="rounded-md border-gray-300 text-sm"
             />
+            <button
+              onClick={() => setDelegateOpen(true)}
+              className="inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm bg-indigo-600 text-white hover:bg-indigo-700"
+            >
+              代行会計
+            </button>
             {selectedDate === new Date().toISOString().split("T")[0] && (
               <button
                 onClick={handleClosingProcess}
@@ -360,6 +372,53 @@ export default function BillingPage() {
           </div>
         </div>
       )}
+
+      {/* Delegate checkout modal */}
+      <Modal
+        isOpen={delegateOpen}
+        onClose={() => setDelegateOpen(false)}
+        title="代行会計（セッションID指定）"
+      >
+        <div className="space-y-3">
+          <input
+            className="w-full border rounded px-3 py-2 text-sm"
+            placeholder="Visit (Session) ID を入力"
+            value={delegateVisitId}
+            onChange={(e) => setDelegateVisitId(e.target.value)}
+          />
+          <button
+            disabled={!delegateVisitId || delegateLoading}
+            onClick={async () => {
+              try {
+                setDelegateLoading(true);
+                const visit =
+                  await billingService.getOpenCheckBySession(delegateVisitId);
+                if (!visit) {
+                  toast.error("対象のセッションが見つかりません");
+                  return;
+                }
+                const calc = await billingService.calculateBill(visit.id);
+                await billingService.checkoutSession(visit.id, {
+                  method: "cash",
+                  amount: calc.totalAmount,
+                  cashReceived: calc.totalAmount,
+                });
+                toast.success("代行会計が完了しました");
+                setDelegateOpen(false);
+                setDelegateVisitId("");
+                loadBillingData();
+              } catch (e) {
+                toast.error("代行会計に失敗しました");
+              } finally {
+                setDelegateLoading(false);
+              }
+            }}
+            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
+          >
+            {delegateLoading ? "処理中..." : "会計実行（現金）"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
