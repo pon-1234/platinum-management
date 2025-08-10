@@ -126,11 +126,7 @@ export class VisitSessionService {
 
     if (error) throw error;
 
-    // visitsテーブルも更新
-    await supabase
-      .from("visits")
-      .update({ table_id: tableId })
-      .eq("id", visitId);
+    // Note: visits.table_id is deprecated; rely on visit_table_segments
   }
 
   /**
