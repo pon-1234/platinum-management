@@ -47,6 +47,10 @@ export default function VisitSessionDrawer({
     role: "primary" | "inhouse" | "help" | "douhan" | "after";
     nominationTypeId?: string;
   }>({ castId: "", role: "inhouse" });
+  const [castQuery, setCastQuery] = useState("");
+  const [castOptions, setCastOptions] = useState<
+    Array<{ id: string; label: string }>
+  >([]);
 
   const formattedTotal = (n: number) =>
     new Intl.NumberFormat("ja-JP", {
@@ -96,6 +100,27 @@ export default function VisitSessionDrawer({
     };
     loadTables();
   }, [open, table]);
+
+  // Load cast options with simple client-side filtering
+  useEffect(() => {
+    const loadCasts = async () => {
+      if (!open) return;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("casts_profile")
+        .select("id, staffs(full_name)")
+        .eq("is_active", true)
+        .limit(50);
+      if (!error && data) {
+        const opts = data.map((c: any) => ({
+          id: c.id as string,
+          label: `${c.staffs?.full_name || "(無名)"}`,
+        }));
+        setCastOptions(opts);
+      }
+    };
+    loadCasts();
+  }, [open]);
 
   // Realtime reload for order/attribution/cast changes
   useEffect(() => {
@@ -404,7 +429,26 @@ export default function VisitSessionDrawer({
             <div className="grid grid-cols-2 gap-2">
               <input
                 className="border rounded px-2 py-1 text-sm col-span-2"
-                placeholder="キャストID"
+                placeholder="キャスト検索（氏名）"
+                value={castQuery}
+                onChange={(e) => setCastQuery(e.target.value)}
+                list="cast-options"
+              />
+              <datalist id="cast-options">
+                {castOptions
+                  .filter((c) =>
+                    castQuery
+                      ? c.label.includes(castQuery) || c.id.includes(castQuery)
+                      : true
+                  )
+                  .slice(0, 20)
+                  .map((c) => (
+                    <option key={c.id} value={c.label} />
+                  ))}
+              </datalist>
+              <input
+                className="border rounded px-2 py-1 text-sm col-span-2"
+                placeholder="キャストID（上の候補から選択した場合は手入力不要）"
                 value={assignCast.castId}
                 onChange={(e) =>
                   setAssignCast((p) => ({ ...p, castId: e.target.value }))
