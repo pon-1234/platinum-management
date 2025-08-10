@@ -13,6 +13,12 @@ import { StatCard } from "@/components/ui/StatCard";
 import OrderTicketManagement from "@/components/billing/OrderTicketManagement";
 import { useState as useReactState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { createClient } from "@/lib/supabase/client";
+import type {
+  BillCalculation,
+  VisitWithDetails,
+  PaymentMethod,
+} from "@/types/billing.types";
 
 export default function BillingPage() {
   const [todayReport, setTodayReport] = useState<DailyReport | null>(null);
@@ -27,6 +33,17 @@ export default function BillingPage() {
   const [delegateOpen, setDelegateOpen] = useReactState(false);
   const [delegateVisitId, setDelegateVisitId] = useReactState("");
   const [delegateLoading, setDelegateLoading] = useReactState(false);
+  const [delegateVisit, setDelegateVisit] =
+    useReactState<VisitWithDetails | null>(null);
+  const [delegateCalc, setDelegateCalc] = useReactState<BillCalculation | null>(
+    null
+  );
+  const [delegateMethod, setDelegateMethod] =
+    useReactState<PaymentMethod>("cash");
+  const [delegateCashReceived, setDelegateCashReceived] =
+    useReactState<number>(0);
+  const [delegateNotes, setDelegateNotes] = useReactState<string>("");
+  const [userRole, setUserRole] = useReactState<string | null>(null);
 
   const loadBillingData = useCallback(async () => {
     try {
@@ -67,6 +84,22 @@ export default function BillingPage() {
   useEffect(() => {
     loadBillingData();
   }, [loadBillingData]);
+
+  // Fetch current user's role for UI guard
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase.rpc(
+          "get_current_user_staff_role"
+        );
+        if (!error) setUserRole(data as string);
+      } catch {
+        setUserRole(null);
+      }
+    };
+    fetchRole();
+  }, []);
 
   const handleClosingProcess = async () => {
     // Check for open visits first
@@ -135,12 +168,15 @@ export default function BillingPage() {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="rounded-md border-gray-300 text-sm"
             />
-            <button
-              onClick={() => setDelegateOpen(true)}
-              className="inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm bg-indigo-600 text-white hover:bg-indigo-700"
-            >
-              代行会計
-            </button>
+            {(["admin", "manager", "cashier"].includes(userRole || "") ||
+              process.env.NODE_ENV === "development") && (
+              <button
+                onClick={() => setDelegateOpen(true)}
+                className="inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                代行会計
+              </button>
+            )}
             {selectedDate === new Date().toISOString().split("T")[0] && (
               <button
                 onClick={handleClosingProcess}
@@ -379,44 +415,163 @@ export default function BillingPage() {
         onClose={() => setDelegateOpen(false)}
         title="代行会計（セッションID指定）"
       >
-        <div className="space-y-3">
-          <input
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="Visit (Session) ID を入力"
-            value={delegateVisitId}
-            onChange={(e) => setDelegateVisitId(e.target.value)}
-          />
-          <button
-            disabled={!delegateVisitId || delegateLoading}
-            onClick={async () => {
-              try {
-                setDelegateLoading(true);
-                const visit =
-                  await billingService.getOpenCheckBySession(delegateVisitId);
-                if (!visit) {
-                  toast.error("対象のセッションが見つかりません");
-                  return;
-                }
-                const calc = await billingService.calculateBill(visit.id);
-                await billingService.checkoutSession(visit.id, {
-                  method: "cash",
-                  amount: calc.totalAmount,
-                  cashReceived: calc.totalAmount,
-                });
-                toast.success("代行会計が完了しました");
-                setDelegateOpen(false);
-                setDelegateVisitId("");
-                loadBillingData();
-              } catch (e) {
-                toast.error("代行会計に失敗しました");
-              } finally {
-                setDelegateLoading(false);
-              }
-            }}
-            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
-          >
-            {delegateLoading ? "処理中..." : "会計実行（現金）"}
-          </button>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Visit (Session) ID</label>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 border rounded px-3 py-2 text-sm"
+                placeholder="Visit ID を入力"
+                value={delegateVisitId}
+                onChange={(e) => setDelegateVisitId(e.target.value)}
+              />
+              <button
+                disabled={!delegateVisitId || delegateLoading}
+                onClick={async () => {
+                  try {
+                    setDelegateLoading(true);
+                    setDelegateVisit(null);
+                    setDelegateCalc(null);
+                    const visit =
+                      await billingService.getOpenCheckBySession(
+                        delegateVisitId
+                      );
+                    if (!visit) {
+                      toast.error("対象のセッションが見つかりません");
+                      return;
+                    }
+                    const calc = await billingService.calculateBill(visit.id);
+                    setDelegateVisit(visit);
+                    setDelegateCalc(calc);
+                    setDelegateMethod("cash");
+                    setDelegateCashReceived(calc.totalAmount);
+                  } catch (e) {
+                    toast.error("読み込みに失敗しました");
+                  } finally {
+                    setDelegateLoading(false);
+                  }
+                }}
+                className="px-4 py-2 bg-gray-700 text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
+              >
+                {delegateLoading ? "読み込み中..." : "読み込み"}
+              </button>
+            </div>
+          </div>
+
+          {delegateVisit && delegateCalc && (
+            <div className="space-y-3">
+              <div className="text-sm">
+                お客様: {delegateVisit.customer?.name || "未登録"}
+              </div>
+              <div className="bg-gray-50 rounded p-3 text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span>小計</span>
+                  <span>¥{delegateCalc.subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>サービス料</span>
+                  <span>¥{delegateCalc.serviceCharge.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>税額</span>
+                  <span>¥{delegateCalc.taxAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between font-semibold pt-1 border-t">
+                  <span>合計</span>
+                  <span>¥{delegateCalc.totalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">支払い方法</label>
+                <select
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  value={delegateMethod}
+                  onChange={(e) =>
+                    setDelegateMethod(e.target.value as PaymentMethod)
+                  }
+                >
+                  <option value="cash">現金</option>
+                  <option value="card">カード</option>
+                  <option value="mixed">混合</option>
+                </select>
+              </div>
+
+              {(delegateMethod === "cash" || delegateMethod === "mixed") && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">お預かり金額</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded px-2 py-1 text-sm"
+                    value={delegateCashReceived}
+                    onChange={(e) =>
+                      setDelegateCashReceived(Number(e.target.value))
+                    }
+                  />
+                  {delegateMethod === "cash" && delegateCashReceived > 0 && (
+                    <div className="text-xs text-gray-600">
+                      お釣り: ¥
+                      {Math.max(
+                        0,
+                        delegateCashReceived - delegateCalc.totalAmount
+                      ).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium">備考</label>
+                <textarea
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  rows={2}
+                  value={delegateNotes}
+                  onChange={(e) => setDelegateNotes(e.target.value)}
+                />
+              </div>
+
+              <button
+                disabled={delegateLoading}
+                onClick={async () => {
+                  if (!delegateVisit || !delegateCalc) return;
+                  try {
+                    setDelegateLoading(true);
+                    await billingService.checkoutSession(delegateVisit.id, {
+                      method: delegateMethod,
+                      amount: delegateCalc.totalAmount,
+                      cashReceived:
+                        delegateMethod === "card"
+                          ? undefined
+                          : delegateCashReceived,
+                      changeAmount:
+                        delegateMethod === "cash" && delegateCashReceived
+                          ? Math.max(
+                              0,
+                              delegateCashReceived - delegateCalc.totalAmount
+                            )
+                          : undefined,
+                      notes: delegateNotes || undefined,
+                    });
+                    toast.success("代行会計が完了しました");
+                    setDelegateOpen(false);
+                    setDelegateVisitId("");
+                    setDelegateVisit(null);
+                    setDelegateCalc(null);
+                    setDelegateCashReceived(0);
+                    setDelegateNotes("");
+                    loadBillingData();
+                  } catch (e) {
+                    toast.error("代行会計に失敗しました");
+                  } finally {
+                    setDelegateLoading(false);
+                  }
+                }}
+                className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
+              >
+                {delegateLoading ? "処理中..." : "会計実行"}
+              </button>
+            </div>
+          )}
         </div>
       </Modal>
     </div>
