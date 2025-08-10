@@ -181,6 +181,29 @@ export class BillingService extends BaseService {
       this.handleError(error, "来店記録の作成に失敗しました");
     }
 
+    // Create initial table segment as the source of truth
+    try {
+      await this.supabase.from("visit_table_segments").insert({
+        visit_id: visit.id,
+        table_id: data.tableId,
+        reason: "initial",
+        started_at: new Date().toISOString(),
+      });
+      // Update table occupancy status for compatibility
+      await this.supabase
+        .from("tables")
+        .update({
+          current_status: "occupied",
+          current_visit_id: visit.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.tableId);
+    } catch (e) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Failed to create initial table segment:", e);
+      }
+    }
+
     return this.mapToVisit(visit);
   }
 
