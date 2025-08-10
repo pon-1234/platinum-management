@@ -29,6 +29,29 @@ export class BillingService extends BaseService {
     this.supabase = createClient();
   }
 
+  // ===== Session-centric thin adapters =====
+  async getOpenCheckBySession(
+    visitId: string
+  ): Promise<VisitWithDetails | null> {
+    return this.getVisitWithDetails(visitId);
+  }
+
+  async addItemToSession(
+    visitId: string,
+    payload: {
+      productId: number;
+      quantity: number;
+      unitPrice?: number;
+      notes?: string;
+    }
+  ): Promise<OrderItem> {
+    return this.addOrderItem({ visitId, ...payload });
+  }
+
+  async checkoutSession(visitId: string, payment: PaymentData): Promise<Visit> {
+    return this.processPayment(visitId, payment);
+  }
+
   // ============= PRODUCT MANAGEMENT =============
 
   async createProduct(data: CreateProductData): Promise<Product> {
