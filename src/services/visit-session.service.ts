@@ -186,7 +186,7 @@ export class VisitSessionService {
       .select(
         `
         *,
-        cast:casts_profile(id, stage_name, staff_code),
+        cast:casts_profile(id, stage_name),
         nomination_type:nomination_types(display_name, price, back_rate)
       `
       )
@@ -225,7 +225,7 @@ export class VisitSessionService {
         table_segments:visit_table_segments(*),
         cast_engagements:cast_engagements(
           *,
-          cast:casts_profile(id, stage_name, staff_code),
+          cast:casts_profile(id, stage_name),
           nomination_type:nomination_types(display_name, price, back_rate)
         )
       `
