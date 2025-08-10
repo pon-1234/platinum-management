@@ -223,7 +223,27 @@ export class CustomerService extends BaseService {
       );
     }
 
-    return data.map((item) => this.mapToVisit(item));
+    const visits = data.map((item) => this.mapToVisit(item));
+
+    // Override tableId with active segment if available
+    const ids = visits.map((v) => v.id);
+    if (ids.length > 0) {
+      const { data: activeSegs } = await supabase
+        .from("visit_table_segments")
+        .select("visit_id, table_id")
+        .in("visit_id", ids)
+        .is("ended_at", null);
+      const visitIdToTableId = new Map<string, number>();
+      (activeSegs || []).forEach((s) => {
+        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
+      });
+      visits.forEach((v) => {
+        const t = visitIdToTableId.get(v.id);
+        if (t !== undefined) v.tableId = t;
+      });
+    }
+
+    return visits;
   }
 
   async createVisit(
@@ -308,7 +328,27 @@ export class CustomerService extends BaseService {
       );
     }
 
-    return data.map((item) => this.mapToVisit(item));
+    const visits = data.map((item) => this.mapToVisit(item));
+
+    // Override tableId with active segment if available
+    const ids = visits.map((v) => v.id);
+    if (ids.length > 0) {
+      const { data: activeSegs } = await supabase
+        .from("visit_table_segments")
+        .select("visit_id, table_id")
+        .in("visit_id", ids)
+        .is("ended_at", null);
+      const visitIdToTableId = new Map<string, number>();
+      (activeSegs || []).forEach((s) => {
+        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
+      });
+      visits.forEach((v) => {
+        const t = visitIdToTableId.get(v.id);
+        if (t !== undefined) v.tableId = t;
+      });
+    }
+
+    return visits;
   }
 
   private mapToCustomer(
