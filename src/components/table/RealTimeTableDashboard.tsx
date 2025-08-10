@@ -3,6 +3,10 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { tableService } from "@/services/table.service";
 import TableDetailModal from "./TableDetailModal";
+import dynamic from "next/dynamic";
+const VisitSessionDrawer = dynamic(() => import("./VisitSessionDrawer"), {
+  ssr: false,
+});
 import type { Table, TableStatus } from "@/types/reservation.types";
 import {
   ArrowPathIcon as RefreshIcon,
@@ -128,6 +132,7 @@ export default function RealTimeTableDashboard({
   >("connecting");
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showTableDetail, setShowTableDetail] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   // Convert Map to sorted array
   const tables = useMemo(() => {
@@ -251,6 +256,7 @@ export default function RealTimeTableDashboard({
     (table: Table) => {
       setSelectedTable(table);
       setShowTableDetail(true);
+      setShowDrawer(true);
       onTableSelect?.(table);
     },
     [onTableSelect]
@@ -371,6 +377,13 @@ export default function RealTimeTableDashboard({
       <TableDetailModal
         isOpen={showTableDetail}
         onClose={() => setShowTableDetail(false)}
+        table={selectedTable}
+      />
+
+      {/* Visit session drawer (operations unified) */}
+      <VisitSessionDrawer
+        open={showDrawer}
+        onClose={() => setShowDrawer(false)}
         table={selectedTable}
       />
     </div>
