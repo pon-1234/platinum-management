@@ -231,4 +231,20 @@ export abstract class BaseService {
 
     throw new Error(detailedMessage);
   }
+
+  /**
+   * Apply a NULL filter that works in both runtime and test mocks.
+   * Some test mocks don't implement `.is(col, null)`, so we fall back to `.eq(col, null)`.
+   * Returns the same builder so further chaining (order/limit) can be applied.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected applyWhereNull(builder: any, column: string) {
+    if (typeof builder?.is === "function") {
+      return builder.is(column, null);
+    }
+    if (typeof builder?.eq === "function") {
+      return builder.eq(column, null as unknown as string);
+    }
+    return builder;
+  }
 }

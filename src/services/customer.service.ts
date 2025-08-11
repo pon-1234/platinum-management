@@ -470,27 +470,13 @@ export class CustomerService extends BaseService {
     const ids = visits.map((v) => v.id);
     if (ids.length === 0) return;
 
-    const segBase = supabase
-      .from("visit_table_segments")
-      .select("visit_id, table_id")
-      .in("visit_id", ids);
-    const segBuilt =
-      (
-        segBase as unknown as {
-          is?: (
-            col: string,
-            val: unknown
-          ) => Promise<{ data: Array<{ visit_id: string; table_id: number }> }>;
-        }
-      ).is?.("ended_at", null) ||
-      (
-        segBase as unknown as {
-          eq: (
-            col: string,
-            val: unknown
-          ) => Promise<{ data: Array<{ visit_id: string; table_id: number }> }>;
-        }
-      ).eq("ended_at", null);
+    const segBuilt = this.applyWhereNull(
+      supabase
+        .from("visit_table_segments")
+        .select("visit_id, table_id")
+        .in("visit_id", ids),
+      "ended_at"
+    );
     const { data: activeSegs } = await segBuilt;
     const visitIdToTableId = new Map<string, number>();
     (activeSegs || []).forEach((s) => {
