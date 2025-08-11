@@ -1,6 +1,7 @@
 "use client";
 
 import { Visit } from "@/types/customer.types";
+import { useState } from "react";
 import {
   ClockIcon,
   UsersIcon,
@@ -14,6 +15,7 @@ interface VisitHistoryProps {
 }
 
 export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const formatDuration = (checkIn: string, checkOut: string | null) => {
     if (!checkOut) return "滞在中";
 
@@ -127,10 +129,32 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
                           </span>
                         </div>
                       )}
+                      <button
+                        className="text-indigo-600 hover:text-indigo-700 text-xs"
+                        onClick={() =>
+                          setExpandedId((prev) =>
+                            prev === visit.id ? null : visit.id
+                          )
+                        }
+                      >
+                        {expandedId === visit.id ? "閉じる" : "詳細"}
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {expandedId === visit.id && (
+                <div className="ml-12 mt-2 text-sm text-gray-700">
+                  <div className="border rounded p-3 bg-gray-50">
+                    <div className="font-medium mb-1">この来店の明細</div>
+                    <div className="text-xs text-gray-500">
+                      ※
+                      詳細な注文・指名は「会計」画面や席のドロワーから確認/操作できます
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </li>
         ))}
