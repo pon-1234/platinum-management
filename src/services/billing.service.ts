@@ -344,16 +344,45 @@ export class BillingService extends BaseService {
       )
       .eq("visit_id", id);
 
-    const casts = (castsRows || []).map((row) => ({
-      castId: row.cast_id as string,
-      name:
-        (row.cast as any)?.stage_name ||
-        (row.cast as any)?.staffs?.full_name ||
-        (row.cast_id as string),
-      role: (row.role as string) || undefined,
-      nomination: (row.nomination_type as any)?.display_name || undefined,
-      fee: (row.fee_amount as number) || undefined,
-    }));
+    type StaffsRow =
+      | { full_name: string | null }
+      | null
+      | Array<{ full_name: string | null }>;
+    type CastProfileRow =
+      | { id: string; stage_name: string | null; staffs: StaffsRow }
+      | null
+      | Array<{ id: string; stage_name: string | null; staffs: StaffsRow }>;
+    type NominationRow =
+      | { display_name: string | null }
+      | null
+      | Array<{ display_name: string | null }>;
+    type CastRow = {
+      cast_id: string;
+      role: string | null;
+      nomination_type: NominationRow;
+      fee_amount: number | null;
+      cast: CastProfileRow;
+    };
+    const casts = ((castsRows || []) as CastRow[]).map((row) => {
+      const castObj = Array.isArray(row.cast) ? row.cast[0] : row.cast;
+      const staffs =
+        castObj && Array.isArray(castObj.staffs)
+          ? castObj.staffs[0]
+          : castObj?.staffs;
+      const nomination = Array.isArray(row.nomination_type)
+        ? row.nomination_type[0]
+        : row.nomination_type;
+      return {
+        castId: row.cast_id,
+        name:
+          castObj?.stage_name ||
+          (staffs as { full_name: string | null } | null)?.full_name ||
+          row.cast_id,
+        role: row.role || undefined,
+        nomination: nomination?.display_name || undefined,
+        fee: row.fee_amount ?? undefined,
+      };
+    });
 
     return {
       ...visit,

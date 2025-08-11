@@ -82,7 +82,7 @@ export class TableService extends BaseService {
     // visit_table_segmentsから現在アクティブな来店を取得
     const tableIdNumber = parseInt(id, 10);
     if (!isNaN(tableIdNumber)) {
-      let segQuery: any = this.supabase
+      let segQuery = this.supabase
         .from("visit_table_segments")
         .select(
           `
@@ -261,7 +261,7 @@ export class TableService extends BaseService {
       const tableIdNumber = parseInt(id, 10);
       if (!isNaN(tableIdNumber)) {
         // 既存のアクティブなセグメントを終了
-        let endSeg: any = this.supabase
+        let endSeg = this.supabase
           .from("visit_table_segments")
           .update({ ended_at: new Date().toISOString() })
           .eq("table_id", tableIdNumber);
@@ -280,7 +280,7 @@ export class TableService extends BaseService {
       // テーブルが空席になった場合、アクティブなセグメントを終了
       const tableIdNumber = parseInt(id, 10);
       if (!isNaN(tableIdNumber)) {
-        let endSeg2: any = this.supabase
+        let endSeg2 = this.supabase
           .from("visit_table_segments")
           .update({ ended_at: new Date().toISOString() })
           .eq("table_id", tableIdNumber);

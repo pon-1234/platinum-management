@@ -25,6 +25,7 @@ async function getInitialCustomers(): Promise<InitialData> {
   }
 }
 
+export const dynamic = "force-dynamic";
 export default async function CustomersPage() {
   const initialData = await getInitialCustomers();
 
