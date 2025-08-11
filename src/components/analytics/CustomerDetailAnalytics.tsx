@@ -11,6 +11,8 @@ import {
   CustomerAnalyticsService,
 } from "@/services/customer-analytics.service";
 import { User, AlertTriangle, Wine, Activity, Target } from "lucide-react";
+import { reportService } from "@/services/report.service";
+import type { CustomerReport } from "@/types/report.types";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -27,6 +29,7 @@ export function CustomerDetailAnalytics({
   const [engagementScore, setEngagementScore] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<CustomerReport | null>(null);
 
   useEffect(() => {
     loadCustomerData();
@@ -50,6 +53,10 @@ export function CustomerDetailAnalytics({
       setLtv(ltvData);
       setChurnScore(churn);
       setEngagementScore(engagement);
+
+      // Load extended customer report (orders and casts)
+      const detailed = await reportService.generateCustomerReport(customerId);
+      setReport(detailed);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "データの取得に失敗しました"
@@ -281,6 +288,34 @@ export function CustomerDetailAnalytics({
                   {(ltv.retention_probability * 100).toFixed(1)}%
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 指名キャスト（ランキング） */}
+      {report?.favoriteCasts && report.favoriteCasts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>指名キャスト・貢献ランキング</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {report.favoriteCasts.map((c) => (
+                <div
+                  key={c.castId}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>{c.castName || c.castId}</span>
+                    <Badge variant="outline">指名 {c.nominationCount}</Badge>
+                  </div>
+                  <div className="font-medium">
+                    ¥{c.attributedRevenue.toLocaleString()}
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
