@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { tableService } from "@/services/table.service";
-import TableDetailModal from "./TableDetailModal";
 import dynamic from "next/dynamic";
 const VisitSessionDrawer = dynamic(() => import("./VisitSessionDrawer"), {
   ssr: false,
@@ -131,7 +130,7 @@ export default function RealTimeTableDashboard({
     "connected" | "disconnected" | "connecting"
   >("connecting");
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [showTableDetail, setShowTableDetail] = useState(false);
+  // Table detail modal has been removed in favor of the unified drawer
   const [showDrawer, setShowDrawer] = useState(false);
 
   // Convert Map to sorted array
@@ -256,7 +255,6 @@ export default function RealTimeTableDashboard({
     (table: Table) => {
       setSelectedTable(table);
       // Open only the operations drawer to avoid double overlays
-      setShowTableDetail(false);
       setShowDrawer(true);
       onTableSelect?.(table);
     },
@@ -374,12 +372,7 @@ export default function RealTimeTableDashboard({
         </div>
       </div>
 
-      {/* Table Detail Modal */}
-      <TableDetailModal
-        isOpen={showTableDetail}
-        onClose={() => setShowTableDetail(false)}
-        table={selectedTable}
-      />
+      {/* Table Detail Modal removed */}
 
       {/* Visit session drawer (operations unified) */}
       <VisitSessionDrawer
