@@ -247,11 +247,12 @@ export class BillingService extends BaseService {
     const visit = this.mapToVisit(data);
 
     // Override tableId with active segment if present
-    const { data: activeSeg } = await this.supabase
+    let activeSegQuery: any = this.supabase
       .from("visit_table_segments")
       .select("table_id")
-      .eq("visit_id", id)
-      .is("ended_at", null)
+      .eq("visit_id", id);
+    activeSegQuery = this.applyWhereNull(activeSegQuery, "ended_at");
+    const { data: activeSeg } = await activeSegQuery
       .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -280,11 +281,12 @@ export class BillingService extends BaseService {
     const visit = this.mapToVisit(visitRow);
 
     // Override tableId with active segment if present
-    const { data: activeSeg } = await this.supabase
+    let activeSegQuery2: any = this.supabase
       .from("visit_table_segments")
       .select("table_id")
-      .eq("visit_id", id)
-      .is("ended_at", null)
+      .eq("visit_id", id);
+    activeSegQuery2 = this.applyWhereNull(activeSegQuery2, "ended_at");
+    const { data: activeSeg } = await activeSegQuery2
       .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -390,11 +392,12 @@ export class BillingService extends BaseService {
 
     // If filtering by table, constrain visits by active segments
     if (params.tableId !== undefined) {
-      const { data: segs, error: segErr } = await this.supabase
+      let segsQuery: any = this.supabase
         .from("visit_table_segments")
         .select("visit_id")
-        .eq("table_id", params.tableId)
-        .is("ended_at", null);
+        .eq("table_id", params.tableId);
+      segsQuery = this.applyWhereNull(segsQuery, "ended_at");
+      const { data: segs, error: segErr } = await segsQuery;
       if (segErr) {
         this.handleError(segErr, "テーブル別の来店検索に失敗しました");
       }
@@ -427,11 +430,12 @@ export class BillingService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      const { data: activeSegs } = await this.supabase
+      let segQueryAny: any = this.supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
-        .in("visit_id", ids)
-        .is("ended_at", null);
+        .in("visit_id", ids);
+      segQueryAny = this.applyWhereNull(segQueryAny, "ended_at");
+      const { data: activeSegs } = await segQueryAny;
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
@@ -768,11 +772,12 @@ export class BillingService extends BaseService {
 
     // Close active segments and free table occupancy
     try {
-      await this.supabase
+      let endSegQuery: any = this.supabase
         .from("visit_table_segments")
         .update({ ended_at: new Date().toISOString() })
-        .eq("visit_id", visitId)
-        .is("ended_at", null);
+        .eq("visit_id", visitId);
+      endSegQuery = this.applyWhereNull(endSegQuery, "ended_at");
+      await endSegQuery;
 
       await this.supabase
         .from("tables")

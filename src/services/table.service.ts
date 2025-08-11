@@ -82,7 +82,7 @@ export class TableService extends BaseService {
     // visit_table_segmentsから現在アクティブな来店を取得
     const tableIdNumber = parseInt(id, 10);
     if (!isNaN(tableIdNumber)) {
-      const { data: activeSegment } = await this.supabase
+      let segQuery: any = this.supabase
         .from("visit_table_segments")
         .select(
           `
@@ -96,11 +96,11 @@ export class TableService extends BaseService {
           )
         `
         )
-        .eq("table_id", tableIdNumber)
-        .is("ended_at", null)
+        .eq("table_id", tableIdNumber);
+      segQuery = this.applyWhereNull(segQuery, "ended_at")
         .order("started_at", { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
+      const { data: activeSegment } = await segQuery.single();
 
       if (activeSegment?.visits) {
         // アクティブな来店がある場合、テーブルは使用中
@@ -261,11 +261,12 @@ export class TableService extends BaseService {
       const tableIdNumber = parseInt(id, 10);
       if (!isNaN(tableIdNumber)) {
         // 既存のアクティブなセグメントを終了
-        await this.supabase
+        let endSeg: any = this.supabase
           .from("visit_table_segments")
           .update({ ended_at: new Date().toISOString() })
-          .eq("table_id", tableIdNumber)
-          .is("ended_at", null);
+          .eq("table_id", tableIdNumber);
+        endSeg = this.applyWhereNull(endSeg, "ended_at");
+        await endSeg;
 
         // 新しいセグメントを作成
         await this.supabase.from("visit_table_segments").insert({
@@ -279,11 +280,12 @@ export class TableService extends BaseService {
       // テーブルが空席になった場合、アクティブなセグメントを終了
       const tableIdNumber = parseInt(id, 10);
       if (!isNaN(tableIdNumber)) {
-        await this.supabase
+        let endSeg2: any = this.supabase
           .from("visit_table_segments")
           .update({ ended_at: new Date().toISOString() })
-          .eq("table_id", tableIdNumber)
-          .is("ended_at", null);
+          .eq("table_id", tableIdNumber);
+        endSeg2 = this.applyWhereNull(endSeg2, "ended_at");
+        await endSeg2;
       }
     }
 
