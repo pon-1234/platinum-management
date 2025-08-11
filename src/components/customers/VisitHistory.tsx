@@ -36,6 +36,14 @@ interface VisitHistoryProps {
 
 export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  const total = visits.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, total);
+  const pageVisits = visits.slice(startIdx, endIdx);
   const [detailsMap, setDetailsMap] = useState<Record<string, ExpandedDetails>>(
     {}
   );
@@ -139,145 +147,200 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
 
   return (
     <div className="flow-root">
+      {/* Pagination header */}
+      <div className="flex items-center justify-between mb-3 text-sm text-gray-600">
+        <div>
+          全 {total} 件中 {startIdx + 1}–{endIdx} を表示
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            className="border rounded px-2 py-1 text-xs"
+            value={pageSize}
+            onChange={(e) => {
+              const size = Number(e.target.value);
+              setPageSize(size);
+              setPage(1);
+              setExpandedId(null);
+            }}
+          >
+            {[10, 20, 50].map((n) => (
+              <option key={n} value={n}>
+                {n}/頁
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1">
+            <button
+              className="px-2 py-1 border rounded text-xs disabled:opacity-50"
+              onClick={() => {
+                setPage((p) => Math.max(1, p - 1));
+                setExpandedId(null);
+              }}
+              disabled={page <= 1}
+            >
+              前へ
+            </button>
+            <span className="text-xs">
+              {page} / {totalPages}
+            </span>
+            <button
+              className="px-2 py-1 border rounded text-xs disabled:opacity-50"
+              onClick={() => {
+                setPage((p) => Math.min(totalPages, p + 1));
+                setExpandedId(null);
+              }}
+              disabled={page >= totalPages}
+            >
+              次へ
+            </button>
+          </div>
+        </div>
+      </div>
       <ul className="-mb-8">
-        {visits.map((visit, visitIdx) => (
-          <li key={visit.id}>
-            <div className="relative pb-8">
-              {visitIdx !== visits.length - 1 ? (
-                <span
-                  className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
-                  aria-hidden="true"
-                />
-              ) : null}
-              <div className="relative flex space-x-3">
-                <div>
-                  <span className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center ring-8 ring-white">
-                    <ClockIcon
-                      className="h-5 w-5 text-white"
-                      aria-hidden="true"
-                    />
-                  </span>
-                </div>
-                <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+        {pageVisits.map((visit, idx) => {
+          const visitIdx = startIdx + idx;
+          return (
+            <li key={visit.id}>
+              <div className="relative pb-8">
+                {visitIdx !== visits.length - 1 ? (
+                  <span
+                    className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <div className="relative flex space-x-3">
                   <div>
-                    <div className="flex items-center gap-4">
-                      <p className="text-sm text-gray-900">
-                        テーブル {visit.tableId}
-                      </p>
-                      {getStatusBadge(visit.status)}
-                    </div>
-                    <div className="mt-2 flex items-center gap-6 text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <ClockIcon className="h-4 w-4" />
-                        <span>{formatDateTime(visit.checkInAt)}</span>
-                        {visit.checkOutAt && (
-                          <>
-                            <span>〜</span>
-                            <span>{formatDateTime(visit.checkOutAt)}</span>
-                          </>
-                        )}
+                    <span className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center ring-8 ring-white">
+                      <ClockIcon
+                        className="h-5 w-5 text-white"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </div>
+                  <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                    <div>
+                      <div className="flex items-center gap-4">
+                        <p className="text-sm text-gray-900">
+                          テーブル {visit.tableId}
+                        </p>
+                        {getStatusBadge(visit.status)}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <UsersIcon className="h-4 w-4" />
-                        <span>{visit.numGuests}名</span>
+                      <div className="mt-2 flex items-center gap-6 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <ClockIcon className="h-4 w-4" />
+                          <span>{formatDateTime(visit.checkInAt)}</span>
+                          {visit.checkOutAt && (
+                            <>
+                              <span>〜</span>
+                              <span>{formatDateTime(visit.checkOutAt)}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <UsersIcon className="h-4 w-4" />
+                          <span>{visit.numGuests}名</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-6 text-sm">
-                      <div className="flex items-center gap-1 text-gray-700">
-                        <span className="font-medium">滞在時間:</span>
-                        <span>
-                          {formatDuration(visit.checkInAt, visit.checkOutAt)}
-                        </span>
-                      </div>
-                      {visit.totalAmount !== null && (
+                      <div className="mt-2 flex items-center gap-6 text-sm">
                         <div className="flex items-center gap-1 text-gray-700">
-                          <CurrencyYenIcon className="h-4 w-4" />
-                          <span className="font-medium">
-                            {formatAmount(visit.totalAmount)}
+                          <span className="font-medium">滞在時間:</span>
+                          <span>
+                            {formatDuration(visit.checkInAt, visit.checkOutAt)}
                           </span>
                         </div>
-                      )}
-                      <button
-                        className="text-indigo-600 hover:text-indigo-700 text-xs"
-                        onClick={() => {
-                          setExpandedId((prev) =>
-                            prev === visit.id ? null : visit.id
-                          );
-                          if (
-                            expandedId !== visit.id &&
-                            !detailsMap[visit.id]
-                          ) {
-                            void loadDetails(visit.id);
-                          }
-                        }}
-                      >
-                        {expandedId === visit.id ? "閉じる" : "詳細"}
-                      </button>
+                        {visit.totalAmount !== null && (
+                          <div className="flex items-center gap-1 text-gray-700">
+                            <CurrencyYenIcon className="h-4 w-4" />
+                            <span className="font-medium">
+                              {formatAmount(visit.totalAmount)}
+                            </span>
+                          </div>
+                        )}
+                        <button
+                          className="text-indigo-600 hover:text-indigo-700 text-xs"
+                          onClick={() => {
+                            setExpandedId((prev) =>
+                              prev === visit.id ? null : visit.id
+                            );
+                            if (
+                              expandedId !== visit.id &&
+                              !detailsMap[visit.id]
+                            ) {
+                              void loadDetails(visit.id);
+                            }
+                          }}
+                        >
+                          {expandedId === visit.id ? "閉じる" : "詳細"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {expandedId === visit.id && (
-                <div className="ml-12 mt-2 text-sm text-gray-700">
-                  <div className="border rounded p-3 bg-gray-50">
-                    <div className="font-medium mb-2">この来店の明細</div>
-                    {detailsMap[visit.id]?.loading ? (
-                      <div className="text-xs text-gray-500">読み込み中...</div>
-                    ) : detailsMap[visit.id]?.error ? (
-                      <div className="text-xs text-red-600">
-                        {detailsMap[visit.id]?.error}
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">
-                            指名・着席キャスト
-                          </div>
-                          <ul className="space-y-1">
-                            {detailsMap[visit.id]?.casts &&
-                            detailsMap[visit.id]!.casts!.length > 0 ? (
-                              detailsMap[visit.id]!.casts!.map((c) => (
-                                <li
-                                  key={c.castId}
-                                  className="flex items-center justify-between"
-                                >
-                                  <span>
-                                    {c.name}{" "}
-                                    {c.role && (
-                                      <span className="text-gray-400">
-                                        / {c.role}
-                                      </span>
-                                    )}
-                                    {c.nomination && (
-                                      <span className="ml-1 text-gray-400">
-                                        ({c.nomination})
-                                      </span>
-                                    )}
-                                  </span>
-                                  {typeof c.fee === "number" && (
-                                    <span className="text-gray-700">
-                                      {formatCurrency(c.fee)}
-                                    </span>
-                                  )}
-                                </li>
-                              ))
-                            ) : (
-                              <li className="text-xs text-gray-400">
-                                データなし
-                              </li>
-                            )}
-                          </ul>
+                {expandedId === visit.id && (
+                  <div className="ml-12 mt-2 text-sm text-gray-700">
+                    <div className="border rounded p-3 bg-gray-50">
+                      <div className="font-medium mb-2">この来店の明細</div>
+                      {detailsMap[visit.id]?.loading ? (
+                        <div className="text-xs text-gray-500">
+                          読み込み中...
                         </div>
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">
-                            注文明細
+                      ) : detailsMap[visit.id]?.error ? (
+                        <div className="text-xs text-red-600">
+                          {detailsMap[visit.id]?.error}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              指名・着席キャスト
+                            </div>
+                            <ul className="space-y-1">
+                              {detailsMap[visit.id]?.casts &&
+                              detailsMap[visit.id]!.casts!.length > 0 ? (
+                                detailsMap[visit.id]!.casts!.map((c) => (
+                                  <li
+                                    key={c.castId}
+                                    className="flex items-center justify-between"
+                                  >
+                                    <span>
+                                      {c.name}{" "}
+                                      {c.role && (
+                                        <span className="text-gray-400">
+                                          / {c.role}
+                                        </span>
+                                      )}
+                                      {c.nomination && (
+                                        <span className="ml-1 text-gray-400">
+                                          ({c.nomination})
+                                        </span>
+                                      )}
+                                    </span>
+                                    {typeof c.fee === "number" && (
+                                      <span className="text-gray-700">
+                                        {formatCurrency(c.fee)}
+                                      </span>
+                                    )}
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="text-xs text-gray-400">
+                                  データなし
+                                </li>
+                              )}
+                            </ul>
                           </div>
-                          <ul className="space-y-1">
-                            {detailsMap[visit.id]?.orderItems &&
-                            detailsMap[visit.id]!.orderItems!.length > 0 ? (
-                              detailsMap[visit.id]!.orderItems!.slice(0, 5).map(
-                                (oi) => (
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              注文明細
+                            </div>
+                            <ul className="space-y-1">
+                              {detailsMap[visit.id]?.orderItems &&
+                              detailsMap[visit.id]!.orderItems!.length > 0 ? (
+                                detailsMap[visit.id]!.orderItems!.slice(
+                                  0,
+                                  5
+                                ).map((oi) => (
                                   <li
                                     key={oi.id}
                                     className="flex items-center justify-between"
@@ -289,31 +352,31 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
                                       {formatCurrency(oi.totalPrice)}
                                     </span>
                                   </li>
-                                )
-                              )
-                            ) : (
-                              <li className="text-xs text-gray-400">
-                                データなし
-                              </li>
-                            )}
-                          </ul>
-                          {detailsMap[visit.id]?.orderItems &&
-                            detailsMap[visit.id]!.orderItems!.length > 5 && (
-                              <div className="text-[10px] text-gray-400 mt-1">
-                                他{" "}
-                                {detailsMap[visit.id]!.orderItems!.length - 5}{" "}
-                                件
-                              </div>
-                            )}
+                                ))
+                              ) : (
+                                <li className="text-xs text-gray-400">
+                                  データなし
+                                </li>
+                              )}
+                            </ul>
+                            {detailsMap[visit.id]?.orderItems &&
+                              detailsMap[visit.id]!.orderItems!.length > 5 && (
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  他{" "}
+                                  {detailsMap[visit.id]!.orderItems!.length - 5}{" "}
+                                  件
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </li>
-        ))}
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
