@@ -352,7 +352,10 @@ export default function VisitSessionDrawer({
                 className="w-full border rounded px-2 py-1 text-sm"
                 value={payment.method}
                 onChange={(e) =>
-                  setPayment((p) => ({ ...p, method: e.target.value as any }))
+                  setPayment((p) => ({
+                    ...p,
+                    method: e.target.value as typeof p.method,
+                  }))
                 }
               >
                 <option value="cash">現金</option>
@@ -458,7 +461,10 @@ export default function VisitSessionDrawer({
                 className="border rounded px-2 py-1 text-sm"
                 value={assignCast.role}
                 onChange={(e) =>
-                  setAssignCast((p) => ({ ...p, role: e.target.value as any }))
+                  setAssignCast((p) => ({
+                    ...p,
+                    role: e.target.value as typeof p.role,
+                  }))
                 }
               >
                 <option value="primary">メイン</option>

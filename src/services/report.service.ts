@@ -410,8 +410,12 @@ export class ReportService extends BaseService {
           .select("id, staffs(full_name)")
           .in("id", castIds);
         const idToName = new Map<string, string>();
-        (castRows || []).forEach((r: any) => {
-          if (r?.id) idToName.set(r.id as string, r?.staffs?.full_name || "");
+        type CastRow = {
+          id: string;
+          staffs: { full_name: string | null } | null;
+        };
+        (castRows as CastRow[] | null | undefined)?.forEach((r) => {
+          if (r?.id) idToName.set(r.id, r?.staffs?.full_name || "");
         });
         favoriteCasts = favoriteCasts.map((c) => ({
           ...c,

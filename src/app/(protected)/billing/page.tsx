@@ -447,6 +447,9 @@ export default function BillingPage() {
                     setDelegateCashReceived(calc.totalAmount);
                   } catch (e) {
                     toast.error("読み込みに失敗しました");
+                    if (process.env.NODE_ENV === "development") {
+                      console.error(e);
+                    }
                   } finally {
                     setDelegateLoading(false);
                   }
@@ -562,6 +565,9 @@ export default function BillingPage() {
                     loadBillingData();
                   } catch (e) {
                     toast.error("代行会計に失敗しました");
+                    if (process.env.NODE_ENV === "development") {
+                      console.error(e);
+                    }
                   } finally {
                     setDelegateLoading(false);
                   }
