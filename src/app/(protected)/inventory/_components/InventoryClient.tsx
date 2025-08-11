@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useDebounce } from "@/hooks";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { EmptyState } from "@/components/common";
+import { EmptyState, Pagination } from "@/components/common";
 import {
   CubeIcon,
   PlusIcon,
@@ -26,6 +26,7 @@ interface InventoryClientProps {
     stats: InventoryStats | null;
     alerts: InventoryAlert[];
     categories: string[];
+    totalCount?: number;
   };
   error: string | null;
 }
@@ -43,6 +44,11 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const [showMovementForm, setShowMovementForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState<number>(
+    initialData.totalCount ?? initialData.products.length
+  );
 
   // デバウンス処理
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -54,14 +60,17 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
       const result = await getInventoryPageData({
         category: debouncedCategory !== "all" ? debouncedCategory : undefined,
         searchTerm: debouncedSearchTerm || undefined,
+        offset: (page - 1) * pageSize,
+        limit: pageSize,
       });
 
       if (result.success) {
-        const { products, stats, alerts, categories } = result.data;
+        const { products, stats, alerts, categories, totalCount } = result.data;
         setProducts(products);
         setStats(stats);
         setAlerts(alerts);
         setCategories(categories);
+        if (typeof totalCount === "number") setTotal(totalCount);
       } else {
         toast.error(`在庫データ取得エラー: ${result.error}`);
       }
@@ -70,7 +79,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     } finally {
       setIsRefreshing(false);
     }
-  }, [debouncedSearchTerm, debouncedCategory]);
+  }, [debouncedSearchTerm, debouncedCategory, page, pageSize]);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -233,6 +242,18 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
 
       {/* Inventory Table */}
       <Card>
+        <div className="p-3">
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={(p) => setPage(p)}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+          />
+        </div>
         {isRefreshing ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
