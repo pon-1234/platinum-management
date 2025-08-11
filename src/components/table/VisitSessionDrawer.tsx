@@ -112,15 +112,17 @@ export default function VisitSessionDrawer({
         .eq("is_active", true)
         .limit(50);
       if (!error && data) {
+        type StaffName = { full_name: string | null };
         type CastProfileRow = {
           id: string;
-          staffs: { full_name: string | null } | null;
+          staffs: StaffName | StaffName[] | null;
         };
         const rows = data as CastProfileRow[];
-        const opts = rows.map((c) => ({
-          id: c.id,
-          label: `${c.staffs?.full_name || "(無名)"}`,
-        }));
+        const opts = rows.map((c) => {
+          const staff = Array.isArray(c.staffs) ? c.staffs[0] : c.staffs;
+          const name = staff?.full_name || "(無名)";
+          return { id: c.id, label: `${name}` };
+        });
         setCastOptions(opts);
       }
     };
