@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatting";
 import { billingService } from "@/services/billing.service";
-import { createClient } from "@/lib/supabase/client";
+import { Pagination } from "@/components/common";
 
 type ExpandedDetails = {
   loading: boolean;
@@ -155,75 +155,38 @@ export function VisitHistory({
       {/* Pagination header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 text-sm text-gray-600 gap-2">
         <div className="flex items-center gap-2">
-          <span>
-            全 {total} 件中 {startIdx + 1}–{endIdx} を表示
-          </span>
-          {/* Date range filter */}
-          <div className="flex items-center gap-1">
-            <input
-              type="date"
-              className="border rounded px-2 py-1 text-xs"
-              value={startDate ?? ""}
-              onChange={(e) =>
-                onDateRangeChange?.(e.target.value || undefined, endDate)
-              }
-            />
-            <span className="text-gray-400">〜</span>
-            <input
-              type="date"
-              className="border rounded px-2 py-1 text-xs"
-              value={endDate ?? ""}
-              onChange={(e) =>
-                onDateRangeChange?.(startDate, e.target.value || undefined)
-              }
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            className="border rounded px-2 py-1 text-xs"
-            value={pageSize}
-            onChange={(e) => {
-              const size = Number(e.target.value);
-              if (onPageSizeChange) {
-                onPageSizeChange(size);
-              }
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={(p) => {
+              onPageChange?.(p);
               setExpandedId(null);
             }}
-          >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}/頁
-              </option>
-            ))}
-          </select>
-          <div className="flex items-center gap-1">
-            <button
-              className="px-2 py-1 border rounded text-xs disabled:opacity-50"
-              onClick={() => {
-                const next = Math.max(1, page - 1);
-                if (onPageChange) onPageChange(next);
-                setExpandedId(null);
-              }}
-              disabled={page <= 1}
-            >
-              前へ
-            </button>
-            <span className="text-xs">
-              {page} / {totalPages}
-            </span>
-            <button
-              className="px-2 py-1 border rounded text-xs disabled:opacity-50"
-              onClick={() => {
-                const next = Math.min(totalPages, page + 1);
-                if (onPageChange) onPageChange(next);
-                setExpandedId(null);
-              }}
-              disabled={page >= totalPages}
-            >
-              次へ
-            </button>
-          </div>
+            onPageSizeChange={(n) => {
+              onPageSizeChange?.(n);
+              setExpandedId(null);
+            }}
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <input
+            type="date"
+            className="border rounded px-2 py-1 text-xs"
+            value={startDate ?? ""}
+            onChange={(e) =>
+              onDateRangeChange?.(e.target.value || undefined, endDate)
+            }
+          />
+          <span className="text-gray-400">〜</span>
+          <input
+            type="date"
+            className="border rounded px-2 py-1 text-xs"
+            value={endDate ?? ""}
+            onChange={(e) =>
+              onDateRangeChange?.(startDate, e.target.value || undefined)
+            }
+          />
         </div>
       </div>
       <ul className="-mb-8">

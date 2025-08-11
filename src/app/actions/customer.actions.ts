@@ -20,3 +20,25 @@ export const searchCustomers = createSafeAction(
     return customers;
   }
 );
+
+const listCustomerVisitsSchema = z.object({
+  customerId: z.string(),
+  page: z.number().min(1).optional().default(1),
+  pageSize: z.number().min(1).max(100).optional().default(10),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export const listCustomerVisits = createSafeAction(
+  listCustomerVisitsSchema,
+  async ({ customerId, page, pageSize, startDate, endDate }) => {
+    const supabase = await createClient();
+    const offset = (page - 1) * pageSize;
+    const result = await customerService.listCustomerVisits(
+      supabase,
+      customerId,
+      { limit: pageSize, offset, startDate, endDate }
+    );
+    return result;
+  }
+);
