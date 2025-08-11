@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
+import { listCustomerVisits } from "@/app/actions/customer.actions";
 import { CustomerForm } from "@/components/customers/CustomerForm";
 import { VisitHistory } from "@/components/customers/VisitHistory";
 import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
@@ -119,20 +120,19 @@ export function CustomerDetailClient({
     if (!customer) return;
     try {
       setVisitsLoading(true);
-      const supabase = createClient();
-      const offset = (page - 1) * pageSize;
-      const result = await customerService.listCustomerVisits(
-        supabase,
-        customer.id,
-        {
-          limit: pageSize,
-          offset,
-          startDate,
-          endDate,
-        }
-      );
-      setVisits(result.visits);
-      setTotalVisits(result.total);
+      const res = await listCustomerVisits({
+        customerId: customer.id,
+        page,
+        pageSize,
+        startDate,
+        endDate,
+      });
+      if (res.success) {
+        setVisits(res.data.visits);
+        setTotalVisits(res.data.total);
+      } else {
+        setError(res.error || "来店履歴の取得に失敗しました");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "来店履歴の取得に失敗しました");
     } finally {
