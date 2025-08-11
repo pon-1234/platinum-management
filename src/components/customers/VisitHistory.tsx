@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatting";
 import { billingService } from "@/services/billing.service";
-import { Pagination } from "@/components/common";
+import { Pagination, DateRangePicker } from "@/components/common";
 
 type ExpandedDetails = {
   loading: boolean;
@@ -171,25 +171,11 @@ export function VisitHistory({
             }}
           />
         </div>
-        <div className="flex items-center gap-1">
-          <input
-            type="date"
-            className="border rounded px-2 py-1 text-xs"
-            value={startDate ?? ""}
-            onChange={(e) =>
-              onDateRangeChange?.(e.target.value || undefined, endDate)
-            }
-          />
-          <span className="text-gray-400">〜</span>
-          <input
-            type="date"
-            className="border rounded px-2 py-1 text-xs"
-            value={endDate ?? ""}
-            onChange={(e) =>
-              onDateRangeChange?.(startDate, e.target.value || undefined)
-            }
-          />
-        </div>
+        <DateRangePicker
+          startDate={startDate}
+          endDate={endDate}
+          onChange={onDateRangeChange}
+        />
       </div>
       <ul className="-mb-8">
         {pageVisits.map((visit, idx) => {
