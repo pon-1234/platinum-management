@@ -4,13 +4,21 @@ import { CustomerDetailClient } from "./_components/CustomerDetailClient";
 import type { Customer, Visit } from "@/types/customer.types";
 
 interface PageProps {
-  params: Promise<{
-    id: string;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{
+    page?: string;
+    pageSize?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
 }
 
-export default async function CustomerDetailPage({ params }: PageProps) {
+export default async function CustomerDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const resolvedParams = await params;
+  const sp = (await searchParams) || {};
   const customerId = resolvedParams.id;
 
   let customer: Customer | null = null;
@@ -25,12 +33,17 @@ export default async function CustomerDetailPage({ params }: PageProps) {
     if (!customer) {
       error = "顧客が見つかりません";
     } else {
+      const page = Math.max(1, Number(sp.page || 1));
+      const pageSize = Math.max(1, Math.min(100, Number(sp.pageSize || 10)));
+      const offset = (page - 1) * pageSize;
       const result = await customerService.listCustomerVisits(
         supabase,
         customerId,
         {
-          limit: 10,
-          offset: 0,
+          limit: pageSize,
+          offset,
+          startDate: sp.startDate,
+          endDate: sp.endDate,
         }
       );
       visits = result.visits;

@@ -35,10 +35,13 @@ export function ActiveVisitsWithBottleKeep() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stable callback to satisfy exhaustive-deps
   useEffect(() => {
     loadActiveVisits();
     const interval = setInterval(loadActiveVisits, 30000); // 30秒ごとに更新
     return () => clearInterval(interval);
+    // loadActiveVisits is stable within this module
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadActiveVisits = async () => {

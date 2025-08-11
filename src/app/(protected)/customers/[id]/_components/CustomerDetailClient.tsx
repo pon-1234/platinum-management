@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
@@ -49,6 +50,21 @@ export function CustomerDetailClient({
   const [startDate, setStartDate] = useState<string | undefined>();
   const [endDate, setEndDate] = useState<string | undefined>();
   const [visitsLoading, setVisitsLoading] = useState<boolean>(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initialize from URL search params on mount
+  useEffect(() => {
+    const spPage = Number(searchParams.get("page") || "1");
+    const spSize = Number(searchParams.get("pageSize") || "10");
+    const spStart = searchParams.get("startDate") || undefined;
+    const spEnd = searchParams.get("endDate") || undefined;
+    if (!Number.isNaN(spPage)) setPage(Math.max(1, spPage));
+    if (!Number.isNaN(spSize)) setPageSize(Math.max(1, Math.min(100, spSize)));
+    setStartDate(spStart || undefined);
+    setEndDate(spEnd || undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load bottle keeps on mount
   useEffect(() => {
@@ -127,6 +143,15 @@ export function CustomerDetailClient({
   // Refetch when pagination or filter changes
   useEffect(() => {
     void fetchVisits();
+    // Reflect state to URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    if (startDate) params.set("startDate", startDate);
+    else params.delete("startDate");
+    if (endDate) params.set("endDate", endDate);
+    else params.delete("endDate");
+    router.replace(`?${params.toString()}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, startDate, endDate, customer?.id]);
 

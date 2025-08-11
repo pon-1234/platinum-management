@@ -225,45 +225,7 @@ export class CustomerService extends BaseService {
 
     const visits = data.map((item) => this.mapToVisit(item));
 
-    // Override tableId with active segment if available
-    const ids = visits.map((v) => v.id);
-    if (ids.length > 0) {
-      const segBase = supabase
-        .from("visit_table_segments")
-        .select("visit_id, table_id")
-        .in("visit_id", ids);
-      const segBuilt =
-        // Prefer `.is(col, null)`; fall back to `.eq(col, null)` for test mocks
-        (
-          segBase as unknown as {
-            is?: (
-              col: string,
-              val: unknown
-            ) => Promise<{
-              data: Array<{ visit_id: string; table_id: number }>;
-            }>;
-          }
-        ).is?.("ended_at", null) ||
-        (
-          segBase as unknown as {
-            eq: (
-              col: string,
-              val: unknown
-            ) => Promise<{
-              data: Array<{ visit_id: string; table_id: number }>;
-            }>;
-          }
-        ).eq("ended_at", null);
-      const { data: activeSegs } = await segBuilt;
-      const visitIdToTableId = new Map<string, number>();
-      (activeSegs || []).forEach((s) => {
-        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
-      });
-      visits.forEach((v) => {
-        const t = visitIdToTableId.get(v.id);
-        if (t !== undefined) v.tableId = t;
-      });
-    }
+    await this.applyActiveSegmentTableIds(supabase, visits);
 
     return visits;
   }
@@ -310,44 +272,7 @@ export class CustomerService extends BaseService {
 
     const visits = (data || []).map((item) => this.mapToVisit(item));
 
-    // Override tableId with active segment if available
-    const ids = visits.map((v) => v.id);
-    if (ids.length > 0) {
-      const segBase = supabase
-        .from("visit_table_segments")
-        .select("visit_id, table_id")
-        .in("visit_id", ids);
-      const segBuilt =
-        (
-          segBase as unknown as {
-            is?: (
-              col: string,
-              val: unknown
-            ) => Promise<{
-              data: Array<{ visit_id: string; table_id: number }>;
-            }>;
-          }
-        ).is?.("ended_at", null) ||
-        (
-          segBase as unknown as {
-            eq: (
-              col: string,
-              val: unknown
-            ) => Promise<{
-              data: Array<{ visit_id: string; table_id: number }>;
-            }>;
-          }
-        ).eq("ended_at", null);
-      const { data: activeSegs } = await segBuilt;
-      const visitIdToTableId = new Map<string, number>();
-      (activeSegs || []).forEach((s) => {
-        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
-      });
-      visits.forEach((v) => {
-        const t = visitIdToTableId.get(v.id);
-        if (t !== undefined) v.tableId = t;
-      });
-    }
+    await this.applyActiveSegmentTableIds(supabase, visits);
 
     return { visits, total: count ?? 0 };
   }
@@ -492,44 +417,7 @@ export class CustomerService extends BaseService {
 
     const visits = data.map((item) => this.mapToVisit(item));
 
-    // Override tableId with active segment if available
-    const ids = visits.map((v) => v.id);
-    if (ids.length > 0) {
-      const segBase = supabase
-        .from("visit_table_segments")
-        .select("visit_id, table_id")
-        .in("visit_id", ids);
-      const segBuilt =
-        (
-          segBase as unknown as {
-            is?: (
-              col: string,
-              val: unknown
-            ) => Promise<{
-              data: Array<{ visit_id: string; table_id: number }>;
-            }>;
-          }
-        ).is?.("ended_at", null) ||
-        (
-          segBase as unknown as {
-            eq: (
-              col: string,
-              val: unknown
-            ) => Promise<{
-              data: Array<{ visit_id: string; table_id: number }>;
-            }>;
-          }
-        ).eq("ended_at", null);
-      const { data: activeSegs } = await segBuilt;
-      const visitIdToTableId = new Map<string, number>();
-      (activeSegs || []).forEach((s) => {
-        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
-      });
-      visits.forEach((v) => {
-        const t = visitIdToTableId.get(v.id);
-        if (t !== undefined) v.tableId = t;
-      });
-    }
+    await this.applyActiveSegmentTableIds(supabase, visits);
 
     return visits;
   }
@@ -570,6 +458,48 @@ export class CustomerService extends BaseService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
+  }
+
+  /**
+   * For a set of visits, override tableId with the currently active segment table if present.
+   */
+  private async applyActiveSegmentTableIds(
+    supabase: SupabaseClient<Database>,
+    visits: Visit[]
+  ): Promise<void> {
+    const ids = visits.map((v) => v.id);
+    if (ids.length === 0) return;
+
+    const segBase = supabase
+      .from("visit_table_segments")
+      .select("visit_id, table_id")
+      .in("visit_id", ids);
+    const segBuilt =
+      (
+        segBase as unknown as {
+          is?: (
+            col: string,
+            val: unknown
+          ) => Promise<{ data: Array<{ visit_id: string; table_id: number }> }>;
+        }
+      ).is?.("ended_at", null) ||
+      (
+        segBase as unknown as {
+          eq: (
+            col: string,
+            val: unknown
+          ) => Promise<{ data: Array<{ visit_id: string; table_id: number }> }>;
+        }
+      ).eq("ended_at", null);
+    const { data: activeSegs } = await segBuilt;
+    const visitIdToTableId = new Map<string, number>();
+    (activeSegs || []).forEach((s) => {
+      visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
+    });
+    visits.forEach((v) => {
+      const t = visitIdToTableId.get(v.id);
+      if (t !== undefined) v.tableId = t;
+    });
   }
 }
 
