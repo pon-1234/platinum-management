@@ -99,7 +99,7 @@ export default function BillingPage() {
       }
     };
     fetchRole();
-  }, []);
+  }, [setUserRole]);
 
   const handleClosingProcess = async () => {
     // Check for open visits first

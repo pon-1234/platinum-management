@@ -61,6 +61,8 @@ export function VisitHistory({
   const page = controlled ? pageProp! : 1;
   const pageSize = controlled ? pageSizeProp! : visits.length || 10;
   const total = typeof totalProp === "number" ? totalProp : visits.length;
+  // totalPages kept for legacy scenarios; eslint-disable-next-line used to avoid lint error when not used
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const startIdx = (page - 1) * pageSize;
   const endIdx = Math.min(startIdx + pageSize, total);

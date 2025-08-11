@@ -247,7 +247,7 @@ export class BillingService extends BaseService {
     const visit = this.mapToVisit(data);
 
     // Override tableId with active segment if present
-    let activeSegQuery: any = this.supabase
+    let activeSegQuery = this.supabase
       .from("visit_table_segments")
       .select("table_id")
       .eq("visit_id", id);
@@ -281,7 +281,7 @@ export class BillingService extends BaseService {
     const visit = this.mapToVisit(visitRow);
 
     // Override tableId with active segment if present
-    let activeSegQuery2: any = this.supabase
+    let activeSegQuery2 = this.supabase
       .from("visit_table_segments")
       .select("table_id")
       .eq("visit_id", id);
@@ -392,12 +392,15 @@ export class BillingService extends BaseService {
 
     // If filtering by table, constrain visits by active segments
     if (params.tableId !== undefined) {
-      let segsQuery: any = this.supabase
+      let segsQuery = this.supabase
         .from("visit_table_segments")
         .select("visit_id")
         .eq("table_id", params.tableId);
       segsQuery = this.applyWhereNull(segsQuery, "ended_at");
-      const { data: segs, error: segErr } = await segsQuery;
+      const { data: segs, error: segErr } = (await segsQuery) as {
+        data: Array<{ visit_id: string }>;
+        error: unknown;
+      };
       if (segErr) {
         this.handleError(segErr, "テーブル別の来店検索に失敗しました");
       }
@@ -430,12 +433,14 @@ export class BillingService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      let segQueryAny: any = this.supabase
+      let segQueryAny = this.supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
         .in("visit_id", ids);
       segQueryAny = this.applyWhereNull(segQueryAny, "ended_at");
-      const { data: activeSegs } = await segQueryAny;
+      const { data: activeSegs } = (await segQueryAny) as {
+        data: Array<{ visit_id: string; table_id: number }>;
+      };
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
@@ -772,7 +777,7 @@ export class BillingService extends BaseService {
 
     // Close active segments and free table occupancy
     try {
-      let endSegQuery: any = this.supabase
+      let endSegQuery = this.supabase
         .from("visit_table_segments")
         .update({ ended_at: new Date().toISOString() })
         .eq("visit_id", visitId);
