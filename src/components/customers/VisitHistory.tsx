@@ -8,6 +8,26 @@ import {
   CurrencyYenIcon,
 } from "@heroicons/react/24/outline";
 import { formatDateTime, formatCurrency } from "@/lib/utils/formatting";
+import { billingService } from "@/services/billing.service";
+import { createClient } from "@/lib/supabase/client";
+
+type ExpandedDetails = {
+  loading: boolean;
+  orderItems?: Array<{
+    id: number;
+    name: string;
+    quantity: number;
+    totalPrice: number;
+  }>;
+  casts?: Array<{
+    castId: string;
+    name?: string;
+    role?: string;
+    nomination?: string;
+    fee?: number;
+  }>;
+  error?: string;
+};
 
 interface VisitHistoryProps {
   visits: Visit[];
@@ -16,6 +36,54 @@ interface VisitHistoryProps {
 
 export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailsMap, setDetailsMap] = useState<Record<string, ExpandedDetails>>(
+    {}
+  );
+
+  const loadDetails = async (visitId: string) => {
+    setDetailsMap((prev) => ({ ...prev, [visitId]: { loading: true } }));
+    try {
+      const visit = await billingService.getVisitWithDetails(visitId);
+      const orderItems = (visit?.orderItems || []).map((oi) => ({
+        id: oi.id,
+        name: oi.product?.name || String(oi.productId),
+        quantity: oi.quantity,
+        totalPrice: oi.totalPrice,
+      }));
+
+      const supabase = createClient();
+      const { data: casts } = await supabase
+        .from("cast_engagements")
+        .select(
+          `cast_id, role, nomination_type:nomination_types(display_name), fee_amount, cast:casts_profile(id, stage_name, staffs(full_name))`
+        )
+        .eq("visit_id", visitId);
+
+      const castSummaries = (casts || []).map((row: any) => ({
+        castId: row.cast_id as string,
+        name:
+          row.cast?.stage_name ||
+          row.cast?.staffs?.full_name ||
+          (row.cast_id as string),
+        role: row.role as string,
+        nomination: (row.nomination_type?.display_name as string) || undefined,
+        fee: (row.fee_amount as number) || undefined,
+      }));
+
+      setDetailsMap((prev) => ({
+        ...prev,
+        [visitId]: { loading: false, orderItems, casts: castSummaries },
+      }));
+    } catch (e) {
+      setDetailsMap((prev) => ({
+        ...prev,
+        [visitId]: {
+          loading: false,
+          error: e instanceof Error ? e.message : "読み込みに失敗しました",
+        },
+      }));
+    }
+  };
   const formatDuration = (checkIn: string, checkOut: string | null) => {
     if (!checkOut) return "滞在中";
 
@@ -131,11 +199,17 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
                       )}
                       <button
                         className="text-indigo-600 hover:text-indigo-700 text-xs"
-                        onClick={() =>
+                        onClick={() => {
                           setExpandedId((prev) =>
                             prev === visit.id ? null : visit.id
-                          )
-                        }
+                          );
+                          if (
+                            expandedId !== visit.id &&
+                            !detailsMap[visit.id]
+                          ) {
+                            void loadDetails(visit.id);
+                          }
+                        }}
                       >
                         {expandedId === visit.id ? "閉じる" : "詳細"}
                       </button>
@@ -148,24 +222,92 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
                 <div className="ml-12 mt-2 text-sm text-gray-700">
                   <div className="border rounded p-3 bg-gray-50">
                     <div className="font-medium mb-2">この来店の明細</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">
-                          指名・着席キャスト
+                    {detailsMap[visit.id]?.loading ? (
+                      <div className="text-xs text-gray-500">読み込み中...</div>
+                    ) : detailsMap[visit.id]?.error ? (
+                      <div className="text-xs text-red-600">
+                        {detailsMap[visit.id]?.error}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            指名・着席キャスト
+                          </div>
+                          <ul className="space-y-1">
+                            {detailsMap[visit.id]?.casts &&
+                            detailsMap[visit.id]!.casts!.length > 0 ? (
+                              detailsMap[visit.id]!.casts!.map((c) => (
+                                <li
+                                  key={c.castId}
+                                  className="flex items-center justify-between"
+                                >
+                                  <span>
+                                    {c.name}{" "}
+                                    {c.role && (
+                                      <span className="text-gray-400">
+                                        / {c.role}
+                                      </span>
+                                    )}
+                                    {c.nomination && (
+                                      <span className="ml-1 text-gray-400">
+                                        ({c.nomination})
+                                      </span>
+                                    )}
+                                  </span>
+                                  {typeof c.fee === "number" && (
+                                    <span className="text-gray-700">
+                                      {formatCurrency(c.fee)}
+                                    </span>
+                                  )}
+                                </li>
+                              ))
+                            ) : (
+                              <li className="text-xs text-gray-400">
+                                データなし
+                              </li>
+                            )}
+                          </ul>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          （指名キャストの詳細は会計ドロワーで確認可能）
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            注文明細
+                          </div>
+                          <ul className="space-y-1">
+                            {detailsMap[visit.id]?.orderItems &&
+                            detailsMap[visit.id]!.orderItems!.length > 0 ? (
+                              detailsMap[visit.id]!.orderItems!.slice(0, 5).map(
+                                (oi) => (
+                                  <li
+                                    key={oi.id}
+                                    className="flex items-center justify-between"
+                                  >
+                                    <span>
+                                      {oi.name} × {oi.quantity}
+                                    </span>
+                                    <span className="text-gray-700">
+                                      {formatCurrency(oi.totalPrice)}
+                                    </span>
+                                  </li>
+                                )
+                              )
+                            ) : (
+                              <li className="text-xs text-gray-400">
+                                データなし
+                              </li>
+                            )}
+                          </ul>
+                          {detailsMap[visit.id]?.orderItems &&
+                            detailsMap[visit.id]!.orderItems!.length > 5 && (
+                              <div className="text-[10px] text-gray-400 mt-1">
+                                他{" "}
+                                {detailsMap[visit.id]!.orderItems!.length - 5}{" "}
+                                件
+                              </div>
+                            )}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">
-                          注文明細
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          （注文の詳細は会計ドロワーで確認可能）
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
