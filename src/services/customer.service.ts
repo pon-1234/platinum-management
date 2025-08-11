@@ -479,7 +479,7 @@ export class CustomerService extends BaseService {
     );
     const { data: activeSegs } = await segBuilt;
     const visitIdToTableId = new Map<string, number>();
-    (activeSegs || []).forEach((s) => {
+    (activeSegs || []).forEach((s: { visit_id: string; table_id: number }) => {
       visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
     });
     visits.forEach((v) => {
