@@ -103,46 +103,13 @@ export class VisitSessionServerService {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("認証されていません");
 
-    const { error: endSegmentError } = await supabase
-      .from("visit_table_segments")
-      .update({ ended_at: new Date().toISOString() })
-      .eq("visit_id", visitId)
-      .is("ended_at", null);
-    if (endSegmentError) throw endSegmentError;
-
-    const { error: newSegmentError } = await supabase
-      .from("visit_table_segments")
-      .insert({
-        visit_id: visitId,
-        table_id: newTableId,
-        reason: "move",
-        started_at: new Date().toISOString(),
-      });
-    if (newSegmentError) throw newSegmentError;
-
-    const { error: visitError } = await supabase
-      .from("visits")
-      .update({ table_id: newTableId, updated_at: new Date().toISOString() })
-      .eq("id", visitId);
-    if (visitError) throw visitError;
-
-    // Update table statuses
-    await supabase
-      .from("tables")
-      .update({
-        current_status: "available",
-        current_visit_id: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("current_visit_id", visitId);
-
-    await supabase
-      .from("tables")
-      .update({
-        current_status: "occupied",
-        current_visit_id: visitId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", newTableId);
+    // Use authoritative DB RPC for table move to keep logic centralized
+    const { error } = await supabase.rpc("move_visit_table", {
+      p_visit_id: visitId,
+      p_from_table_id: null, // let RPC infer from current state when null
+      p_to_table_id: newTableId,
+      p_reason: "move",
+    });
+    if (error) throw error;
   }
 }

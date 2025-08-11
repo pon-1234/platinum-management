@@ -20,8 +20,14 @@ interface HourlySalesChartProps {
   salesData: HourlySale[];
 }
 
+import { useMemo, useCallback } from "react";
+
 export function HourlySalesChart({ salesData }: HourlySalesChartProps) {
-  const formatCurrency = (value: number) => `¥${value.toLocaleString()}`;
+  const formatCurrency = useCallback(
+    (value: number) => `¥${value.toLocaleString()}`,
+    []
+  );
+  const data = useMemo(() => salesData, [salesData]);
 
   return (
     <div className="bg-white shadow rounded-lg">
@@ -30,7 +36,7 @@ export function HourlySalesChart({ salesData }: HourlySalesChartProps) {
         <div className="mt-4" style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <BarChart
-              data={salesData}
+              data={data}
               margin={{
                 top: 5,
                 right: 30,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
 import { z } from "zod";
+import { parseQueryOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
 // クエリパラメータのバリデーションスキーマ
 const statisticsQuerySchema = z.object({
@@ -19,32 +20,12 @@ const statisticsQuerySchema = z.object({
 // GET: 統計情報取得
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-
-    // クエリパラメータのバリデーション
-    const queryValidation = statisticsQuerySchema.safeParse({
-      type: searchParams.get("type"),
-      customer_id: searchParams.get("customer_id"),
-      start_date: searchParams.get("start_date"),
-      end_date: searchParams.get("end_date"),
-    });
-
-    if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid query parameters",
-          details: queryValidation.error.flatten(),
-        },
-        { status: 400 }
-      );
-    }
-
     const {
       type = "general",
       customer_id,
       start_date,
       end_date,
-    } = queryValidation.data;
+    } = parseQueryOrThrow(statisticsQuerySchema, request);
 
     let data;
 
@@ -74,6 +55,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to fetch bottle keep statistics:", error);
     return NextResponse.json(
       { error: "Failed to fetch statistics" },
