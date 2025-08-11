@@ -164,6 +164,13 @@ export interface VisitWithDetails extends Visit {
     phoneNumber: string | null;
   };
   orderItems?: OrderItemWithDetails[];
+  casts?: Array<{
+    castId: string;
+    name?: string;
+    role?: string;
+    nomination?: string;
+    fee?: number;
+  }>;
 }
 
 export interface OrderItemWithDetails extends OrderItem {

@@ -334,10 +334,30 @@ export class BillingService extends BaseService {
       product: item.product ? this.mapToProduct(item.product) : undefined,
     }));
 
+    // 4) キャスト割り当て（名称含む）
+    const { data: castsRows } = await this.supabase
+      .from("cast_engagements")
+      .select(
+        `cast_id, role, nomination_type:nomination_types(display_name), fee_amount, cast:casts_profile(id, stage_name, staffs(full_name))`
+      )
+      .eq("visit_id", id);
+
+    const casts = (castsRows || []).map((row) => ({
+      castId: row.cast_id as string,
+      name:
+        (row.cast as any)?.stage_name ||
+        (row.cast as any)?.staffs?.full_name ||
+        (row.cast_id as string),
+      role: (row.role as string) || undefined,
+      nomination: (row.nomination_type as any)?.display_name || undefined,
+      fee: (row.fee_amount as number) || undefined,
+    }));
+
     return {
       ...visit,
       customer,
       orderItems,
+      casts,
     };
   }
 

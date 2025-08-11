@@ -81,35 +81,7 @@ export function VisitHistory({
         totalPrice: oi.totalPrice,
       }));
 
-      const supabase = createClient();
-      const { data: casts } = await supabase
-        .from("cast_engagements")
-        .select(
-          `cast_id, role, nomination_type:nomination_types(display_name), fee_amount, cast:casts_profile(id, stage_name, staffs(full_name))`
-        )
-        .eq("visit_id", visitId);
-
-      type CastRow = {
-        cast_id: string;
-        role: string | null;
-        nomination_type: { display_name: string | null } | null;
-        fee_amount: number | null;
-        cast: {
-          id: string;
-          stage_name: string | null;
-          staffs: { full_name: string | null } | null;
-        } | null;
-      };
-
-      const castSummaries =
-        (casts as CastRow[] | null | undefined)?.map((row) => ({
-          castId: row.cast_id,
-          name:
-            row.cast?.stage_name || row.cast?.staffs?.full_name || row.cast_id,
-          role: row.role || undefined,
-          nomination: row.nomination_type?.display_name || undefined,
-          fee: row.fee_amount ?? undefined,
-        })) || [];
+      const castSummaries = visit?.casts || [];
 
       setDetailsMap((prev) => ({
         ...prev,
