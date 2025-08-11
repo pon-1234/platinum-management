@@ -255,7 +255,8 @@ export default function RealTimeTableDashboard({
   const handleTableSelect = useCallback(
     (table: Table) => {
       setSelectedTable(table);
-      setShowTableDetail(true);
+      // Open only the operations drawer to avoid double overlays
+      setShowTableDetail(false);
       setShowDrawer(true);
       onTableSelect?.(table);
     },
