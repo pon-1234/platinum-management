@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CustomerAnalyticsService } from "@/services/customer-analytics.service";
 import { z } from "zod";
+import { parseQueryOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
 // クエリパラメータのバリデーションスキーマ
 const querySchema = z.object({
@@ -40,33 +41,7 @@ const querySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-
-    // クエリパラメータのバリデーション
-    const queryValidation = querySchema.safeParse({
-      type: searchParams.get("type"),
-      retention_status: searchParams.get("retention_status"),
-      segment: searchParams.get("segment"),
-      risk_level: searchParams.get("risk_level"),
-      min_visits: searchParams.get("min_visits"),
-      min_revenue: searchParams.get("min_revenue"),
-      start_date: searchParams.get("start_date"),
-      end_date: searchParams.get("end_date"),
-      channel1: searchParams.get("channel1"),
-      channel2: searchParams.get("channel2"),
-    });
-
-    if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid query parameters",
-          details: queryValidation.error.flatten(),
-        },
-        { status: 400 }
-      );
-    }
-
-    const params = queryValidation.data;
+    const params = parseQueryOrThrow(querySchema, request);
     const type = params.type || "metrics";
 
     let data;
@@ -150,6 +125,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to fetch customer analytics:", error);
     return NextResponse.json(
       { error: "Failed to fetch analytics data" },

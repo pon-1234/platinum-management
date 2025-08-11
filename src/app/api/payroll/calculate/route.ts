@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PayrollService } from "@/services/payroll.service";
+import { z } from "zod";
+import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
+
+const postSchema = z.object({
+  castId: z.string().uuid(),
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  save: z.boolean().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { castId, periodStart, periodEnd, save = false } = body;
-
-    if (!castId || !periodStart || !periodEnd) {
-      return NextResponse.json(
-        { error: "Missing required parameters" },
-        { status: 400 }
-      );
-    }
+    const {
+      castId,
+      periodStart,
+      periodEnd,
+      save = false,
+    } = await parseJsonOrThrow(postSchema, request);
 
     const calculation = await PayrollService.calculatePayroll(
       castId,
@@ -28,6 +34,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Payroll calculation error:", error);
     return NextResponse.json(
       { error: "Failed to calculate payroll" },
