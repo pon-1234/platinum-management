@@ -31,19 +31,41 @@ type ExpandedDetails = {
 
 interface VisitHistoryProps {
   visits: Visit[];
+  total?: number; // server provided total
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
+  startDate?: string;
+  endDate?: string;
+  onDateRangeChange?: (start?: string, end?: string) => void;
   isLoading?: boolean;
 }
 
-export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
+export function VisitHistory({
+  visits,
+  total: totalProp,
+  page: pageProp,
+  pageSize: pageSizeProp,
+  onPageChange,
+  onPageSizeChange,
+  startDate,
+  endDate,
+  onDateRangeChange,
+  isLoading = false,
+}: VisitHistoryProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [page, setPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
 
-  const total = visits.length;
+  const controlled =
+    typeof pageProp === "number" && typeof pageSizeProp === "number";
+  const page = controlled ? pageProp! : 1;
+  const pageSize = controlled ? pageSizeProp! : visits.length || 10;
+  const total = typeof totalProp === "number" ? totalProp : visits.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const startIdx = (page - 1) * pageSize;
   const endIdx = Math.min(startIdx + pageSize, total);
-  const pageVisits = visits.slice(startIdx, endIdx);
+  // Server-side pagination: assume `visits` already contains current page
+  const pageVisits = controlled ? visits : visits.slice(startIdx, endIdx);
   const [detailsMap, setDetailsMap] = useState<Record<string, ExpandedDetails>>(
     {}
   );
@@ -67,16 +89,27 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
         )
         .eq("visit_id", visitId);
 
-      const castSummaries = (casts || []).map((row: any) => ({
-        castId: row.cast_id as string,
-        name:
-          row.cast?.stage_name ||
-          row.cast?.staffs?.full_name ||
-          (row.cast_id as string),
-        role: row.role as string,
-        nomination: (row.nomination_type?.display_name as string) || undefined,
-        fee: (row.fee_amount as number) || undefined,
-      }));
+      type CastRow = {
+        cast_id: string;
+        role: string | null;
+        nomination_type: { display_name: string | null } | null;
+        fee_amount: number | null;
+        cast: {
+          id: string;
+          stage_name: string | null;
+          staffs: { full_name: string | null } | null;
+        } | null;
+      };
+
+      const castSummaries =
+        (casts as CastRow[] | null | undefined)?.map((row) => ({
+          castId: row.cast_id,
+          name:
+            row.cast?.stage_name || row.cast?.staffs?.full_name || row.cast_id,
+          role: row.role || undefined,
+          nomination: row.nomination_type?.display_name || undefined,
+          fee: row.fee_amount ?? undefined,
+        })) || [];
 
       setDetailsMap((prev) => ({
         ...prev,
@@ -148,9 +181,31 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
   return (
     <div className="flow-root">
       {/* Pagination header */}
-      <div className="flex items-center justify-between mb-3 text-sm text-gray-600">
-        <div>
-          全 {total} 件中 {startIdx + 1}–{endIdx} を表示
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 text-sm text-gray-600 gap-2">
+        <div className="flex items-center gap-2">
+          <span>
+            全 {total} 件中 {startIdx + 1}–{endIdx} を表示
+          </span>
+          {/* Date range filter */}
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              className="border rounded px-2 py-1 text-xs"
+              value={startDate ?? ""}
+              onChange={(e) =>
+                onDateRangeChange?.(e.target.value || undefined, endDate)
+              }
+            />
+            <span className="text-gray-400">〜</span>
+            <input
+              type="date"
+              className="border rounded px-2 py-1 text-xs"
+              value={endDate ?? ""}
+              onChange={(e) =>
+                onDateRangeChange?.(startDate, e.target.value || undefined)
+              }
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -158,8 +213,9 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
             value={pageSize}
             onChange={(e) => {
               const size = Number(e.target.value);
-              setPageSize(size);
-              setPage(1);
+              if (onPageSizeChange) {
+                onPageSizeChange(size);
+              }
               setExpandedId(null);
             }}
           >
@@ -173,7 +229,8 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
             <button
               className="px-2 py-1 border rounded text-xs disabled:opacity-50"
               onClick={() => {
-                setPage((p) => Math.max(1, p - 1));
+                const next = Math.max(1, page - 1);
+                if (onPageChange) onPageChange(next);
                 setExpandedId(null);
               }}
               disabled={page <= 1}
@@ -186,7 +243,8 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
             <button
               className="px-2 py-1 border rounded text-xs disabled:opacity-50"
               onClick={() => {
-                setPage((p) => Math.min(totalPages, p + 1));
+                const next = Math.min(totalPages, page + 1);
+                if (onPageChange) onPageChange(next);
                 setExpandedId(null);
               }}
               disabled={page >= totalPages}

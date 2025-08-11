@@ -51,6 +51,19 @@ export interface Visit {
   updatedAt: string;
 }
 
+// Server-side pagination and filtering for visits
+export interface VisitListParams {
+  limit?: number;
+  offset?: number;
+  startDate?: string; // ISO 8601 string (inclusive) matched against check_in_at
+  endDate?: string; // ISO 8601 string (inclusive) matched against check_in_at
+}
+
+export interface VisitListResult {
+  visits: Visit[];
+  total: number;
+}
+
 // Legacy aliases for backward compatibility
 export type CreateCustomerData = CreateCustomerInput;
 export type UpdateCustomerData = UpdateCustomerInput;

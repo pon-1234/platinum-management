@@ -228,11 +228,21 @@ export class CustomerService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      const { data: activeSegs } = await supabase
+      // Build query with fallback when .is is unavailable in test mocks
+      let segQuery: ReturnType<typeof supabase.from> & {
+        is?: (col: string, val: unknown) => unknown;
+        eq: (col: string, val: unknown) => unknown;
+      } = supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
-        .in("visit_id", ids)
-        .is("ended_at", null);
+        .in("visit_id", ids);
+      if (typeof segQuery.is === "function") {
+        segQuery = segQuery.is("ended_at", null);
+      } else if (typeof segQuery.eq === "function") {
+        // Fallback for environments without .is (e.g., unit test mocks)
+        segQuery = segQuery.eq("ended_at", null as unknown as string);
+      }
+      const { data: activeSegs } = await segQuery;
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
@@ -244,6 +254,77 @@ export class CustomerService extends BaseService {
     }
 
     return visits;
+  }
+
+  /**
+   * List visits for a customer with server-side pagination and optional date range filter
+   */
+  async listCustomerVisits(
+    supabase: SupabaseClient<Database>,
+    customerId: string,
+    params: {
+      limit?: number;
+      offset?: number;
+      startDate?: string;
+      endDate?: string;
+    } = {}
+  ): Promise<{ visits: Visit[]; total: number }> {
+    const { limit = 10, offset = 0, startDate, endDate } = params;
+
+    // Build query with count for total
+    let query = supabase
+      .from("visits")
+      .select("*", { count: "exact" })
+      .eq("customer_id", customerId);
+
+    if (startDate) {
+      query = query.gte("check_in_at", startDate);
+    }
+    if (endDate) {
+      query = query.lte("check_in_at", endDate);
+    }
+
+    query = query
+      .order("check_in_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw new Error(
+        this.handleDatabaseError(error, "来店履歴の取得に失敗しました")
+      );
+    }
+
+    const visits = (data || []).map((item) => this.mapToVisit(item));
+
+    // Override tableId with active segment if available
+    const ids = visits.map((v) => v.id);
+    if (ids.length > 0) {
+      let segQuery: ReturnType<typeof supabase.from> & {
+        is?: (col: string, val: unknown) => unknown;
+        eq: (col: string, val: unknown) => unknown;
+      } = supabase
+        .from("visit_table_segments")
+        .select("visit_id, table_id")
+        .in("visit_id", ids);
+      if (typeof segQuery.is === "function") {
+        segQuery = segQuery.is("ended_at", null);
+      } else if (typeof segQuery.eq === "function") {
+        segQuery = segQuery.eq("ended_at", null as unknown as string);
+      }
+      const { data: activeSegs } = await segQuery;
+      const visitIdToTableId = new Map<string, number>();
+      (activeSegs || []).forEach((s) => {
+        visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
+      });
+      visits.forEach((v) => {
+        const t = visitIdToTableId.get(v.id);
+        if (t !== undefined) v.tableId = t;
+      });
+    }
+
+    return { visits, total: count ?? 0 };
   }
 
   async createVisit(
@@ -389,11 +470,19 @@ export class CustomerService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      const { data: activeSegs } = await supabase
+      let segQuery: ReturnType<typeof supabase.from> & {
+        is?: (col: string, val: unknown) => unknown;
+        eq: (col: string, val: unknown) => unknown;
+      } = supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
-        .in("visit_id", ids)
-        .is("ended_at", null);
+        .in("visit_id", ids);
+      if (typeof segQuery.is === "function") {
+        segQuery = segQuery.is("ended_at", null);
+      } else if (typeof segQuery.eq === "function") {
+        segQuery = segQuery.eq("ended_at", null as unknown as string);
+      }
+      const { data: activeSegs } = await segQuery;
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));

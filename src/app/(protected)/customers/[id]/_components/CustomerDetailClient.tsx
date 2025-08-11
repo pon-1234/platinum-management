@@ -27,20 +27,28 @@ import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 interface CustomerDetailClientProps {
   customer: Customer | null;
   visits: Visit[];
+  totalVisits?: number;
   error: string | null;
 }
 
 export function CustomerDetailClient({
   customer: initialCustomer,
   visits: initialVisits,
+  totalVisits: initialTotal = 0,
   error: initialError,
 }: CustomerDetailClientProps) {
   const [customer, setCustomer] = useState<Customer | null>(initialCustomer);
   const [visits, setVisits] = useState<Visit[]>(initialVisits);
+  const [totalVisits, setTotalVisits] = useState<number>(initialTotal);
   const [bottleKeeps, setBottleKeeps] = useState<BottleKeep[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [startDate, setStartDate] = useState<string | undefined>();
+  const [endDate, setEndDate] = useState<string | undefined>();
+  const [visitsLoading, setVisitsLoading] = useState<boolean>(false);
 
   // Load bottle keeps on mount
   useEffect(() => {
@@ -79,11 +87,7 @@ export function CustomerDetailClient({
 
       setCustomer(customerData);
 
-      const visitsData = await customerService.getCustomerVisits(
-        supabase,
-        customer.id
-      );
-      setVisits(visitsData);
+      await fetchVisits();
 
       // Reload bottle keeps
       await loadBottleKeeps();
@@ -94,6 +98,37 @@ export function CustomerDetailClient({
       }
     }
   };
+
+  const fetchVisits = async () => {
+    if (!customer) return;
+    try {
+      setVisitsLoading(true);
+      const supabase = createClient();
+      const offset = (page - 1) * pageSize;
+      const result = await customerService.listCustomerVisits(
+        supabase,
+        customer.id,
+        {
+          limit: pageSize,
+          offset,
+          startDate,
+          endDate,
+        }
+      );
+      setVisits(result.visits);
+      setTotalVisits(result.total);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "来店履歴の取得に失敗しました");
+    } finally {
+      setVisitsLoading(false);
+    }
+  };
+
+  // Refetch when pagination or filter changes
+  useEffect(() => {
+    void fetchVisits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, startDate, endDate, customer?.id]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -310,7 +345,25 @@ export function CustomerDetailClient({
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
             来店履歴
           </h3>
-          <VisitHistory visits={visits} />
+          <VisitHistory
+            visits={visits}
+            total={totalVisits}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            startDate={startDate}
+            endDate={endDate}
+            onDateRangeChange={(start, end) => {
+              setStartDate(start);
+              setEndDate(end);
+              setPage(1);
+            }}
+            isLoading={visitsLoading}
+          />
         </div>
       </div>
     </div>

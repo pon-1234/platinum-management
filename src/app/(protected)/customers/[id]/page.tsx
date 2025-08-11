@@ -15,6 +15,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
 
   let customer: Customer | null = null;
   let visits: Visit[] = [];
+  let totalVisits = 0;
   let error: string | null = null;
 
   try {
@@ -24,7 +25,16 @@ export default async function CustomerDetailPage({ params }: PageProps) {
     if (!customer) {
       error = "顧客が見つかりません";
     } else {
-      visits = await customerService.getCustomerVisits(supabase, customerId);
+      const result = await customerService.listCustomerVisits(
+        supabase,
+        customerId,
+        {
+          limit: 10,
+          offset: 0,
+        }
+      );
+      visits = result.visits;
+      totalVisits = result.total;
     }
   } catch (err) {
     error = "データの取得に失敗しました";
@@ -34,6 +44,11 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   }
 
   return (
-    <CustomerDetailClient customer={customer} visits={visits} error={error} />
+    <CustomerDetailClient
+      customer={customer}
+      visits={visits}
+      totalVisits={totalVisits}
+      error={error}
+    />
   );
 }
