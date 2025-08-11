@@ -391,7 +391,7 @@ export class ReportService extends BaseService {
       .slice(0, 5); // Top 5 products
 
     // Build favorite casts by engagements and attributed revenue
-    const favoriteCasts = Array.from(castCounts.entries())
+    let favoriteCasts = Array.from(castCounts.entries())
       .map(([castId, data]) => ({
         castId,
         castName: data.name || "", // could be filled by a join if needed
@@ -400,6 +400,27 @@ export class ReportService extends BaseService {
       }))
       .sort((a, b) => b.attributedRevenue - a.attributedRevenue)
       .slice(0, 5);
+
+    // Fill cast names if possible
+    try {
+      const castIds = favoriteCasts.map((c) => c.castId).filter(Boolean);
+      if (castIds.length > 0) {
+        const { data: castRows } = await this.supabase
+          .from("casts_profile")
+          .select("id, staffs(full_name)")
+          .in("id", castIds);
+        const idToName = new Map<string, string>();
+        (castRows || []).forEach((r: any) => {
+          if (r?.id) idToName.set(r.id as string, r?.staffs?.full_name || "");
+        });
+        favoriteCasts = favoriteCasts.map((c) => ({
+          ...c,
+          castName: idToName.get(c.castId) || c.castName,
+        }));
+      }
+    } catch (e) {
+      // ignore name fill failure
+    }
 
     return {
       customerId,

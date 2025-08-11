@@ -147,10 +147,24 @@ export function VisitHistory({ visits, isLoading = false }: VisitHistoryProps) {
               {expandedId === visit.id && (
                 <div className="ml-12 mt-2 text-sm text-gray-700">
                   <div className="border rounded p-3 bg-gray-50">
-                    <div className="font-medium mb-1">この来店の明細</div>
-                    <div className="text-xs text-gray-500">
-                      ※
-                      詳細な注文・指名は「会計」画面や席のドロワーから確認/操作できます
+                    <div className="font-medium mb-2">この来店の明細</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          指名・着席キャスト
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          （指名キャストの詳細は会計ドロワーで確認可能）
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          注文明細
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          （注文の詳細は会計ドロワーで確認可能）
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
