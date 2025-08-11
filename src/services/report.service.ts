@@ -422,7 +422,7 @@ export class ReportService extends BaseService {
           castName: idToName.get(c.castId) || c.castName,
         }));
       }
-    } catch (e) {
+    } catch {
       // ignore name fill failure
     }
 

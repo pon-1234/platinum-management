@@ -112,8 +112,13 @@ export default function VisitSessionDrawer({
         .eq("is_active", true)
         .limit(50);
       if (!error && data) {
-        const opts = data.map((c: any) => ({
-          id: c.id as string,
+        type CastProfileRow = {
+          id: string;
+          staffs: { full_name: string | null } | null;
+        };
+        const rows = data as CastProfileRow[];
+        const opts = rows.map((c) => ({
+          id: c.id,
           label: `${c.staffs?.full_name || "(無名)"}`,
         }));
         setCastOptions(opts);
@@ -175,7 +180,7 @@ export default function VisitSessionDrawer({
       await billingService.deleteOrderItem(id);
       await load();
       toast.success("削除しました");
-    } catch (e) {
+    } catch {
       toast.error("削除に失敗しました");
     }
   };
