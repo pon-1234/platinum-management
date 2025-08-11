@@ -228,21 +228,33 @@ export class CustomerService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      // Build query with fallback when .is is unavailable in test mocks
-      let segQuery: ReturnType<typeof supabase.from> & {
-        is?: (col: string, val: unknown) => unknown;
-        eq: (col: string, val: unknown) => unknown;
-      } = supabase
+      const segBase = supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
         .in("visit_id", ids);
-      if (typeof segQuery.is === "function") {
-        segQuery = segQuery.is("ended_at", null);
-      } else if (typeof segQuery.eq === "function") {
-        // Fallback for environments without .is (e.g., unit test mocks)
-        segQuery = segQuery.eq("ended_at", null as unknown as string);
-      }
-      const { data: activeSegs } = await segQuery;
+      const segBuilt =
+        // Prefer `.is(col, null)`; fall back to `.eq(col, null)` for test mocks
+        (
+          segBase as unknown as {
+            is?: (
+              col: string,
+              val: unknown
+            ) => Promise<{
+              data: Array<{ visit_id: string; table_id: number }>;
+            }>;
+          }
+        ).is?.("ended_at", null) ||
+        (
+          segBase as unknown as {
+            eq: (
+              col: string,
+              val: unknown
+            ) => Promise<{
+              data: Array<{ visit_id: string; table_id: number }>;
+            }>;
+          }
+        ).eq("ended_at", null);
+      const { data: activeSegs } = await segBuilt;
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
@@ -301,19 +313,32 @@ export class CustomerService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      let segQuery: ReturnType<typeof supabase.from> & {
-        is?: (col: string, val: unknown) => unknown;
-        eq: (col: string, val: unknown) => unknown;
-      } = supabase
+      const segBase = supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
         .in("visit_id", ids);
-      if (typeof segQuery.is === "function") {
-        segQuery = segQuery.is("ended_at", null);
-      } else if (typeof segQuery.eq === "function") {
-        segQuery = segQuery.eq("ended_at", null as unknown as string);
-      }
-      const { data: activeSegs } = await segQuery;
+      const segBuilt =
+        (
+          segBase as unknown as {
+            is?: (
+              col: string,
+              val: unknown
+            ) => Promise<{
+              data: Array<{ visit_id: string; table_id: number }>;
+            }>;
+          }
+        ).is?.("ended_at", null) ||
+        (
+          segBase as unknown as {
+            eq: (
+              col: string,
+              val: unknown
+            ) => Promise<{
+              data: Array<{ visit_id: string; table_id: number }>;
+            }>;
+          }
+        ).eq("ended_at", null);
+      const { data: activeSegs } = await segBuilt;
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
@@ -470,19 +495,32 @@ export class CustomerService extends BaseService {
     // Override tableId with active segment if available
     const ids = visits.map((v) => v.id);
     if (ids.length > 0) {
-      let segQuery: ReturnType<typeof supabase.from> & {
-        is?: (col: string, val: unknown) => unknown;
-        eq: (col: string, val: unknown) => unknown;
-      } = supabase
+      const segBase = supabase
         .from("visit_table_segments")
         .select("visit_id, table_id")
         .in("visit_id", ids);
-      if (typeof segQuery.is === "function") {
-        segQuery = segQuery.is("ended_at", null);
-      } else if (typeof segQuery.eq === "function") {
-        segQuery = segQuery.eq("ended_at", null as unknown as string);
-      }
-      const { data: activeSegs } = await segQuery;
+      const segBuilt =
+        (
+          segBase as unknown as {
+            is?: (
+              col: string,
+              val: unknown
+            ) => Promise<{
+              data: Array<{ visit_id: string; table_id: number }>;
+            }>;
+          }
+        ).is?.("ended_at", null) ||
+        (
+          segBase as unknown as {
+            eq: (
+              col: string,
+              val: unknown
+            ) => Promise<{
+              data: Array<{ visit_id: string; table_id: number }>;
+            }>;
+          }
+        ).eq("ended_at", null);
+      const { data: activeSegs } = await segBuilt;
       const visitIdToTableId = new Map<string, number>();
       (activeSegs || []).forEach((s) => {
         visitIdToTableId.set(s.visit_id as string, Number(s.table_id));
