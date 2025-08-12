@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { User, UserRole, AuthResult } from "@/types/auth.types";
-import { CacheUtils } from "@/lib/cache-utils";
 
 type PermissionMatrix = {
   [role in UserRole]: {
@@ -86,7 +85,7 @@ export class AuthService extends BaseService {
       }
 
       // Clear all service caches after successful sign out
-      CacheUtils.clearAllCaches();
+      BaseService.clearAllInstanceCaches();
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("signOut failed:", error);

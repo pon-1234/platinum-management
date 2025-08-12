@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { keys } from "@/lib/cache-utils";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import { CustomerStatus } from "@/types/customer.types";
@@ -11,7 +12,7 @@ export const useCustomers = (
   const supabase = createClient();
 
   return useQuery({
-    queryKey: ["customers", query, status],
+    queryKey: keys.customers(query, status),
     queryFn: async () => {
       const data = await customerService.searchCustomers(supabase, {
         query,
