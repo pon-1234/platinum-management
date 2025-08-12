@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 
 const supabase = createClient();
 
@@ -31,7 +32,11 @@ export class NominationTypeService {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching nomination types:", error);
+      logger.error(
+        "Error fetching nomination types",
+        error,
+        "NominationTypeService"
+      );
       throw new Error("指名種別の取得に失敗しました");
     }
 
@@ -54,7 +59,11 @@ export class NominationTypeService {
       if (error.code === "PGRST116") {
         return null; // Not found
       }
-      console.error("Error fetching nomination type:", error);
+      logger.error(
+        "Error fetching nomination type",
+        error,
+        "NominationTypeService"
+      );
       throw new Error("指名種別の取得に失敗しました");
     }
 
@@ -77,7 +86,11 @@ export class NominationTypeService {
       if (error.code === "PGRST116") {
         return null; // Not found
       }
-      console.error("Error fetching nomination type by name:", error);
+      logger.error(
+        "Error fetching nomination type by name",
+        error,
+        "NominationTypeService"
+      );
       throw new Error("指名種別の取得に失敗しました");
     }
 
@@ -104,7 +117,11 @@ export class NominationTypeService {
       .single();
 
     if (error) {
-      console.error("Error creating nomination type:", error);
+      logger.error(
+        "Error creating nomination type",
+        error,
+        "NominationTypeService"
+      );
       if (error.code === "23505") {
         throw new Error("この種別名は既に使用されています");
       }
@@ -140,7 +157,11 @@ export class NominationTypeService {
       .single();
 
     if (error) {
-      console.error("Error updating nomination type:", error);
+      logger.error(
+        "Error updating nomination type",
+        error,
+        "NominationTypeService"
+      );
       throw new Error("指名種別の更新に失敗しました");
     }
 
@@ -161,7 +182,11 @@ export class NominationTypeService {
       .eq("id", id);
 
     if (error) {
-      console.error("Error deleting nomination type:", error);
+      logger.error(
+        "Error deleting nomination type",
+        error,
+        "NominationTypeService"
+      );
       throw new Error("指名種別の削除に失敗しました");
     }
   }
@@ -186,7 +211,11 @@ export class NominationTypeService {
     const hasError = results.some((result) => result.error);
 
     if (hasError) {
-      console.error("Error updating priorities:", results);
+      logger.error(
+        "Error updating priorities",
+        results as unknown as Error,
+        "NominationTypeService"
+      );
       throw new Error("表示順序の更新に失敗しました");
     }
   }
@@ -213,7 +242,11 @@ export class NominationTypeService {
       .eq("is_active", true);
 
     if (error) {
-      console.error("Error calculating total fee:", error);
+      logger.error(
+        "Error calculating total fee",
+        error,
+        "NominationTypeService"
+      );
       throw new Error("指名料金の計算に失敗しました");
     }
 
@@ -246,7 +279,7 @@ export class NominationTypeService {
       .lte("assigned_at", endDate.toISOString());
 
     if (error) {
-      console.error("Error fetching statistics:", error);
+      logger.error("Error fetching statistics", error, "NominationTypeService");
       throw new Error("統計情報の取得に失敗しました");
     }
 

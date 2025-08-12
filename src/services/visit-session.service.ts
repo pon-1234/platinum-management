@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 
 const supabase = createClient();
 
@@ -229,7 +230,11 @@ export class VisitSessionService {
       .single();
 
     if (error) {
-      console.error("Error fetching session details:", error);
+      logger.error(
+        "Error fetching session details",
+        error,
+        "VisitSessionService"
+      );
       return null;
     }
 
@@ -259,7 +264,11 @@ export class VisitSessionService {
       .order("check_in_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching active sessions:", error);
+      logger.error(
+        "Error fetching active sessions",
+        error,
+        "VisitSessionService"
+      );
       return [];
     }
 
@@ -338,7 +347,7 @@ export class VisitSessionService {
       .order("attribution_percentage", { ascending: false });
 
     if (error) {
-      console.error("Error fetching attributions:", error);
+      logger.error("Error fetching attributions", error, "VisitSessionService");
       return [];
     }
 
@@ -420,7 +429,11 @@ export class VisitSessionService {
       .order("work_date", { ascending: false });
 
     if (error) {
-      console.error("Error fetching payroll facts:", error);
+      logger.error(
+        "Error fetching payroll facts",
+        error,
+        "VisitSessionService"
+      );
       return [];
     }
 
