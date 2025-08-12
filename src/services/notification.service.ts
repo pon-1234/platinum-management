@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -263,14 +264,10 @@ export class NotificationService extends BaseService {
       });
 
       if (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Notification log error:", error);
-        }
+        logger.error("Notification log error", error, "NotificationService");
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to log notification:", error);
-      }
+      logger.error("Failed to log notification", error, "NotificationService");
     }
   }
 
