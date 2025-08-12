@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { toSnakeCase, toCamelCase } from "@/lib/utils/transform";
+import { logger } from "@/lib/logger";
 
 export abstract class BaseService {
   private _cachedStaffId: string | null = null;
@@ -65,10 +66,7 @@ export abstract class BaseService {
       .single();
 
     if (error) {
-      // Log error to monitoring service in production
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to fetch staff ID from database:", error);
-      }
+      logger.logDatabaseError(error, "select staff id by user_id", "staffs");
       return null;
     }
 
@@ -149,10 +147,7 @@ export abstract class BaseService {
 
       return result;
     } catch (error) {
-      // Log error to monitoring service in production
-      if (process.env.NODE_ENV === "development") {
-        console.error("Permission check failed:", error);
-      }
+      logger.error("Permission check failed", error, "BaseService");
       return false;
     }
   }
@@ -213,10 +208,7 @@ export abstract class BaseService {
     error: unknown,
     defaultMessage = "操作に失敗しました"
   ): never {
-    // Log error to monitoring service in production
-    if (process.env.NODE_ENV === "development") {
-      console.error("Database error details:", error);
-    }
+    logger.error("Database error", error, "BaseService");
     const message = this.handleDatabaseError(error, defaultMessage);
 
     // より詳細なエラー情報を含む
