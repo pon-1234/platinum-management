@@ -3,6 +3,7 @@
 import { QRCodeService } from "@/services/qr-code.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 // Create singleton instance
 const qrCodeService = new QRCodeService();
@@ -19,6 +20,7 @@ export const generateQRCode = createSafeAction(
   generateQRCodeSchema,
   async (data) => {
     const qrCode = await qrCodeService.generateQRCode(data);
+    revalidatePath("/qr-attendance");
     return qrCode;
   }
 );
@@ -56,6 +58,9 @@ export const recordAttendance = createSafeAction(
   recordAttendanceSchema,
   async (data) => {
     const response = await qrCodeService.recordAttendance(data);
+    // Update relevant dashboards/pages
+    revalidatePath("/qr-attendance");
+    revalidatePath("/attendance");
     return response;
   }
 );
