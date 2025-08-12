@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { keys } from "@/lib/cache-utils";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import { CustomerList } from "@/components/customers/CustomerList";
@@ -99,7 +100,9 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
       }
 
       // Invalidate the query to refetch the list
-      await queryClient.invalidateQueries({ queryKey: ["customers"] });
+      await queryClient.invalidateQueries({
+        queryKey: keys.customers(debouncedSearchQuery, statusFilter),
+      });
 
       setShowForm(false);
       setEditingCustomer(null);
