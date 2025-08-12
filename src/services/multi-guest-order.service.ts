@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/types/database.types";
 
 type GuestOrder = Database["public"]["Tables"]["guest_orders"]["Row"];
@@ -83,13 +84,20 @@ export class MultiGuestOrderService {
           orderItem.id
         );
       } catch (attrError) {
-        console.warn("Attribution calculation failed, continuing:", attrError);
+        logger.warn(
+          "Attribution calculation failed, continuing",
+          "MultiGuestOrderService"
+        );
         // Attributionの計算に失敗しても注文作成は成功とする
       }
 
       return { orderItem, guestOrder };
     } catch (error) {
-      console.error("Error creating guest order:", error);
+      logger.error(
+        "Error creating guest order",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
@@ -133,7 +141,11 @@ export class MultiGuestOrderService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error("Error assigning order to guest:", error);
+      logger.error(
+        "Error assigning order to guest",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
@@ -220,13 +232,20 @@ export class MultiGuestOrderService {
           orderItem.id
         );
       } catch (attrError) {
-        console.warn("Attribution calculation failed, continuing:", attrError);
+        logger.warn(
+          "Attribution calculation failed, continuing",
+          "MultiGuestOrderService"
+        );
         // Attributionの計算に失敗しても注文作成は成功とする
       }
 
       return { orderItem, guestOrders };
     } catch (error) {
-      console.error("Error creating shared order:", error);
+      logger.error(
+        "Error creating shared order",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
@@ -256,7 +275,11 @@ export class MultiGuestOrderService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error("Error fetching guest orders:", error);
+      logger.error(
+        "Error fetching guest orders",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
@@ -285,7 +308,11 @@ export class MultiGuestOrderService {
 
       return ordersByGuest;
     } catch (error) {
-      console.error("Error fetching visit orders by guest:", error);
+      logger.error(
+        "Error fetching visit orders by guest",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
@@ -323,7 +350,11 @@ export class MultiGuestOrderService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error("Error updating order assignment:", error);
+      logger.error(
+        "Error updating order assignment",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
@@ -341,7 +372,11 @@ export class MultiGuestOrderService {
 
       if (error) throw error;
     } catch (error) {
-      console.error("Error deleting guest order:", error);
+      logger.error(
+        "Error deleting guest order",
+        error,
+        "MultiGuestOrderService"
+      );
       throw error;
     }
   }
