@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -322,8 +323,9 @@ export class TableService extends BaseService {
 
       if (error) {
         // RPCが存在しない場合は従来の方法でフォールバック
-        console.warn(
-          "RPC get_available_tablesが存在しません。従来の方法で処理します。"
+        logger.warn(
+          "RPC get_available_tablesが存在しません。従来の方法で処理します。",
+          "TableService"
         );
 
         const tables = await this.searchTables({
@@ -411,8 +413,9 @@ export class TableService extends BaseService {
   }
 
   subscribeToAllTableUpdates(callback: (tables: Table[]) => void): () => void {
-    console.warn(
-      "subscribeToAllTableUpdates is deprecated. Use subscribeToTableUpdatesDifferential for better performance."
+    logger.warn(
+      "subscribeToAllTableUpdates is deprecated. Use subscribeToTableUpdatesDifferential for better performance.",
+      "TableService"
     );
     // Initial load
     this.searchTables({ isActive: true }).then(callback);

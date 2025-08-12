@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 export interface AvailableStaff {
   id: string;
@@ -47,10 +48,12 @@ export async function getAvailableStaffAction(): Promise<{
       })
     );
 
+    // This list may power cast management page; revalidate if needed
+    revalidatePath("/cast/management");
     return { success: true, data: formattedStaff };
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.error("Unexpected error in getAvailableStaffAction:", error);
+      // Avoid adding logger in server actions to keep them lightweight
     }
     return { success: false, error: "予期しないエラーが発生しました" };
   }

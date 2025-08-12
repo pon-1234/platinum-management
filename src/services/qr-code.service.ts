@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -35,10 +36,9 @@ export class QRCodeService extends BaseService {
       if (!secretKey) {
         // 開発環境用のデフォルトキー（本番環境では必ず環境変数を設定すること）
         if (process.env.NODE_ENV === "development") {
-          console.warn(
-            "QR_CODE_SECRET_KEY is not set. Using development default. " +
-              "Please set it in your .env.local file for production. " +
-              "You can generate a secure key using: openssl rand -base64 32"
+          logger.warn(
+            "QR_CODE_SECRET_KEY is not set. Using development default. Please set it in your .env.local file for production. You can generate a secure key using: openssl rand -base64 32",
+            "QRCodeService"
           );
           this.secretKey = "dev-secret-key-do-not-use-in-production";
         } else {
@@ -687,7 +687,7 @@ export class QRCodeService extends BaseService {
 
     if (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("アクティブスタッフ取得エラー:", error);
+        logger.error("アクティブスタッフ取得エラー", error, "QRCodeService");
       }
       return [];
     }

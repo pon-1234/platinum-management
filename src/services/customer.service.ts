@@ -329,7 +329,11 @@ export class CustomerService extends BaseService {
         .eq("id", validatedData.tableId);
     } catch (e) {
       if (process.env.NODE_ENV === "development") {
-        console.warn("Failed to create initial table segment:", e);
+        logger.warn(
+          "Failed to create initial table segment",
+          "CustomerService",
+          { error: e as unknown }
+        );
       }
     }
 
@@ -397,7 +401,11 @@ export class CustomerService extends BaseService {
       }
     } catch (e) {
       if (process.env.NODE_ENV === "development") {
-        console.warn("Failed to update table segments on visit update:", e);
+        logger.warn(
+          "Failed to update table segments on visit update",
+          "CustomerService",
+          { error: e as unknown }
+        );
       }
     }
 

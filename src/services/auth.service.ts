@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { User, UserRole, AuthResult } from "@/types/auth.types";
+import { logger } from "@/lib/logger";
 
 type PermissionMatrix = {
   [role in UserRole]: {
@@ -88,7 +89,7 @@ export class AuthService extends BaseService {
       BaseService.clearAllInstanceCaches();
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("signOut failed:", error);
+        logger.error("signOut failed", error, "AuthService");
       }
       throw error;
     }
@@ -103,7 +104,7 @@ export class AuthService extends BaseService {
 
       if (error || !user) {
         if (error && process.env.NODE_ENV === "development") {
-          console.error("Failed to get user:", error);
+          logger.error("Failed to get user", error, "AuthService");
         }
         return null;
       }
@@ -116,7 +117,11 @@ export class AuthService extends BaseService {
 
         if (roleError || !roleData) {
           if (process.env.NODE_ENV === "development") {
-            console.error("Failed to get user role, signing out:", roleError);
+            logger.error(
+              "Failed to get user role, signing out",
+              roleError,
+              "AuthService"
+            );
           }
           await this.signOut();
           return null;
@@ -134,7 +139,7 @@ export class AuthService extends BaseService {
 
         if (staffError) {
           if (process.env.NODE_ENV === "development") {
-            console.error("Failed to get staff id:", staffError);
+            logger.error("Failed to get staff id", staffError, "AuthService");
           }
           // Decide if you want to sign out here as well, or proceed without staffId
         }
@@ -147,14 +152,14 @@ export class AuthService extends BaseService {
         };
       } catch (e) {
         if (process.env.NODE_ENV === "development") {
-          console.error("Exception when getting user role:", e);
+          logger.error("Exception when getting user role", e, "AuthService");
         }
         await this.signOut();
         return null;
       }
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("getCurrentUser failed:", error);
+        logger.error("getCurrentUser failed", error, "AuthService");
       }
       return null;
     }

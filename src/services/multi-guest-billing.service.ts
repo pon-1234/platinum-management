@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/types/database.types";
 import { VisitGuestService } from "./visit-guest.service";
 import { MultiGuestOrderService } from "./multi-guest-order.service";
@@ -75,7 +76,11 @@ export class MultiGuestBillingService {
 
       return individualBills;
     } catch (error) {
-      console.error("Error calculating individual bills:", error);
+      logger.error(
+        "Error calculating individual bills",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }
@@ -111,7 +116,11 @@ export class MultiGuestBillingService {
 
       return billingSplits;
     } catch (error) {
-      console.error("Error processing split billing:", error);
+      logger.error(
+        "Error processing split billing",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }
@@ -153,7 +162,11 @@ export class MultiGuestBillingService {
         await VisitGuestService.checkOutGuest(guestId);
       }
     } catch (error) {
-      console.error("Error processing individual payment:", error);
+      logger.error(
+        "Error processing individual payment",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }
@@ -196,7 +209,11 @@ export class MultiGuestBillingService {
         billingType,
       };
     } catch (error) {
-      console.error("Error generating group bill:", error);
+      logger.error(
+        "Error generating group bill",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }
@@ -261,7 +278,11 @@ export class MultiGuestBillingService {
         errors,
       };
     } catch (error) {
-      console.error("Error validating billing consistency:", error);
+      logger.error(
+        "Error validating billing consistency",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }
@@ -308,7 +329,11 @@ export class MultiGuestBillingService {
           .eq("id", visitId);
       }
     } catch (error) {
-      console.error("Error processing partial checkout:", error);
+      logger.error(
+        "Error processing partial checkout",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }
@@ -334,7 +359,11 @@ export class MultiGuestBillingService {
 
       return await this.processSplitBilling(visitId, splitData);
     } catch (error) {
-      console.error("Error splitting bill evenly:", error);
+      logger.error(
+        "Error splitting bill evenly",
+        error,
+        "MultiGuestBillingService"
+      );
       throw error;
     }
   }

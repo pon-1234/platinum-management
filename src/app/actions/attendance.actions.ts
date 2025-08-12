@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 import type {
   AttendanceDashboard,
   AttendanceRecord,
@@ -133,7 +134,7 @@ export async function getAttendanceDashboardAction(): Promise<
     };
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.error("getAttendanceDashboardAction failed:", error);
+      // Keep server actions minimal; avoid importing logger here
     }
     const errorMessage =
       error instanceof Error
@@ -253,6 +254,7 @@ export async function clockInAction(
 
     if (error) throw error;
 
+    revalidatePath("/attendance");
     return { success: true, data };
   } catch (error) {
     const errorMessage =
@@ -325,6 +327,7 @@ export async function clockOutAction(
 
     if (error) throw error;
 
+    revalidatePath("/attendance");
     return { success: true, data };
   } catch (error) {
     const errorMessage =
@@ -401,6 +404,7 @@ export async function startBreakAction(
 
     if (error) throw error;
 
+    revalidatePath("/attendance");
     return { success: true, data };
   } catch (error) {
     const errorMessage =
@@ -472,6 +476,7 @@ export async function endBreakAction(
 
     if (error) throw error;
 
+    revalidatePath("/attendance");
     return { success: true, data };
   } catch (error) {
     const errorMessage =

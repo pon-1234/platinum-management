@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 
 const supabase = createClient();
 
@@ -38,7 +39,11 @@ export class CastAssignmentService {
       .single();
 
     if (error) {
-      console.error("Error assigning cast to visit:", error);
+      logger.error(
+        "Error assigning cast to visit",
+        error,
+        "CastAssignmentService"
+      );
       throw new Error("キャストの割り当てに失敗しました");
     }
 
@@ -65,7 +70,11 @@ export class CastAssignmentService {
       .order("assigned_at", { ascending: true });
 
     if (error) {
-      console.error("Error fetching visit assignments:", error);
+      logger.error(
+        "Error fetching visit assignments",
+        error,
+        "CastAssignmentService"
+      );
       throw new Error("キャスト割り当ての取得に失敗しました");
     }
 
@@ -96,7 +105,7 @@ export class CastAssignmentService {
       .single();
 
     if (error) {
-      console.error("Error updating assignment:", error);
+      logger.error("Error updating assignment", error, "CastAssignmentService");
       throw new Error("キャスト割り当ての更新に失敗しました");
     }
 
@@ -116,7 +125,7 @@ export class CastAssignmentService {
       .eq("id", assignmentId);
 
     if (error) {
-      console.error("Error ending assignment:", error);
+      logger.error("Error ending assignment", error, "CastAssignmentService");
       throw new Error("キャスト割り当ての終了に失敗しました");
     }
   }
@@ -131,7 +140,7 @@ export class CastAssignmentService {
       .eq("id", assignmentId);
 
     if (error) {
-      console.error("Error removing assignment:", error);
+      logger.error("Error removing assignment", error, "CastAssignmentService");
       throw new Error("キャスト割り当ての削除に失敗しました");
     }
   }
@@ -161,7 +170,11 @@ export class CastAssignmentService {
       .eq("cast_id", castId);
 
     if (error) {
-      console.error("Error setting primary cast:", error);
+      logger.error(
+        "Error setting primary cast",
+        error,
+        "CastAssignmentService"
+      );
       throw new Error("メインキャストの設定に失敗しました");
     }
   }
@@ -183,7 +196,11 @@ export class CastAssignmentService {
     });
 
     if (error) {
-      console.error("Error calculating nomination fees:", error);
+      logger.error(
+        "Error calculating nomination fees",
+        error,
+        "CastAssignmentService"
+      );
       throw new Error("指名料の計算に失敗しました");
     }
 
@@ -222,7 +239,11 @@ export class CastAssignmentService {
     );
 
     if (error) {
-      console.error("Error calculating cast nomination back:", error);
+      logger.error(
+        "Error calculating cast nomination back",
+        error,
+        "CastAssignmentService"
+      );
       throw new Error("指名バックの計算に失敗しました");
     }
 
@@ -251,7 +272,11 @@ export class CastAssignmentService {
       .order("name");
 
     if (error) {
-      console.error("Error fetching available casts:", error);
+      logger.error(
+        "Error fetching available casts",
+        error,
+        "CastAssignmentService"
+      );
       throw new Error("キャスト一覧の取得に失敗しました");
     }
 

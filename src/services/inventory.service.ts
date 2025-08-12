@@ -531,7 +531,7 @@ export class InventoryService extends BaseService {
       );
 
       if (error) {
-        console.error("Categories RPC error:", error);
+        logger.error("Categories RPC error", error, "InventoryService");
         throw new Error(
           error.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -542,7 +542,7 @@ export class InventoryService extends BaseService {
       return (data || []).map((row: { category: string }) => row.category);
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("getCategories failed:", error);
+        logger.error("getCategories failed", error, "InventoryService");
       }
       throw error;
     }

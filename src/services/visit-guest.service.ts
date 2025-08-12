@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/types/database.types";
 
 type VisitGuest = Database["public"]["Tables"]["visit_guests"]["Row"];
@@ -62,7 +63,7 @@ export class VisitGuestService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error("Error adding guest to visit:", error);
+      logger.error("Error adding guest to visit", error, "VisitGuestService");
       throw error;
     }
   }
@@ -86,7 +87,7 @@ export class VisitGuestService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error("Error updating guest info:", error);
+      logger.error("Error updating guest info", error, "VisitGuestService");
       throw error;
     }
   }
@@ -114,7 +115,7 @@ export class VisitGuestService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error("Error fetching visit guests:", error);
+      logger.error("Error fetching visit guests", error, "VisitGuestService");
       throw error;
     }
   }
@@ -137,7 +138,7 @@ export class VisitGuestService {
 
       if (error) throw error;
     } catch (error) {
-      console.error("Error checking out guest:", error);
+      logger.error("Error checking out guest", error, "VisitGuestService");
       throw error;
     }
   }
@@ -162,7 +163,7 @@ export class VisitGuestService {
 
       if (error) throw error;
     } catch (error) {
-      console.error("Error transferring guest:", error);
+      logger.error("Error transferring guest", error, "VisitGuestService");
       throw error;
     }
   }
@@ -210,7 +211,7 @@ export class VisitGuestService {
         total,
       };
     } catch (error) {
-      console.error("Error calculating guest bill:", error);
+      logger.error("Error calculating guest bill", error, "VisitGuestService");
       throw error;
     }
   }
@@ -238,7 +239,7 @@ export class VisitGuestService {
 
       if (error) throw error;
     } catch (error) {
-      console.error("Error setting primary payer:", error);
+      logger.error("Error setting primary payer", error, "VisitGuestService");
       throw error;
     }
   }

@@ -285,7 +285,7 @@ export class QRAttendanceService extends BaseService {
 
     if (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("重複チェックエラー:", error);
+        logger.error("重複チェックエラー", error, "QRAttendanceService");
       }
       return false;
     }

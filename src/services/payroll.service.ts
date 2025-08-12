@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 import { Database } from "@/types/database.types";
 import { startOfMonth, endOfMonth, format, differenceInHours } from "date-fns";
 
@@ -456,9 +457,10 @@ export class PayrollService {
         const saved = await this.saveCalculation(calculation, "draft");
         calculations.push(saved);
       } catch (error) {
-        console.error(
-          `Failed to calculate payroll for cast ${cast.id}:`,
-          error
+        logger.error(
+          `Failed to calculate payroll for cast ${cast.id}`,
+          error,
+          "PayrollService"
         );
       }
     }
