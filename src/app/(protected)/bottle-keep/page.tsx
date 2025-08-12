@@ -29,6 +29,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
+import { Access } from "@/components/auth/Access";
 
 type ViewMode = "dashboard" | "list" | "alerts" | "expiry";
 
@@ -201,13 +202,20 @@ export default function BottleKeepPage() {
                 >
                   ダッシュボードに戻る
                 </button>
-                <button
-                  onClick={() => setShowCreateForm(true)}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+                <Access
+                  roles={["admin", "manager", "hall", "cashier"]}
+                  resource="bottle_keep"
+                  action="manage"
+                  require="any"
                 >
-                  <PlusIcon className="h-5 w-5" />
-                  新規登録
-                </button>
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-5 w-5" />
+                    新規登録
+                  </button>
+                </Access>
               </div>
             </div>
 
@@ -266,13 +274,20 @@ export default function BottleKeepPage() {
           <p className="text-gray-600">顧客のボトルキープを管理します</p>
         </div>
         {viewMode === "dashboard" && (
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+          <Access
+            roles={["admin", "manager", "hall", "cashier"]}
+            resource="bottle_keep"
+            action="manage"
+            require="any"
           >
-            <PlusIcon className="h-5 w-5" />
-            新規登録
-          </button>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+            >
+              <PlusIcon className="h-5 w-5" />
+              新規登録
+            </button>
+          </Access>
         )}
       </div>
 
