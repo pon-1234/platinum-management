@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -59,7 +60,7 @@ export class QRStatisticsService extends BaseService {
         totalStaff: Number(stats.unique_users_today) || 0, // Using unique users as totalStaff for now
       };
     } catch (error) {
-      console.error("getQRCodeStats error:", error);
+      logger.error("getQRCodeStats error", error, "QRStatisticsService");
       throw error;
     }
   }

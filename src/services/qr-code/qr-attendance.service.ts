@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -120,9 +121,7 @@ export class QRAttendanceService extends BaseService {
         staffName: staffId, // スタッフ名の代わりにIDを使用
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("出勤記録エラー:", error);
-      }
+      logger.error("出勤記録エラー", error, "QRAttendanceService");
 
       // エラーログ記録
       if (request.qrData) {
@@ -142,9 +141,7 @@ export class QRAttendanceService extends BaseService {
             });
           }
         } catch (logError) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("エラーログ記録失敗:", logError);
-          }
+          logger.error("エラーログ記録失敗", logError, "QRAttendanceService");
         }
       }
 

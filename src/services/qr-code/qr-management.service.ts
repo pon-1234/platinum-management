@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -195,9 +196,7 @@ export class QRManagementService extends BaseService {
       .maybeSingle();
 
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("位置設定取得エラー:", error);
-      }
+      logger.error("位置設定取得エラー", error, "QRManagementService");
     }
 
     // デフォルト設定を返す
@@ -324,6 +323,11 @@ export class QRManagementService extends BaseService {
       .gt("qr_codes.expires_at", new Date().toISOString());
 
     if (error) {
+      logger.error(
+        "Failed to fetch active staffs with QR",
+        error,
+        "QRManagementService"
+      );
       return [];
     }
 
