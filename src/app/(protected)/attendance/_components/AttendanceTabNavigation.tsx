@@ -8,6 +8,7 @@ import {
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { Access } from "@/components/auth/Access";
 
 export type TabType = "dashboard" | "schedule" | "timeclock" | "requests";
 
@@ -57,7 +58,7 @@ export const AttendanceTabNavigation = memo(
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
             {tabs.map((tab) => (
-              <RoleGate key={tab.id} allowedRoles={tab.roles}>
+              <Access key={tab.id} roles={tab.roles}>
                 <button
                   onClick={() => onTabChange(tab.id)}
                   className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -69,7 +70,7 @@ export const AttendanceTabNavigation = memo(
                   <tab.icon className="w-5 h-5 inline-block mr-2" />
                   {tab.label}
                 </button>
-              </RoleGate>
+              </Access>
             ))}
           </nav>
         </div>

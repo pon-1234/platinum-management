@@ -8,6 +8,7 @@ import { TableFilters } from "@/components/table/TableFilters";
 import { TableDashboard } from "@/components/table/TableDashboard";
 import RealTimeTableDashboard from "@/components/table/RealTimeTableDashboard";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { Access } from "@/components/auth/Access";
 import { usePermission } from "@/hooks/usePermission";
 import { tableService } from "@/services/table.service";
 import type { Table, TableSearchParams } from "@/types/reservation.types";
@@ -90,7 +91,12 @@ export default function TablesPage() {
               テーブルをクリックしてステータスを変更できます
             </p>
           </div>
-          {can("table", "manage") && (
+          <Access
+            resource="tables"
+            action="manage"
+            roles={["admin", "manager", "hall"]}
+            require="any"
+          >
             <button
               onClick={handleCreateTable}
               className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2 transition-colors"
@@ -98,7 +104,7 @@ export default function TablesPage() {
               <PlusIcon className="h-5 w-5" />
               テーブル作成
             </button>
-          )}
+          </Access>
         </div>
 
         {/* Real-time Dashboard */}
