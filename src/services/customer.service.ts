@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service";
+import { logger } from "@/lib/logger";
 import { camelToSnake, removeUndefined } from "@/lib/utils/transform";
 import type { Database } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -137,7 +138,11 @@ export class CustomerService extends BaseService {
       });
 
       if (error) {
-        console.error("Optimized customer search error:", error);
+        logger.error(
+          "Optimized customer search error",
+          error,
+          "CustomerService"
+        );
         // If RPC function doesn't exist, fall back to standard query
         if (error.code === "42883") {
           throw new Error(
