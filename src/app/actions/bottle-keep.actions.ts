@@ -3,6 +3,7 @@
 import { BottleKeepService } from "@/services/bottle-keep.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 // ========== BottleKeep Actions ==========
 
@@ -67,6 +68,7 @@ export const createBottleKeep = createSafeAction(
       storage_location: data.storageLocation,
       notes: data.notes,
     });
+    revalidatePath("/bottle-keep");
     return bottleKeep;
   }
 );
@@ -89,6 +91,7 @@ export const updateBottleKeep = createSafeAction(
       remaining_percentage: data.remainingAmount,
       notes: data.notes,
     });
+    revalidatePath("/bottle-keep");
     return bottleKeep;
   }
 );
@@ -109,6 +112,7 @@ export const useBottleKeep = createSafeAction(
       served_amount: data.amountUsed,
       notes: data.notes,
     });
+    revalidatePath("/bottle-keep");
     return null;
   }
 );
