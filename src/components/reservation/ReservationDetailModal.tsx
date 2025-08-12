@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { reservationService } from "@/services/reservation.service";
+import { revalidatePath } from "next/cache";
 import { customerService } from "@/services/customer.service";
 import { castService } from "@/services/cast.service";
 import { updateReservationSchema } from "@/lib/validations/reservation";
@@ -164,6 +165,7 @@ export function ReservationDetailModal({
     setIsLoading(true);
     try {
       await reservationService.updateReservation(reservation.id, data);
+      revalidatePath("/bookings");
       toast.success("予約を更新しました");
       setIsEditing(false);
       onSuccess();
@@ -189,6 +191,7 @@ export function ReservationDetailModal({
 
     try {
       await reservationService.checkInReservation(reservation.id, tableId);
+      revalidatePath("/bookings");
       toast.success("チェックインしました");
       onSuccess();
     } catch (error) {
@@ -207,6 +210,7 @@ export function ReservationDetailModal({
 
     try {
       await reservationService.cancelReservation(reservation.id, reason);
+      revalidatePath("/bookings");
       toast.success("予約をキャンセルしました");
       onSuccess();
     } catch (error) {

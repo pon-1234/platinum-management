@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { reservationService } from "@/services/reservation.service";
+import { revalidatePath } from "next/cache";
 import { customerService } from "@/services/customer.service";
 import { castService } from "@/services/cast.service";
 import { createReservationSchema } from "@/lib/validations/reservation";
@@ -109,6 +110,7 @@ export function CreateReservationModal({
     setIsLoading(true);
     try {
       await reservationService.createReservation(data);
+      revalidatePath("/bookings");
       toast.success("予約を作成しました");
       reset();
       onSuccess();
