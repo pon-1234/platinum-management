@@ -25,6 +25,7 @@ import {
   CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
+import { Access } from "@/components/auth/Access";
 
 interface CustomerDetailClientProps {
   customer: Customer | null;
@@ -253,7 +254,12 @@ export function CustomerDetailClient({
             </Link>
             <h1 className="text-2xl font-bold text-gray-900">顧客詳細</h1>
           </div>
-          <ProtectedComponent resource="customers" action="edit">
+          <Access
+            roles={["admin", "manager", "hall"]}
+            resource="customers"
+            action="edit"
+            require="any"
+          >
             <button
               onClick={handleEdit}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -261,7 +267,7 @@ export function CustomerDetailClient({
               <PencilIcon className="-ml-1 mr-2 h-5 w-5" />
               編集
             </button>
-          </ProtectedComponent>
+          </Access>
         </div>
       </div>
 

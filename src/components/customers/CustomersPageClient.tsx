@@ -19,6 +19,7 @@ import { usePermission } from "@/hooks/usePermission";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCustomers } from "@/hooks/useCustomers";
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
+import { Access } from "@/components/auth/Access";
 
 interface CustomersPageClientProps {
   initialData: {
@@ -154,7 +155,12 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <ProtectedComponent resource="customers" action="create">
+          <Access
+            roles={["admin", "manager", "hall"]}
+            resource="customers"
+            action="create"
+            require="any"
+          >
             <button
               type="button"
               onClick={handleCreate}
@@ -163,7 +169,7 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
               <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
               新規登録
             </button>
-          </ProtectedComponent>
+          </Access>
         </div>
       </div>
 
