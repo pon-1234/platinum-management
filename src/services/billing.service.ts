@@ -2,6 +2,7 @@ import { BaseService } from "./base.service";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { logger } from "@/lib/logger";
 import type {
   Product,
   Visit,
@@ -222,9 +223,10 @@ export class BillingService extends BaseService {
         })
         .eq("id", data.tableId);
     } catch (e) {
-      if (process.env.NODE_ENV === "development") {
-        console.warn("Failed to create initial table segment:", e);
-      }
+      logger.warn("Failed to create initial table segment", "BillingService", {
+        visitId: visit.id,
+        tableId: data.tableId,
+      });
     }
 
     return this.mapToVisit(visit);
@@ -550,9 +552,11 @@ export class BillingService extends BaseService {
           .eq("id", data.tableId);
       }
     } catch (e) {
-      if (process.env.NODE_ENV === "development") {
-        console.warn("Failed to update table segments on visit update:", e);
-      }
+      logger.warn(
+        "Failed to update table segments on visit update",
+        "BillingService",
+        { visitId: id, tableId: data.tableId }
+      );
     }
 
     return this.mapToVisit(visit);
@@ -715,7 +719,11 @@ export class BillingService extends BaseService {
       });
 
     if (nominationError) {
-      console.error("Error calculating nomination fees:", nominationError);
+      logger.logDatabaseError(
+        nominationError,
+        "rpc calculate_nomination_fees",
+        "calculate_nomination_fees"
+      );
     }
 
     const nominationFee = nominationData?.[0]?.total_nomination_fee || 0;
@@ -818,9 +826,11 @@ export class BillingService extends BaseService {
         .update({ current_status: "available", current_visit_id: null })
         .eq("current_visit_id", visitId);
     } catch (e) {
-      if (process.env.NODE_ENV === "development") {
-        console.warn("Failed to finalize segments/table on payment:", e);
-      }
+      logger.warn(
+        "Failed to finalize segments/table on payment",
+        "BillingService",
+        { visitId }
+      );
     }
 
     return updatedVisit;
@@ -849,7 +859,11 @@ export class BillingService extends BaseService {
       ]);
 
       if (billingReport.error) {
-        console.error("Daily billing report RPC error:", billingReport.error);
+        logger.logDatabaseError(
+          billingReport.error,
+          "rpc generate_daily_billing_report",
+          "generate_daily_billing_report"
+        );
         throw new Error(
           billingReport.error.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -896,7 +910,7 @@ export class BillingService extends BaseService {
         ),
       };
     } catch (error) {
-      console.error("Failed to generate daily report:", error);
+      logger.error("Failed to generate daily report", error, "BillingService");
       throw error;
     }
   }
@@ -915,9 +929,11 @@ export class BillingService extends BaseService {
       .lte("visit.check_in_at", endDate);
 
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to fetch order items with details:", error);
-      }
+      logger.error(
+        "Failed to fetch order items with details",
+        error,
+        "BillingService"
+      );
       return [];
     }
 
@@ -1074,9 +1090,7 @@ export class BillingService extends BaseService {
 
       return dailyReport;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to perform daily closing:", error);
-      }
+      logger.error("Failed to perform daily closing", error, "BillingService");
       throw new Error("レジ締め処理に失敗しました");
     }
   }
@@ -1095,9 +1109,11 @@ export class BillingService extends BaseService {
       .eq("status", "active"); // Only update if still active
 
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error(`Failed to finalize visit ${visitId}:`, error);
-      }
+      logger.error(
+        `Failed to finalize visit ${visitId}`,
+        error,
+        "BillingService"
+      );
       throw new Error(`来店記録 ${visitId} の確定に失敗しました`);
     }
   }
@@ -1124,27 +1140,29 @@ export class BillingService extends BaseService {
       // If the table doesn't exist, log as warning
       if (error) {
         if (
-          error.message.includes("relation") ||
-          error.message.includes("does not exist")
+          (error as { message?: string }).message?.includes("relation") ||
+          (error as { message?: string }).message?.includes("does not exist")
         ) {
-          if (process.env.NODE_ENV === "development") {
-            console.warn(
-              "Daily closings table not available, skipping record creation:",
-              error.message
-            );
-          }
+          logger.warn(
+            "Daily closings table not available, skipping record creation",
+            "BillingService"
+          );
         } else {
-          if (process.env.NODE_ENV === "development") {
-            console.error("Failed to create daily closing record:", error);
-          }
+          logger.error(
+            "Failed to create daily closing record",
+            error,
+            "BillingService"
+          );
           // Don't throw here to avoid breaking the main closing process
         }
       }
     } catch (error) {
       // Log unexpected errors as warnings to avoid breaking the main process
-      if (process.env.NODE_ENV === "development") {
-        console.warn("Unexpected error creating daily closing record:", error);
-      }
+      logger.warn(
+        "Unexpected error creating daily closing record",
+        "BillingService",
+        { date }
+      );
     }
   }
 
@@ -1158,9 +1176,7 @@ export class BillingService extends BaseService {
 
       if (error) {
         // If table doesn't exist or other error, consider as not closed
-        if (process.env.NODE_ENV === "development") {
-          console.warn("Failed to check daily closing status:", error);
-        }
+        logger.warn("Failed to check daily closing status", "BillingService");
         return false;
       }
 
@@ -1180,9 +1196,7 @@ export class BillingService extends BaseService {
       .lt("check_in_at", `${date}T23:59:59.999Z`);
 
     if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to check open visits:", error);
-      }
+      logger.error("Failed to check open visits", error, "BillingService");
       return 0;
     }
 
