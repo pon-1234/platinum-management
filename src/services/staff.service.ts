@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -93,7 +94,11 @@ export class StaffService extends BaseService {
         });
 
       if (searchError) {
-        console.error("Optimized staff search error:", searchError);
+        logger.error(
+          "Optimized staff search error",
+          searchError,
+          "StaffService"
+        );
         // If RPC function doesn't exist, fall back to standard query
         if (searchError.code === "42883") {
           throw new Error(
