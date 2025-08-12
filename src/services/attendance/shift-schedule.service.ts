@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
@@ -56,9 +57,7 @@ export class ShiftScheduleService extends BaseService {
 
       return this.mapToShiftTemplate(template);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("createShiftTemplate failed:", error);
-      }
+      logger.error("createShiftTemplate failed", error, "ShiftScheduleService");
       throw error;
     }
   }
@@ -85,9 +84,11 @@ export class ShiftScheduleService extends BaseService {
 
       return this.mapToShiftTemplate(data);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getShiftTemplateById failed:", error);
-      }
+      logger.error(
+        "getShiftTemplateById failed",
+        error,
+        "ShiftScheduleService"
+      );
       throw error;
     }
   }
@@ -110,9 +111,11 @@ export class ShiftScheduleService extends BaseService {
 
       return data.map(this.mapToShiftTemplate);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getAllShiftTemplates failed:", error);
-      }
+      logger.error(
+        "getAllShiftTemplates failed",
+        error,
+        "ShiftScheduleService"
+      );
       throw error;
     }
   }
@@ -147,9 +150,7 @@ export class ShiftScheduleService extends BaseService {
 
       return this.mapToShiftTemplate(template);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("updateShiftTemplate failed:", error);
-      }
+      logger.error("updateShiftTemplate failed", error, "ShiftScheduleService");
       throw error;
     }
   }
@@ -170,9 +171,7 @@ export class ShiftScheduleService extends BaseService {
         );
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("deleteShiftTemplate failed:", error);
-      }
+      logger.error("deleteShiftTemplate failed", error, "ShiftScheduleService");
       throw error;
     }
   }
@@ -208,9 +207,11 @@ export class ShiftScheduleService extends BaseService {
 
       return this.mapToConfirmedShift(shift);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("createConfirmedShift failed:", error);
-      }
+      logger.error(
+        "createConfirmedShift failed",
+        error,
+        "ShiftScheduleService"
+      );
       throw error;
     }
   }
@@ -270,9 +271,11 @@ export class ShiftScheduleService extends BaseService {
 
       return data.map(this.mapToConfirmedShift);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("searchConfirmedShifts failed:", error);
-      }
+      logger.error(
+        "searchConfirmedShifts failed",
+        error,
+        "ShiftScheduleService"
+      );
       throw error;
     }
   }
@@ -290,9 +293,11 @@ export class ShiftScheduleService extends BaseService {
         );
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to delete confirmed shift:", error);
-      }
+      logger.error(
+        "Failed to delete confirmed shift",
+        error,
+        "ShiftScheduleService"
+      );
       throw error;
     }
   }
@@ -344,9 +349,7 @@ export class ShiftScheduleService extends BaseService {
         days,
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getWeeklySchedule failed:", error);
-      }
+      logger.error("getWeeklySchedule failed", error, "ShiftScheduleService");
       throw error;
     }
   }

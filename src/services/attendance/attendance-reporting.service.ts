@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { attendanceTrackingService } from "./attendance-tracking.service";
 import { shiftRequestService } from "./shift-request.service";
 import { createClient } from "@/lib/supabase/client";
@@ -32,7 +33,11 @@ export class AttendanceReportingService extends BaseService {
       );
 
       if (statsError) {
-        console.error("Attendance dashboard RPC error:", statsError);
+        logger.error(
+          "Attendance dashboard RPC error",
+          statsError,
+          "AttendanceReportingService"
+        );
         throw new Error(
           statsError.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -86,7 +91,11 @@ export class AttendanceReportingService extends BaseService {
         },
       };
     } catch (error) {
-      console.error("Failed to get attendance dashboard:", error);
+      logger.error(
+        "Failed to get attendance dashboard",
+        error,
+        "AttendanceReportingService"
+      );
       throw error;
     }
   }
@@ -109,7 +118,11 @@ export class AttendanceReportingService extends BaseService {
       );
 
       if (error) {
-        console.error("Monthly attendance summary RPC error:", error);
+        logger.error(
+          "Monthly attendance summary RPC error",
+          error,
+          "AttendanceReportingService"
+        );
         throw new Error(
           error.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -146,7 +159,11 @@ export class AttendanceReportingService extends BaseService {
         lateDays: Number(summary.late_days) || 0,
       };
     } catch (error) {
-      console.error("Failed to get monthly attendance summary:", error);
+      logger.error(
+        "Failed to get monthly attendance summary",
+        error,
+        "AttendanceReportingService"
+      );
       throw error;
     }
   }
@@ -227,9 +244,11 @@ export class AttendanceReportingService extends BaseService {
         },
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("generateMonthlyReport failed:", error);
-      }
+      logger.error(
+        "generateMonthlyReport failed",
+        error,
+        "AttendanceReportingService"
+      );
       throw error;
     }
   }

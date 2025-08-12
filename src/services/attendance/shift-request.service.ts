@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
@@ -41,9 +42,7 @@ export class ShiftRequestService extends BaseService {
 
       return this.mapToShiftRequest(request);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("createShiftRequest failed:", error);
-      }
+      logger.error("createShiftRequest failed", error, "ShiftRequestService");
       throw error;
     }
   }
@@ -92,9 +91,7 @@ export class ShiftRequestService extends BaseService {
 
       return data.map(this.mapToShiftRequest);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("searchShiftRequests failed:", error);
-      }
+      logger.error("searchShiftRequests failed", error, "ShiftRequestService");
       throw error;
     }
   }
@@ -131,9 +128,7 @@ export class ShiftRequestService extends BaseService {
 
       return this.mapToShiftRequest(request);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("approveShiftRequest failed:", error);
-      }
+      logger.error("approveShiftRequest failed", error, "ShiftRequestService");
       throw error;
     }
   }
@@ -154,9 +149,11 @@ export class ShiftRequestService extends BaseService {
         );
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to delete shift request:", error);
-      }
+      logger.error(
+        "Failed to delete shift request",
+        error,
+        "ShiftRequestService"
+      );
       throw error;
     }
   }
@@ -176,9 +173,7 @@ export class ShiftRequestService extends BaseService {
 
       return data?.length || 0;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getPendingCount failed:", error);
-      }
+      logger.error("getPendingCount failed", error, "ShiftRequestService");
       return 0;
     }
   }

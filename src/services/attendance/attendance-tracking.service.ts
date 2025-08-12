@@ -1,4 +1,5 @@
 import { BaseService } from "../base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
@@ -41,9 +42,11 @@ export class AttendanceTrackingService extends BaseService {
 
       return this.mapToAttendanceRecord(record);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("createAttendanceRecord failed:", error);
-      }
+      logger.error(
+        "createAttendanceRecord failed",
+        error,
+        "AttendanceTrackingService"
+      );
       throw error;
     }
   }
@@ -190,9 +193,11 @@ export class AttendanceTrackingService extends BaseService {
 
       return this.mapToAttendanceRecord(data);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getTodayRecordByStaffId failed:", error);
-      }
+      logger.error(
+        "getTodayRecordByStaffId failed",
+        error,
+        "AttendanceTrackingService"
+      );
       throw error;
     }
   }
@@ -209,17 +214,21 @@ export class AttendanceTrackingService extends BaseService {
         );
 
       if (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error fetching correction requests:", error);
-        }
+        logger.error(
+          "Error fetching correction requests",
+          error,
+          "AttendanceTrackingService"
+        );
         return 0;
       }
 
       return data?.length || 0;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Error in getCorrectionRequestsCount:", error);
-      }
+      logger.error(
+        "Error in getCorrectionRequestsCount",
+        error,
+        "AttendanceTrackingService"
+      );
       return 0;
     }
   }
