@@ -3,6 +3,7 @@
 import { inventoryService } from "@/services/inventory.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 // ========== Product Actions ==========
 
@@ -50,6 +51,8 @@ export const createProduct = createSafeAction(
   createProductSchema,
   async (data) => {
     const product = await inventoryService.createProduct(data);
+    // Invalidate inventory-related views
+    revalidatePath("/inventory");
     return product;
   }
 );
@@ -71,6 +74,7 @@ export const updateProduct = createSafeAction(
   updateProductSchema,
   async ({ id, ...data }) => {
     const product = await inventoryService.updateProduct(id, data);
+    revalidatePath("/inventory");
     return product;
   }
 );
@@ -83,6 +87,7 @@ export const deleteProduct = createSafeAction(
   deleteProductSchema,
   async ({ id }) => {
     await inventoryService.deleteProduct(id);
+    revalidatePath("/inventory");
     return null;
   }
 );
@@ -102,6 +107,7 @@ export const createInventoryMovement = createSafeAction(
   createInventoryMovementSchema,
   async (data) => {
     const movement = await inventoryService.createInventoryMovement(data);
+    revalidatePath("/inventory");
     return movement;
   }
 );
@@ -135,6 +141,7 @@ export const adjustInventory = createSafeAction(
   adjustInventorySchema,
   async (data) => {
     const movement = await inventoryService.adjustInventory(data);
+    revalidatePath("/inventory");
     return movement;
   }
 );
