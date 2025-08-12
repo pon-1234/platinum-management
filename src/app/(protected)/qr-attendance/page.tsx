@@ -21,6 +21,7 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
+import { Access } from "@/components/auth/Access";
 
 type ViewMode = "dashboard" | "generate" | "scan" | "history";
 
@@ -215,12 +216,18 @@ export default function QRAttendancePage() {
           <p className="text-gray-600">QRコードを使用した勤怠管理システム</p>
         </div>
         <div className="flex space-x-3">
-          <button
-            onClick={() => handleGenerateQRCode({ staffId: "staff001" })}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          <Access
+            roles={["admin", "manager"]}
+            resource="attendance"
+            action="manage"
           >
-            QRコード生成
-          </button>
+            <button
+              onClick={() => handleGenerateQRCode({ staffId: "staff001" })}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+            >
+              QRコード生成
+            </button>
+          </Access>
         </div>
       </div>
 
