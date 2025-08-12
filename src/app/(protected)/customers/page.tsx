@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { customerService } from "@/services/customer.service";
 import { CustomersPageClient } from "@/components/customers/CustomersPageClient";
 import type { Customer } from "@/types/customer.types";
+import { logger } from "@/lib/logger";
 
 interface InitialData {
   customers: Customer[];
@@ -17,7 +18,7 @@ async function getInitialCustomers(): Promise<InitialData> {
     });
     return { customers };
   } catch (error) {
-    console.error("Failed to fetch initial customers:", error);
+    logger.error("Failed to fetch initial customers", error, "CustomersPage");
     return {
       customers: [],
       error: "初期データの取得に失敗しました。ページを再読み込みしてください。",

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
@@ -72,9 +73,7 @@ export class ReservationService {
 
       return this.mapToReservation(reservation);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("createReservation failed:", error);
-      }
+      logger.error("createReservation failed", error, "ReservationService");
       throw error;
     }
   }
@@ -96,9 +95,7 @@ export class ReservationService {
 
       return this.mapToReservation(data);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getReservationById failed:", error);
-      }
+      logger.error("getReservationById failed", error, "ReservationService");
       throw error;
     }
   }
@@ -483,9 +480,7 @@ export class ReservationService {
 
       return data.map((item) => this.mapToReservationWithDetails(item));
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getTodaysReservations failed:", error);
-      }
+      logger.error("getTodaysReservations failed", error, "ReservationService");
       throw error;
     }
   }
@@ -503,8 +498,12 @@ export class ReservationService {
       } = await this.supabase.auth.getUser();
 
       if (authError || !user) {
-        if (authError && process.env.NODE_ENV === "development") {
-          console.error("Failed to get authenticated user:", authError);
+        if (authError) {
+          logger.error(
+            "Failed to get authenticated user",
+            authError,
+            "ReservationService"
+          );
         }
         return null;
       }
@@ -516,17 +515,13 @@ export class ReservationService {
         .single();
 
       if (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Failed to get staff id:", error);
-        }
+        logger.error("Failed to get staff id", error, "ReservationService");
         return null;
       }
 
       return staff?.id || null;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getCurrentStaffId failed:", error);
-      }
+      logger.error("getCurrentStaffId failed", error, "ReservationService");
       return null;
     }
   }
