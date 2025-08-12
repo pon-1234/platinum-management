@@ -13,6 +13,7 @@ import type { UserRole } from "@/types/auth.types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { usePermission } from "@/hooks/usePermission";
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
+import { Access } from "@/components/auth/Access";
 
 export default function StaffPage() {
   const { can } = usePermission();
@@ -174,7 +175,12 @@ export default function StaffPage() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <ProtectedComponent resource="staff" action="create">
+          <Access
+            roles={["admin", "manager"]}
+            resource="staff"
+            action="create"
+            require="any"
+          >
             <button
               type="button"
               onClick={handleCreate}
@@ -183,7 +189,7 @@ export default function StaffPage() {
               <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
               新規登録
             </button>
-          </ProtectedComponent>
+          </Access>
         </div>
       </div>
 
