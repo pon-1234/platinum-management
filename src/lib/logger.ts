@@ -18,6 +18,7 @@ interface LogEntry {
   error?: Error | unknown;
   metadata?: Record<string, unknown>;
   timestamp: Date;
+  requestId?: string;
 }
 
 /**
@@ -122,8 +123,9 @@ class Logger {
     const timestamp = entry.timestamp.toISOString();
     const level = entry.level.toUpperCase();
     const context = entry.context ? `[${entry.context}]` : "";
+    const req = entry.requestId ? `(req:${entry.requestId})` : "";
 
-    let message = `${timestamp} ${level} ${context} ${entry.message}`;
+    let message = `${timestamp} ${level} ${context} ${req} ${entry.message}`;
 
     if (entry.metadata) {
       message += ` | metadata: ${JSON.stringify(entry.metadata)}`;

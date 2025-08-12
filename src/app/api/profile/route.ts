@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -12,6 +13,7 @@ export async function POST(_request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      logger.warn("Unauthorized profile access", "ProfileAPI");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -23,7 +25,7 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (staffError && staffError.code !== "PGRST116") {
-      console.error("Failed to get staff profile:", staffError);
+      logger.logDatabaseError(staffError, "select staff by user_id", "staffs");
       return NextResponse.json(
         { error: "Failed to fetch profile data" },
         { status: 500 }
@@ -45,7 +47,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json(profile);
   } catch (error) {
-    console.error("Profile API error:", error);
+    logger.error("Profile API error", error, "ProfileAPI");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
