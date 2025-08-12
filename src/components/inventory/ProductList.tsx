@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, memo, forwardRef } from "react";
 import { Product, InventorySearchFilter } from "@/types/inventory.types";
 import {
   PencilIcon,
@@ -8,6 +8,7 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { FixedSizeList, ListChildComponentProps } from "react-window";
 
 interface ProductListProps {
   products: Product[];
@@ -81,6 +82,108 @@ export function ProductList({
       return { label: "正常", color: "text-green-600 bg-green-100" };
     }
   };
+
+  const rows = useMemo(() => products, [products]);
+
+  // Virtualized table row as TR
+  const Row = memo(({ index, style }: ListChildComponentProps) => {
+    const product = rows[index];
+    const stockStatus = getStockStatus(product);
+    const isSelected = selectedIds.includes(product.id);
+    return (
+      <tr style={style as React.CSSProperties} className="hover:bg-gray-50">
+        <td className="px-6 py-4">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => handleSelectOne(product.id)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <div>
+              <div className="text-sm font-medium text-gray-900">
+                {product.name}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {product.category}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}
+            >
+              {stockStatus.label}
+            </span>
+            {(product.stock_quantity === 0 ||
+              product.stock_quantity <= product.low_stock_threshold) && (
+              <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-400" />
+            )}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {product.stock_quantity} / {product.max_stock}
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          {formatCurrency(product.price)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          {formatCurrency(product.cost)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {formatDate(product.updated_at)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div className="flex space-x-2">
+            {onView && (
+              <button
+                onClick={() => onView(product)}
+                className="text-blue-600 hover:text-blue-900"
+              >
+                <EyeIcon className="h-4 w-4" />
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={() => onEdit(product)}
+                className="text-indigo-600 hover:text-indigo-900"
+              >
+                <PencilIcon className="h-4 w-4" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(product)}
+                className="text-red-600 hover:text-red-900"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  });
+  Row.displayName = "Row";
+
+  // Use tbody as outer/inner elements for correct semantics
+  const TBodyOuter = forwardRef<HTMLTableSectionElement, any>(
+    function TBodyOuter(props, ref) {
+      return <tbody ref={ref} {...props} />;
+    }
+  );
+
+  const TBodyInner = forwardRef<HTMLTableSectionElement, any>(
+    function TBodyInner(props, ref) {
+      return <tbody ref={ref} {...props} />;
+    }
+  );
 
   return (
     <div className="space-y-4">
@@ -180,7 +283,7 @@ export function ProductList({
         </div>
       </div>
 
-      {/* 商品一覧テーブル */}
+      {/* 商品一覧テーブル（仮想化） */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="min-w-full overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -220,8 +323,8 @@ export function ProductList({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
+            {loading ? (
+              <tbody>
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center">
@@ -230,7 +333,9 @@ export function ProductList({
                     </div>
                   </td>
                 </tr>
-              ) : products.length === 0 ? (
+              </tbody>
+            ) : products.length === 0 ? (
+              <tbody>
                 <tr>
                   <td
                     colSpan={8}
@@ -239,92 +344,19 @@ export function ProductList({
                     商品が見つかりません
                   </td>
                 </tr>
-              ) : (
-                products.map((product) => {
-                  const stockStatus = getStockStatus(product);
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(product.id)}
-                          onChange={() => handleSelectOne(product.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {product.name}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {product.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}
-                          >
-                            {stockStatus.label}
-                          </span>
-                          {(product.stock_quantity === 0 ||
-                            product.stock_quantity <=
-                              product.low_stock_threshold) && (
-                            <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-400" />
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {product.stock_quantity} / {product.max_stock}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(product.price)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(product.cost)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(product.updated_at)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
-                          {onView && (
-                            <button
-                              onClick={() => onView(product)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                          {onEdit && (
-                            <button
-                              onClick={() => onEdit(product)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                          {onDelete && (
-                            <button
-                              onClick={() => onDelete(product)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
+              </tbody>
+            ) : (
+              <FixedSizeList
+                height={600}
+                itemCount={rows.length}
+                itemSize={68}
+                width={"100%"}
+                outerElementType={TBodyOuter as any}
+                innerElementType={TBodyInner as any}
+              >
+                {Row as any}
+              </FixedSizeList>
+            )}
           </table>
         </div>
       </div>

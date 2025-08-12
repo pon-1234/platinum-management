@@ -1,7 +1,31 @@
 {
   "extends": ["next/core-web-vitals", "next/typescript"],
+  "plugins": ["@typescript-eslint", "import", "promise"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-unused-vars": "error"
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/require-await": "error",
+    "import/order": [
+      "warn",
+      {
+        "groups": [["builtin", "external"], ["internal"], ["parent", "sibling", "index"]],
+        "newlines-between": "always",
+        "alphabetize": { "order": "asc", "caseInsensitive": true }
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": ["../**", "../../**", "../../../**"],
+            "message": "Avoid deep relative imports; prefer alias paths (e.g., @/foo/bar)"
+          }
+        ]
+      }
+    ],
+    "promise/always-return": "warn",
+    "promise/catch-or-return": "warn"
   }
 }

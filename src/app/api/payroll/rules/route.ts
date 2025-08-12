@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
 // 型定義
 interface SlideRule {
@@ -42,9 +44,36 @@ export async function GET() {
   }
 }
 
+const postSchema = z.object({
+  ruleName: z.string().min(1),
+  description: z.string().optional(),
+  baseHourlyRate: z.number().nonnegative(),
+  baseBackPercentage: z.number().min(0).max(100),
+  effectiveFrom: z.string().optional(),
+  effectiveUntil: z.string().optional(),
+  slideRules: z
+    .array(
+      z.object({
+        minSales: z.number().nonnegative(),
+        maxSales: z.number().nonnegative().optional(),
+        backPercentage: z.number().min(0).max(100),
+      })
+    )
+    .optional(),
+  backRules: z
+    .array(
+      z.object({
+        category: z.string(),
+        backPercentage: z.number().min(0).max(100),
+        minAmount: z.number().nonnegative().optional(),
+        maxAmount: z.number().nonnegative().optional(),
+      })
+    )
+    .optional(),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
     const {
       ruleName,
       description,
@@ -54,7 +83,7 @@ export async function POST(request: NextRequest) {
       effectiveUntil,
       slideRules = [],
       backRules = [],
-    } = body;
+    } = await parseJsonOrThrow(postSchema, request);
 
     // 給与ルールを作成
     const supabase = await createClient();
@@ -109,6 +138,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(rule);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to create payroll rule:", error);
     return NextResponse.json(
       { error: "Failed to create payroll rule" },
@@ -117,17 +152,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const putSchema = z.object({
+  id: z.string().uuid(),
+  rule_name: z.string().optional(),
+  description: z.string().optional(),
+  base_hourly_rate: z.number().nonnegative().optional(),
+  base_back_percentage: z.number().min(0).max(100).optional(),
+  effective_from: z.string().optional(),
+  effective_until: z.string().optional(),
+  is_active: z.boolean().optional(),
+});
+
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await parseJsonOrThrow(putSchema, request);
     const { id, ...updateData } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Rule ID is required" },
-        { status: 400 }
-      );
-    }
 
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -141,6 +180,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to update payroll rule:", error);
     return NextResponse.json(
       { error: "Failed to update payroll rule" },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CustomerAnalyticsService } from "@/services/customer-analytics.service";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { parseQueryOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
 // パラメータのバリデーションスキーマ
 const paramsSchema = z.object({
@@ -42,26 +43,11 @@ export async function GET(
       );
     }
 
-    const searchParams = request.nextUrl.searchParams;
-
-    // クエリパラメータのバリデーション
-    const queryValidation = querySchema.safeParse({
-      type: searchParams.get("type"),
-      months: searchParams.get("months"),
-    });
-
-    if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid query parameters",
-          details: queryValidation.error.flatten(),
-        },
-        { status: 400 }
-      );
-    }
-
     const customerId = paramsValidation.data.id;
-    const { type = "metrics", months = 6 } = queryValidation.data;
+    const { type = "metrics", months = 6 } = parseQueryOrThrow(
+      querySchema,
+      request
+    );
 
     let data;
 
@@ -125,6 +111,12 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to fetch customer analytics:", error);
     return NextResponse.json(
       { error: "Failed to fetch customer data" },
