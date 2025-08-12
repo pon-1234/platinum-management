@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCastStore } from "@/stores/cast.store";
 import { PayrollExport } from "@/components/cast/PayrollExport";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { Access } from "@/components/auth/Access";
 import { usePermission } from "@/hooks/usePermission";
 import {
   PlusIcon,
@@ -47,7 +48,12 @@ export default function CastManagementPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium text-gray-900">キャスト一覧</h2>
-            {can("cast", "manage") && (
+            <Access
+              roles={["admin", "manager"]}
+              resource="cast"
+              action="manage"
+              require="any"
+            >
               <button
                 onClick={() => setIsRegistrationModalOpen(true)}
                 className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2 transition-colors"
@@ -55,7 +61,7 @@ export default function CastManagementPage() {
                 <PlusIcon className="h-5 w-5" />
                 新規追加
               </button>
-            )}
+            </Access>
           </div>
           {isLoading ? (
             <div className="text-center py-8">
@@ -66,14 +72,19 @@ export default function CastManagementPage() {
               title="キャストが登録されていません"
               description="新しいキャストを追加して開始しましょう"
               action={
-                can("cast", "manage") && (
+                <Access
+                  roles={["admin", "manager"]}
+                  resource="cast"
+                  action="manage"
+                  require="any"
+                >
                   <button
                     onClick={() => setIsRegistrationModalOpen(true)}
                     className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
                   >
                     初回キャスト追加
                   </button>
-                )
+                </Access>
               }
             />
           ) : (
@@ -131,30 +142,40 @@ export default function CastManagementPage() {
                       >
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      {can("cast", "manage") && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setSelectedCast(cast);
-                              setIsEditModalOpen(true);
-                            }}
-                            className="p-2 text-gray-400 hover:text-indigo-600 rounded-md hover:bg-gray-100 transition-colors"
-                            title="編集"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedCast(cast);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-gray-100 transition-colors"
-                            title="削除"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
+                      <Access
+                        roles={["admin", "manager"]}
+                        resource="cast"
+                        action="manage"
+                        require="any"
+                      >
+                        <button
+                          onClick={() => {
+                            setSelectedCast(cast);
+                            setIsEditModalOpen(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-indigo-600 rounded-md hover:bg-gray-100 transition-colors"
+                          title="編集"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                      </Access>
+                      <Access
+                        roles={["admin", "manager"]}
+                        resource="cast"
+                        action="manage"
+                        require="any"
+                      >
+                        <button
+                          onClick={() => {
+                            setSelectedCast(cast);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-gray-100 transition-colors"
+                          title="削除"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </Access>
                     </div>
                   </div>
                 </div>
