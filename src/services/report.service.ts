@@ -1,4 +1,5 @@
 import { BaseService } from "./base.service";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -574,9 +575,11 @@ export class ReportService extends BaseService {
           sales: report.totalSales || 0,
         }))
         .catch((error) => {
-          if (process.env.NODE_ENV === "development") {
-            console.error(`Failed to get sales for ${year}-${month}:`, error);
-          }
+          logger.error(
+            `Failed to get sales for ${year}-${month}`,
+            error,
+            "ReportService"
+          );
           return {
             month: targetDate.toLocaleDateString("ja-JP", {
               year: "numeric",
