@@ -2,6 +2,7 @@ import { BaseService } from "./base.service";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { logger } from "@/lib/logger";
 import type {
   Product,
   CreateProductData,
@@ -106,9 +107,7 @@ export class InventoryService extends BaseService {
 
       return data || [];
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getProducts failed:", error);
-      }
+      logger.error("getProducts failed", error, "InventoryService");
       throw error;
     }
   }
@@ -130,9 +129,7 @@ export class InventoryService extends BaseService {
 
       return data;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getProductById failed:", error);
-      }
+      logger.error("getProductById failed", error, "InventoryService");
       throw error;
     }
   }
@@ -160,9 +157,7 @@ export class InventoryService extends BaseService {
 
       return product;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("createProduct failed:", error);
-      }
+      logger.error("createProduct failed", error, "InventoryService");
       throw error;
     }
   }
@@ -190,9 +185,7 @@ export class InventoryService extends BaseService {
 
       return product;
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("updateProduct failed:", error);
-      }
+      logger.error("updateProduct failed", error, "InventoryService");
       throw error;
     }
   }
@@ -210,9 +203,7 @@ export class InventoryService extends BaseService {
         );
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("deleteProduct failed:", error);
-      }
+      logger.error("deleteProduct failed", error, "InventoryService");
       throw error;
     }
   }
@@ -252,7 +243,11 @@ export class InventoryService extends BaseService {
 
       return movement;
     } catch (error) {
-      console.error("Inventory movement RPC error:", error);
+      logger.error(
+        "Inventory movement RPC error",
+        error as Error,
+        "InventoryService"
+      );
       if (error instanceof Error) {
         const isRPCMissing = error.message.includes(
           "function create_inventory_movement_with_stock_update"
@@ -309,9 +304,7 @@ export class InventoryService extends BaseService {
 
       return data || [];
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getInventoryMovements failed:", error);
-      }
+      logger.error("getInventoryMovements failed", error, "InventoryService");
       throw error;
     }
   }
@@ -337,7 +330,7 @@ export class InventoryService extends BaseService {
       const { data, error } = await this.supabase.rpc("get_inventory_stats");
 
       if (error) {
-        console.error("Inventory stats RPC error:", error);
+        logger.error("Inventory stats RPC error", error, "InventoryService");
         throw new Error(
           error.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -352,9 +345,7 @@ export class InventoryService extends BaseService {
         totalValue: Number(data.total_value) || 0,
       };
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getInventoryStats failed:", error);
-      }
+      logger.error("getInventoryStats failed", error, "InventoryService");
       throw error;
     }
   }
@@ -366,7 +357,7 @@ export class InventoryService extends BaseService {
       const { data, error } = await this.supabase.rpc("get_inventory_alerts");
 
       if (error) {
-        console.error("Inventory alerts RPC error:", error);
+        logger.error("Inventory alerts RPC error", error, "InventoryService");
         throw new Error(
           error.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -401,9 +392,7 @@ export class InventoryService extends BaseService {
         })
       );
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getInventoryAlerts failed:", error);
-      }
+      logger.error("getInventoryAlerts failed", error, "InventoryService");
       throw error;
     }
   }
@@ -574,7 +563,11 @@ export class InventoryService extends BaseService {
       });
 
       if (error) {
-        console.error("Inventory page data RPC error:", error);
+        logger.error(
+          "Inventory page data RPC error",
+          error,
+          "InventoryService"
+        );
         throw new Error(
           error.code === "42883"
             ? "Required database function is missing. Please run migrations."
@@ -587,9 +580,7 @@ export class InventoryService extends BaseService {
 
       return this.parseInventoryPageData(data || {});
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("getInventoryPageData failed:", error);
-      }
+      logger.error("getInventoryPageData failed", error, "InventoryService");
       throw error;
     }
   }
