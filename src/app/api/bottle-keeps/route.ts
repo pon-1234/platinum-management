@@ -5,33 +5,29 @@ import {
   createBottleKeepSchema,
   getBottleKeepsQuerySchema,
 } from "@/lib/validations/bottle-keep";
+import {
+  parseJsonOrThrow,
+  parseQueryOrThrow,
+  ZodRequestError,
+} from "@/lib/utils/api-validate";
 
 // GET: ボトルキープ一覧取得
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-
-    // クエリパラメータのバリデーション
-    const queryValidation = getBottleKeepsQuerySchema.safeParse({
-      status: searchParams.get("status"),
-      customer_id: searchParams.get("customer_id"),
-    });
-
-    if (!queryValidation.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid query parameters",
-          details: queryValidation.error.flatten(),
-        },
-        { status: 400 }
-      );
-    }
-
-    const { status, customer_id } = queryValidation.data;
+    const { status, customer_id } = parseQueryOrThrow(
+      getBottleKeepsQuerySchema,
+      request
+    );
     const bottles = await BottleKeepService.getBottleKeeps(status, customer_id);
 
     return NextResponse.json(bottles);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to fetch bottle keeps:", error);
     return NextResponse.json(
       { error: "Failed to fetch bottle keeps" },
@@ -43,24 +39,16 @@ export async function GET(request: NextRequest) {
 // POST: 新規ボトルキープ作成
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-
-    // リクエストボディのバリデーション
-    const validation = createBottleKeepSchema.safeParse(body);
-
-    if (!validation.success) {
+    const body = await parseJsonOrThrow(createBottleKeepSchema, request);
+    const bottle = await BottleKeepService.createBottleKeep(body);
+    return NextResponse.json(bottle, { status: 201 });
+  } catch (error) {
+    if (error instanceof ZodRequestError) {
       return NextResponse.json(
-        {
-          error: "Invalid request body",
-          details: validation.error.flatten(),
-        },
+        { error: error.message, details: error.zodError.flatten() },
         { status: 400 }
       );
     }
-
-    const bottle = await BottleKeepService.createBottleKeep(validation.data);
-    return NextResponse.json(bottle, { status: 201 });
-  } catch (error) {
     console.error("Failed to create bottle keep:", error);
     return NextResponse.json(
       { error: "Failed to create bottle keep" },

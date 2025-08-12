@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
 import { updateBottleKeepSchema } from "@/lib/validations/bottle-keep";
 import { z } from "zod";
+import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
 // パラメータのバリデーションスキーマ
 const paramsSchema = z.object({
@@ -69,27 +70,19 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
-
-    // リクエストボディのバリデーション
-    const bodyValidation = updateBottleKeepSchema.safeParse(body);
-
-    if (!bodyValidation.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid request body",
-          details: bodyValidation.error.flatten(),
-        },
-        { status: 400 }
-      );
-    }
-
+    const parsed = await parseJsonOrThrow(updateBottleKeepSchema, request);
     const bottle = await BottleKeepService.updateBottleKeep(
       paramsValidation.data.id,
-      bodyValidation.data
+      parsed
     );
     return NextResponse.json(bottle);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to update bottle keep:", error);
     return NextResponse.json(
       { error: "Failed to update bottle keep" },
