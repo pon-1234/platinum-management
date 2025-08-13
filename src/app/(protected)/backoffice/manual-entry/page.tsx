@@ -172,6 +172,59 @@ export default function ManualEntryPage() {
   const productRefs = useRef<Array<HTMLInputElement | null>>([]);
   const qtyRefs = useRef<Array<HTMLInputElement | null>>([]);
   const priceRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [activeDropdownIndex, setActiveDropdownIndex] = useState<number | null>(
+    null
+  );
+  const [suggestionTab, setSuggestionTab] = useState<
+    "search" | "recent" | "popular"
+  >("search");
+  const [popularIds, setPopularIds] = useState<number[]>([]);
+  const [recentIds, setRecentIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const supabase = createClient();
+        const today = new Date().toISOString().slice(0, 10);
+        const { data } = await supabase.rpc("get_top_products_with_details", {
+          report_date: today,
+          limit_count: 20,
+        });
+        const ids: number[] = (data || [])
+          .map((r: { product_id?: number | string }) => Number(r.product_id))
+          .filter((n: number) => Number.isFinite(n));
+        setPopularIds(ids);
+      } catch {
+        setPopularIds([]);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("recent_products");
+      if (raw) setRecentIds(JSON.parse(raw));
+    } catch {
+      setRecentIds([]);
+    }
+  }, []);
+
+  const pushRecent = (productId: number) => {
+    try {
+      const raw = localStorage.getItem("recent_products");
+      const ids: number[] = Array.isArray(raw ? JSON.parse(raw) : [])
+        ? JSON.parse(raw || "[]")
+        : [];
+      const next = [productId, ...ids.filter((id) => id !== productId)].slice(
+        0,
+        20
+      );
+      localStorage.setItem("recent_products", JSON.stringify(next));
+      setRecentIds(next);
+    } catch {
+      /* ignore */
+    }
+  };
 
   // Undo for row deletion
   const removeRow = (idx: number) => {
@@ -557,55 +610,124 @@ export default function ManualEntryPage() {
                           )
                         );
                       }}
+                      onFocus={() => setActiveDropdownIndex(idx)}
+                      onBlur={() => {
+                        setTimeout(
+                          () =>
+                            setActiveDropdownIndex((v) =>
+                              v === idx ? null : v
+                            ),
+                          150
+                        );
+                      }}
                       placeholder="商品名/コードで検索（Ctrl/⌘+Kでフォーカス）"
                       className="w-full border rounded px-3 py-2 text-sm"
                     />
-                    {(row.search || "").trim().length > 0 && (
-                      <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border rounded shadow">
-                        {products
-                          .filter((p) => {
-                            const q = (row.search || "").toLowerCase();
-                            const fields = [
-                              p.name,
-                              (p as unknown as { nameKana?: string }).nameKana,
-                              (p as unknown as { shortName?: string })
-                                .shortName,
-                              (p as unknown as { alias?: string }).alias,
-                              (p as unknown as { sku?: string }).sku,
-                              (p as unknown as { code?: string }).code,
-                              String(p.id),
-                            ]
-                              .filter(Boolean)
-                              .map((s) => String(s).toLowerCase());
-                            return fields.some((f) => f.includes(q));
-                          })
-                          .slice(0, 20)
-                          .map((p) => (
+                    {activeDropdownIndex === idx && (
+                      <div className="absolute z-10 mt-1 w-full max-h-64 overflow-auto bg-white border rounded shadow">
+                        <div className="sticky top-0 bg-white border-b px-2 py-1 flex gap-2 text-xs">
+                          <button
+                            className={`px-2 py-1 rounded ${suggestionTab === "search" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => setSuggestionTab("search")}
+                          >
+                            検索
+                          </button>
+                          <button
+                            className={`px-2 py-1 rounded ${suggestionTab === "recent" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => setSuggestionTab("recent")}
+                          >
+                            最近
+                          </button>
+                          <button
+                            className={`px-2 py-1 rounded ${suggestionTab === "popular" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => setSuggestionTab("popular")}
+                          >
+                            人気
+                          </button>
+                        </div>
+                        {(() => {
+                          const onPick = (p: Product) => {
+                            setItems((prev) =>
+                              prev.map((r, i) =>
+                                i === idx
+                                  ? {
+                                      ...r,
+                                      productId: p.id,
+                                      search: `${p.name}（¥${p.price.toLocaleString()}）`,
+                                    }
+                                  : r
+                              )
+                            );
+                            pushRecent(p.id);
+                            setTimeout(() => qtyRefs.current[idx]?.focus(), 0);
+                          };
+                          const q = (row.search || "").toLowerCase();
+                          if (suggestionTab === "popular") {
+                            const list = popularIds
+                              .map((id) => productMap.get(id))
+                              .filter(Boolean) as Product[];
+                            return list.map((p) => (
+                              <button
+                                type="button"
+                                key={`pop-${p.id}`}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => onPick(p)}
+                              >
+                                {p.name}（¥{p.price.toLocaleString()}）
+                              </button>
+                            ));
+                          }
+                          if (suggestionTab === "recent") {
+                            const list = recentIds
+                              .map((id) => productMap.get(id))
+                              .filter(Boolean) as Product[];
+                            return list.map((p) => (
+                              <button
+                                type="button"
+                                key={`rec-${p.id}`}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => onPick(p)}
+                              >
+                                {p.name}（¥{p.price.toLocaleString()}）
+                              </button>
+                            ));
+                          }
+                          const filtered = products
+                            .filter((p) => {
+                              if (!q) return true;
+                              const fields = [
+                                p.name,
+                                (p as unknown as { nameKana?: string })
+                                  .nameKana,
+                                (p as unknown as { shortName?: string })
+                                  .shortName,
+                                (p as unknown as { alias?: string }).alias,
+                                (p as unknown as { sku?: string }).sku,
+                                (p as unknown as { code?: string }).code,
+                                String(p.id),
+                              ]
+                                .filter(Boolean)
+                                .map((s) => String(s).toLowerCase());
+                              return fields.some((f) => f.includes(q));
+                            })
+                            .slice(0, 20);
+                          return filtered.map((p) => (
                             <button
                               type="button"
                               key={p.id}
                               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-                              onClick={() => {
-                                setItems((prev) =>
-                                  prev.map((r, i) =>
-                                    i === idx
-                                      ? {
-                                          ...r,
-                                          productId: p.id,
-                                          search: `${p.name}（¥${p.price.toLocaleString()}）`,
-                                        }
-                                      : r
-                                  )
-                                );
-                                setTimeout(
-                                  () => qtyRefs.current[idx]?.focus(),
-                                  0
-                                );
-                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => onPick(p)}
                             >
                               {p.name}（¥{p.price.toLocaleString()}）
                             </button>
-                          ))}
+                          ));
+                        })()}
                       </div>
                     )}
                   </div>
