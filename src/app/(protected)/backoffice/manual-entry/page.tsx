@@ -94,10 +94,14 @@ export default function ManualEntryPage() {
     let active = true;
     (async () => {
       try {
+        // name / name_kana / phone_number を横断検索
         const { data, error } = await supabase
           .from("customers")
-          .select("id, name, phone_number")
-          .ilike("name", `%${q}%`)
+          .select("id, name, name_kana, phone_number")
+          .or(
+            `name.ilike.%${q}%,name_kana.ilike.%${q}%,phone_number.ilike.%${q}%`
+          )
+          .order("updated_at", { ascending: false })
           .limit(20);
         if (!active) return;
         if (error) {
