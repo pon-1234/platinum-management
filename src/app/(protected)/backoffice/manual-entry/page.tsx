@@ -550,21 +550,35 @@ export default function ManualEntryPage() {
                     ))}
                   </select>
                 </div>
-                <div className="col-span-3 md:col-span-3">
+                <div className="col-span-6 md:col-span-6">
                   <select
                     value={row.role}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const role = e.target.value as typeof row.role;
+                      // 役割に合わせて指名種別を自動設定
+                      const roleToTypeName: Record<string, string> = {
+                        primary: "本指名",
+                        inhouse: "場内指名",
+                        help: "ヘルプ",
+                        douhan: "同伴",
+                        after: "アフター",
+                      };
+                      const name = roleToTypeName[role];
+                      const hit = nominationTypes.find(
+                        (t) => t.display_name === name
+                      );
                       setEngagements((prev) =>
                         prev.map((r, i) =>
                           i === idx
                             ? {
                                 ...r,
-                                role: e.target.value as typeof row.role,
+                                role,
+                                nominationTypeId: hit?.id,
                               }
                             : r
                         )
-                      )
-                    }
+                      );
+                    }}
                     className="w-full border rounded px-3 py-2 text-sm"
                   >
                     <option value="primary">本指名</option>
@@ -572,31 +586,6 @@ export default function ManualEntryPage() {
                     <option value="help">ヘルプ</option>
                     <option value="douhan">同伴</option>
                     <option value="after">アフター</option>
-                  </select>
-                </div>
-                <div className="col-span-3 md:col-span-3">
-                  <select
-                    value={row.nominationTypeId || ""}
-                    onChange={(e) =>
-                      setEngagements((prev) =>
-                        prev.map((r, i) =>
-                          i === idx
-                            ? {
-                                ...r,
-                                nominationTypeId: e.target.value || undefined,
-                              }
-                            : r
-                        )
-                      )
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">指名種別（自動）</option>
-                    {nominationTypes.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.display_name}
-                      </option>
-                    ))}
                   </select>
                 </div>
                 <div className="col-span-1 md:col-span-1 flex justify-end">
