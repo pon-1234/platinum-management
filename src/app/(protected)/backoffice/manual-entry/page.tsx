@@ -313,11 +313,16 @@ export default function ManualEntryPage() {
     [estimatedSubtotal, estimatedService, estimatedTax]
   );
 
+  const hasValidRow = useMemo(
+    () => items.some((r) => r.productId && (r.quantity || 0) > 0),
+    [items]
+  );
+  const hasInvalidRow = useMemo(
+    () => items.some((r) => r.productId && (r.quantity || 0) <= 0),
+    [items]
+  );
   const isSubmitDisabled =
-    submitting ||
-    !tableId ||
-    items.length === 0 ||
-    items.some((r) => !r.productId || r.quantity <= 0);
+    submitting || !tableId || !hasValidRow || hasInvalidRow;
 
   const addRow = () =>
     setItems((prev) => [...prev, { productId: "", quantity: 1, search: "" }]);
@@ -463,13 +468,18 @@ export default function ManualEntryPage() {
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
-      if (
-        items.length === 0 ||
-        items.some((r) => !r.productId || r.quantity <= 0)
-      ) {
-        toast.error("商品と数量を入力してください");
+      const valid = items.some((r) => r.productId && (r.quantity || 0) > 0);
+      const invalid = items.some((r) => r.productId && (r.quantity || 0) <= 0);
+      if (!valid || invalid) {
+        toast.error(
+          !valid
+            ? "商品を1行以上選択してください"
+            : "数量が不正な明細があります"
+        );
         // scroll to first invalid row
-        const badIdx = items.findIndex((r) => !r.productId || r.quantity <= 0);
+        const badIdx = items.findIndex(
+          (r) => r.productId && (r.quantity || 0) <= 0
+        );
         if (badIdx >= 0) {
           const el = qtyRefs.current[badIdx] || productRefs.current[badIdx];
           el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -731,7 +741,14 @@ export default function ManualEntryPage() {
 
             <div className="bg-white shadow rounded-lg p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900">注文明細</h2>
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900">
+                    注文明細
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    F&Bを追加。単価は必要に応じて上書き可能です。
+                  </p>
+                </div>
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <span>行数: {items.length}</span>
                   <span>予想小計: ¥{estimatedSubtotal.toLocaleString()}</span>
@@ -1107,7 +1124,18 @@ export default function ManualEntryPage() {
                         onWheel={(e) =>
                           (e.currentTarget as HTMLInputElement).blur()
                         }
-                        className="w-full border rounded px-3 py-2 text-sm"
+                        className={`w-full border rounded px-3 py-2 text-sm ${(() => {
+                          const pid = Number(items[idx]?.productId);
+                          const base = pid
+                            ? productMap.get(pid)?.price
+                            : undefined;
+                          const up = items[idx]?.unitPrice;
+                          return up !== undefined &&
+                            base !== undefined &&
+                            up !== base
+                            ? "border-indigo-400 bg-indigo-50"
+                            : "";
+                        })()}`}
                       />
                     </div>
                     <div className="col-span-12 md:col-span-2 flex justify-end">
@@ -1372,10 +1400,11 @@ export default function ManualEntryPage() {
                   テーブルを選択してください。
                 </p>
               )}
-              {(items.length === 0 ||
-                items.some((r) => !r.productId || r.quantity <= 0)) && (
+              {(!hasValidRow || hasInvalidRow) && (
                 <p className="text-xs text-red-600 mt-1">
-                  明細の入力に不備があります。
+                  {hasInvalidRow
+                    ? "数量が不正な明細があります。"
+                    : "商品を1行以上選択してください。"}
                 </p>
               )}
             </div>
