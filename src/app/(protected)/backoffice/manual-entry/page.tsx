@@ -580,774 +580,806 @@ export default function ManualEntryPage() {
           </p>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-5 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                日付
-              </label>
-              <input
-                type="date"
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                時刻
-              </label>
-              <input
-                type="time"
-                value={visitTime}
-                onChange={(e) => setVisitTime(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                テーブル
-              </label>
-              <select
-                id="table-select"
-                value={tableId}
-                onChange={(e) => setTableId(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              >
-                <option value="">選択してください</option>
-                {tables.map((t) => {
-                  const badge =
-                    t.currentStatus === "available" ? "空き" : "満席";
-                  return (
-                    <option key={t.id} value={t.id}>
-                      {t.tableName}（{t.capacity}） {badge}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                人数
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={numGuests}
-                onChange={(e) =>
-                  setNumGuests(parseInt(e.target.value || "1", 10))
-                }
-                className={`mt-1 w-full border rounded px-3 py-2 text-sm ${
-                  selectedTable && numGuests > (selectedTable.capacity || 0)
-                    ? "border-orange-400 bg-orange-50"
-                    : ""
-                }`}
-              />
-              {selectedTable && (
-                <div className="mt-1 text-xs">
-                  <span
-                    className={
-                      numGuests <= (selectedTable.capacity || 0)
-                        ? "text-green-700"
-                        : "text-orange-700"
-                    }
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main form */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white shadow rounded-lg p-5 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    日付
+                  </label>
+                  <input
+                    type="date"
+                    value={visitDate}
+                    onChange={(e) => setVisitDate(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    時刻
+                  </label>
+                  <input
+                    type="time"
+                    value={visitTime}
+                    onChange={(e) => setVisitTime(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    テーブル
+                  </label>
+                  <select
+                    id="table-select"
+                    value={tableId}
+                    onChange={(e) => setTableId(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
                   >
-                    {numGuests}/{selectedTable.capacity}
-                  </span>
-                  {numGuests > (selectedTable.capacity || 0) && (
-                    <span className="ml-2 text-orange-700">定員超過</span>
+                    <option value="">選択してください</option>
+                    {tables.map((t) => {
+                      const badge =
+                        t.currentStatus === "available" ? "空き" : "満席";
+                      return (
+                        <option key={t.id} value={t.id}>
+                          {t.tableName}（{t.capacity}） {badge}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    人数
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={numGuests}
+                    onChange={(e) =>
+                      setNumGuests(parseInt(e.target.value || "1", 10))
+                    }
+                    className={`mt-1 w-full border rounded px-3 py-2 text-sm ${
+                      selectedTable && numGuests > (selectedTable.capacity || 0)
+                        ? "border-orange-400 bg-orange-50"
+                        : ""
+                    }`}
+                  />
+                  {selectedTable && (
+                    <div className="mt-1 text-xs">
+                      <span
+                        className={
+                          numGuests <= (selectedTable.capacity || 0)
+                            ? "text-green-700"
+                            : "text-orange-700"
+                        }
+                      >
+                        {numGuests}/{selectedTable.capacity}
+                      </span>
+                      {numGuests > (selectedTable.capacity || 0) && (
+                        <span className="ml-2 text-orange-700">定員超過</span>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                顧客（任意）
-              </label>
-              <input
-                type="text"
-                value={customerQuery}
-                onChange={(e) => setCustomerQuery(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-                placeholder="名前で検索（2文字以上）"
-              />
-              {customerOptions.length > 0 && (
-                <div className="mt-1 border rounded max-h-40 overflow-auto text-sm bg-white shadow">
-                  {customerOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        setCustomerId(opt.id);
-                        setCustomerQuery(
-                          `${opt.name}${opt.phone ? ` (${opt.phone})` : ""}`
-                        );
-                        setCustomerOptions([]);
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-50"
-                    >
-                      {opt.name}
-                      {opt.phone ? ` (${opt.phone})` : ""}
-                    </button>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    顧客（任意）
+                  </label>
+                  <input
+                    type="text"
+                    value={customerQuery}
+                    onChange={(e) => setCustomerQuery(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    placeholder="名前で検索（2文字以上）"
+                  />
+                  {customerOptions.length > 0 && (
+                    <div className="mt-1 border rounded max-h-40 overflow-auto text-sm bg-white shadow">
+                      {customerOptions.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setCustomerId(opt.id);
+                            setCustomerQuery(
+                              `${opt.name}${opt.phone ? ` (${opt.phone})` : ""}`
+                            );
+                            setCustomerOptions([]);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50"
+                        >
+                          {opt.name}
+                          {opt.phone ? ` (${opt.phone})` : ""}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {customerId && (
+                    <div className="mt-1 text-xs text-gray-600">
+                      選択中の顧客ID:{" "}
+                      <span className="font-mono">{customerId}</span>
+                      <button
+                        type="button"
+                        className="ml-2 text-indigo-600 hover:underline"
+                        onClick={() => {
+                          setCustomerId("");
+                          setCustomerQuery("");
+                        }}
+                      >
+                        クリア
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-              {customerId && (
-                <div className="mt-1 text-xs text-gray-600">
-                  選択中の顧客ID:{" "}
-                  <span className="font-mono">{customerId}</span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    メモ（任意）
+                  </label>
+                  <input
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white shadow rounded-lg p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900">注文明細</h2>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span>行数: {items.length}</span>
+                  <span>予想小計: ¥{estimatedSubtotal.toLocaleString()}</span>
                   <button
-                    type="button"
-                    className="ml-2 text-indigo-600 hover:underline"
-                    onClick={() => {
-                      setCustomerId("");
-                      setCustomerQuery("");
-                    }}
+                    onClick={addRow}
+                    className="px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                   >
-                    クリア
+                    行を追加
                   </button>
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                メモ（任意）
-              </label>
-              <input
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">注文明細</h2>
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <span>行数: {items.length}</span>
-              <span>予想小計: ¥{estimatedSubtotal.toLocaleString()}</span>
-              <button
-                onClick={addRow}
-                className="px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              >
-                行を追加
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={quickInput}
-              onChange={(e) => setQuickInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleQuickAdd();
-                }
-              }}
-              placeholder="クイック追加: 商品名/コード×数量（例: ﾋﾞｰﾙ×3）"
-              className="flex-1 border rounded px-3 py-2 text-sm"
-            />
-            <button
-              onClick={handleQuickAdd}
-              className="px-3 py-2 text-sm border rounded hover:bg-gray-50"
-            >
-              追加
-            </button>
-          </div>
-          <div className="space-y-2">
-            {items.map((row, idx) => (
-              <div
-                key={idx}
-                className="grid grid-cols-12 gap-2 items-center"
-                onKeyDown={(e) => {
-                  // Keyboard shortcuts per row
-                  if (e.key === "Enter" && e.shiftKey) {
-                    e.preventDefault();
-                    addRow();
-                    setTimeout(
-                      () => productRefs.current[items.length]?.focus(),
-                      0
-                    );
-                    return;
-                  }
-                  if (
-                    (e.ctrlKey || e.metaKey) &&
-                    (e.key === "ArrowUp" || e.key === "ArrowDown")
-                  ) {
-                    e.preventDefault();
-                    setItems((prev) =>
-                      prev.map((r, i) =>
-                        i === idx
-                          ? {
-                              ...r,
-                              quantity: Math.max(
-                                1,
-                                r.quantity + (e.key === "ArrowUp" ? 1 : -1)
-                              ),
-                            }
-                          : r
-                      )
-                    );
-                    return;
-                  }
-                  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-                    e.preventDefault();
-                    productRefs.current[idx]?.focus();
-                    return;
-                  }
-                  if (e.key === "Delete") {
-                    e.preventDefault();
-                    removeRow(idx);
-                    return;
-                  }
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    // move focus to next cell
-                    if (document.activeElement === productRefs.current[idx]) {
-                      qtyRefs.current[idx]?.focus();
-                    } else if (
-                      document.activeElement === qtyRefs.current[idx]
-                    ) {
-                      priceRefs.current[idx]?.focus();
-                    } else if (
-                      document.activeElement === priceRefs.current[idx]
-                    ) {
-                      if (idx === items.length - 1) {
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={quickInput}
+                  onChange={(e) => setQuickInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleQuickAdd();
+                    }
+                  }}
+                  placeholder="クイック追加: 商品名/コード×数量（例: ﾋﾞｰﾙ×3）"
+                  className="flex-1 border rounded px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={handleQuickAdd}
+                  className="px-3 py-2 text-sm border rounded hover:bg-gray-50"
+                >
+                  追加
+                </button>
+              </div>
+              <div className="space-y-2">
+                {items.map((row, idx) => (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-12 gap-2 items-center"
+                    onKeyDown={(e) => {
+                      // Keyboard shortcuts per row
+                      if (e.key === "Enter" && e.shiftKey) {
+                        e.preventDefault();
                         addRow();
                         setTimeout(
                           () => productRefs.current[items.length]?.focus(),
                           0
                         );
-                      } else {
-                        productRefs.current[idx + 1]?.focus();
+                        return;
                       }
-                    }
-                  }
-                }}
-              >
-                <div className="col-span-6 md:col-span-6">
-                  <div className="relative">
-                    <input
-                      ref={(el) => {
-                        productRefs.current[idx] = el;
-                      }}
-                      type="text"
-                      value={row.search || ""}
-                      onChange={(e) => {
-                        const q = e.target.value;
-                        setItems((prev) =>
-                          prev.map((r, i) =>
-                            i === idx ? { ...r, search: q } : r
-                          )
-                        );
-                      }}
-                      onFocus={() => setActiveDropdownIndex(idx)}
-                      onBlur={() => {
-                        setTimeout(
-                          () =>
-                            setActiveDropdownIndex((v) =>
-                              v === idx ? null : v
-                            ),
-                          150
-                        );
-                      }}
-                      placeholder="商品名/コードで検索（Ctrl/⌘+Kでフォーカス）"
-                      className="w-full border rounded px-3 py-2 text-sm"
-                    />
-                    {activeDropdownIndex === idx && (
-                      <div className="absolute z-10 mt-1 w-full max-h-64 overflow-auto bg-white border rounded shadow">
-                        <div className="sticky top-0 bg-white border-b px-2 py-1 flex gap-2 text-xs">
-                          <button
-                            className={`px-2 py-1 rounded ${suggestionTab === "search" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => setSuggestionTab("search")}
-                          >
-                            検索
-                          </button>
-                          <button
-                            className={`px-2 py-1 rounded ${suggestionTab === "recent" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => setSuggestionTab("recent")}
-                          >
-                            最近
-                          </button>
-                          <button
-                            className={`px-2 py-1 rounded ${suggestionTab === "popular" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => setSuggestionTab("popular")}
-                          >
-                            人気
-                          </button>
-                        </div>
-                        {(() => {
-                          const onPick = (p: Product) => {
-                            setItems((prev) =>
-                              prev.map((r, i) =>
-                                i === idx
-                                  ? {
-                                      ...r,
-                                      productId: p.id,
-                                      search: `${p.name}（¥${p.price.toLocaleString()}）`,
-                                    }
-                                  : r
-                              )
-                            );
-                            pushRecent(p.id);
-                            setTimeout(() => qtyRefs.current[idx]?.focus(), 0);
-                          };
-                          const q = (row.search || "").toLowerCase();
-                          if (suggestionTab === "popular") {
-                            const list = popularIds
-                              .map((id) => productMap.get(id))
-                              .filter(Boolean) as Product[];
-                            return list.map((p) => (
-                              <button
-                                type="button"
-                                key={`pop-${p.id}`}
-                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => onPick(p)}
-                              >
-                                {p.name}（¥{p.price.toLocaleString()}）
-                              </button>
-                            ));
-                          }
-                          if (suggestionTab === "recent") {
-                            const list = recentIds
-                              .map((id) => productMap.get(id))
-                              .filter(Boolean) as Product[];
-                            return list.map((p) => (
-                              <button
-                                type="button"
-                                key={`rec-${p.id}`}
-                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => onPick(p)}
-                              >
-                                {p.name}（¥{p.price.toLocaleString()}）
-                              </button>
-                            ));
-                          }
-                          const filtered = products
-                            .filter((p) => {
-                              if (!q) return true;
-                              const fields = [
-                                p.name,
-                                (p as unknown as { nameKana?: string })
-                                  .nameKana,
-                                (p as unknown as { shortName?: string })
-                                  .shortName,
-                                (p as unknown as { alias?: string }).alias,
-                                (p as unknown as { sku?: string }).sku,
-                                (p as unknown as { code?: string }).code,
-                                String(p.id),
-                              ]
-                                .filter(Boolean)
-                                .map((s) => String(s).toLowerCase());
-                              return fields.some((f) => f.includes(q));
-                            })
-                            .slice(0, 20);
-                          return filtered.map((p) => (
-                            <button
-                              type="button"
-                              key={p.id}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => onPick(p)}
-                            >
-                              {p.name}（¥{p.price.toLocaleString()}）
-                            </button>
-                          ));
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="col-span-3 md:col-span-2">
-                  <div className="flex items-center border rounded">
-                    <button
-                      type="button"
-                      className="px-2 py-1 text-gray-600 hover:bg-gray-50"
-                      onMouseDown={(e) => {
+                      if (
+                        (e.ctrlKey || e.metaKey) &&
+                        (e.key === "ArrowUp" || e.key === "ArrowDown")
+                      ) {
                         e.preventDefault();
-                        let timer: number | undefined;
-                        const step = () =>
-                          setItems((prev) =>
-                            prev.map((r, i) =>
-                              i === idx
-                                ? {
-                                    ...r,
-                                    quantity: Math.max(
-                                      1,
-                                      (r.quantity || 1) - 1
-                                    ),
-                                  }
-                                : r
-                            )
-                          );
-                        step();
-                        const interval = window.setInterval(step, 120);
-                        const clearAll = () => {
-                          if (interval) window.clearInterval(interval);
-                          if (timer) window.clearTimeout(timer);
-                          document.removeEventListener("mouseup", clearAll);
-                          (
-                            e.currentTarget as HTMLButtonElement
-                          ).removeEventListener("mouseleave", clearAll);
-                        };
-                        document.addEventListener("mouseup", clearAll);
-                        (e.currentTarget as HTMLButtonElement).addEventListener(
-                          "mouseleave",
-                          clearAll
-                        );
-                      }}
-                    >
-                      -
-                    </button>
-                    <input
-                      ref={(el) => {
-                        qtyRefs.current[idx] = el;
-                      }}
-                      type="number"
-                      min={1}
-                      value={row.quantity}
-                      onChange={(e) =>
                         setItems((prev) =>
                           prev.map((r, i) =>
                             i === idx
                               ? {
                                   ...r,
-                                  quantity: parseInt(e.target.value || "1", 10),
+                                  quantity: Math.max(
+                                    1,
+                                    r.quantity + (e.key === "ArrowUp" ? 1 : -1)
+                                  ),
                                 }
                               : r
                           )
-                        )
+                        );
+                        return;
+                      }
+                      if (
+                        (e.ctrlKey || e.metaKey) &&
+                        e.key.toLowerCase() === "k"
+                      ) {
+                        e.preventDefault();
+                        productRefs.current[idx]?.focus();
+                        return;
+                      }
+                      if (e.key === "Delete") {
+                        e.preventDefault();
+                        removeRow(idx);
+                        return;
+                      }
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        // move focus to next cell
+                        if (
+                          document.activeElement === productRefs.current[idx]
+                        ) {
+                          qtyRefs.current[idx]?.focus();
+                        } else if (
+                          document.activeElement === qtyRefs.current[idx]
+                        ) {
+                          priceRefs.current[idx]?.focus();
+                        } else if (
+                          document.activeElement === priceRefs.current[idx]
+                        ) {
+                          if (idx === items.length - 1) {
+                            addRow();
+                            setTimeout(
+                              () => productRefs.current[items.length]?.focus(),
+                              0
+                            );
+                          } else {
+                            productRefs.current[idx + 1]?.focus();
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <div className="col-span-6 md:col-span-6">
+                      <div className="relative">
+                        <input
+                          ref={(el) => {
+                            productRefs.current[idx] = el;
+                          }}
+                          type="text"
+                          value={row.search || ""}
+                          onChange={(e) => {
+                            const q = e.target.value;
+                            setItems((prev) =>
+                              prev.map((r, i) =>
+                                i === idx ? { ...r, search: q } : r
+                              )
+                            );
+                          }}
+                          onFocus={() => setActiveDropdownIndex(idx)}
+                          onBlur={() => {
+                            setTimeout(
+                              () =>
+                                setActiveDropdownIndex((v) =>
+                                  v === idx ? null : v
+                                ),
+                              150
+                            );
+                          }}
+                          placeholder="商品名/コードで検索（Ctrl/⌘+Kでフォーカス）"
+                          className="w-full border rounded px-3 py-2 text-sm"
+                        />
+                        {activeDropdownIndex === idx && (
+                          <div className="absolute z-10 mt-1 w-full max-h-64 overflow-auto bg-white border rounded shadow">
+                            <div className="sticky top-0 bg-white border-b px-2 py-1 flex gap-2 text-xs">
+                              <button
+                                className={`px-2 py-1 rounded ${suggestionTab === "search" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => setSuggestionTab("search")}
+                              >
+                                検索
+                              </button>
+                              <button
+                                className={`px-2 py-1 rounded ${suggestionTab === "recent" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => setSuggestionTab("recent")}
+                              >
+                                最近
+                              </button>
+                              <button
+                                className={`px-2 py-1 rounded ${suggestionTab === "popular" ? "bg-gray-900 text-white" : "bg-gray-100"}`}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => setSuggestionTab("popular")}
+                              >
+                                人気
+                              </button>
+                            </div>
+                            {(() => {
+                              const onPick = (p: Product) => {
+                                setItems((prev) =>
+                                  prev.map((r, i) =>
+                                    i === idx
+                                      ? {
+                                          ...r,
+                                          productId: p.id,
+                                          search: `${p.name}（¥${p.price.toLocaleString()}）`,
+                                        }
+                                      : r
+                                  )
+                                );
+                                pushRecent(p.id);
+                                setTimeout(
+                                  () => qtyRefs.current[idx]?.focus(),
+                                  0
+                                );
+                              };
+                              const q = (row.search || "").toLowerCase();
+                              if (suggestionTab === "popular") {
+                                const list = popularIds
+                                  .map((id) => productMap.get(id))
+                                  .filter(Boolean) as Product[];
+                                return list.map((p) => (
+                                  <button
+                                    type="button"
+                                    key={`pop-${p.id}`}
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => onPick(p)}
+                                  >
+                                    {p.name}（¥{p.price.toLocaleString()}）
+                                  </button>
+                                ));
+                              }
+                              if (suggestionTab === "recent") {
+                                const list = recentIds
+                                  .map((id) => productMap.get(id))
+                                  .filter(Boolean) as Product[];
+                                return list.map((p) => (
+                                  <button
+                                    type="button"
+                                    key={`rec-${p.id}`}
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => onPick(p)}
+                                  >
+                                    {p.name}（¥{p.price.toLocaleString()}）
+                                  </button>
+                                ));
+                              }
+                              const filtered = products
+                                .filter((p) => {
+                                  if (!q) return true;
+                                  const fields = [
+                                    p.name,
+                                    (p as unknown as { nameKana?: string })
+                                      .nameKana,
+                                    (p as unknown as { shortName?: string })
+                                      .shortName,
+                                    (p as unknown as { alias?: string }).alias,
+                                    (p as unknown as { sku?: string }).sku,
+                                    (p as unknown as { code?: string }).code,
+                                    String(p.id),
+                                  ]
+                                    .filter(Boolean)
+                                    .map((s) => String(s).toLowerCase());
+                                  return fields.some((f) => f.includes(q));
+                                })
+                                .slice(0, 20);
+                              return filtered.map((p) => (
+                                <button
+                                  type="button"
+                                  key={p.id}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => onPick(p)}
+                                >
+                                  {p.name}（¥{p.price.toLocaleString()}）
+                                </button>
+                              ));
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="col-span-3 md:col-span-2">
+                      <div className="flex items-center border rounded">
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-gray-600 hover:bg-gray-50"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            let timer: number | undefined;
+                            const step = () =>
+                              setItems((prev) =>
+                                prev.map((r, i) =>
+                                  i === idx
+                                    ? {
+                                        ...r,
+                                        quantity: Math.max(
+                                          1,
+                                          (r.quantity || 1) - 1
+                                        ),
+                                      }
+                                    : r
+                                )
+                              );
+                            step();
+                            const interval = window.setInterval(step, 120);
+                            const clearAll = () => {
+                              if (interval) window.clearInterval(interval);
+                              if (timer) window.clearTimeout(timer);
+                              document.removeEventListener("mouseup", clearAll);
+                              (
+                                e.currentTarget as HTMLButtonElement
+                              ).removeEventListener("mouseleave", clearAll);
+                            };
+                            document.addEventListener("mouseup", clearAll);
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).addEventListener("mouseleave", clearAll);
+                          }}
+                        >
+                          -
+                        </button>
+                        <input
+                          ref={(el) => {
+                            qtyRefs.current[idx] = el;
+                          }}
+                          type="number"
+                          min={1}
+                          value={row.quantity}
+                          onChange={(e) =>
+                            setItems((prev) =>
+                              prev.map((r, i) =>
+                                i === idx
+                                  ? {
+                                      ...r,
+                                      quantity: parseInt(
+                                        e.target.value || "1",
+                                        10
+                                      ),
+                                    }
+                                  : r
+                              )
+                            )
+                          }
+                          onWheel={(e) =>
+                            (e.currentTarget as HTMLInputElement).blur()
+                          }
+                          className="w-full px-2 py-1 text-sm text-center border-l border-r"
+                        />
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-gray-600 hover:bg-gray-50"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            let timer: number | undefined;
+                            const step = () =>
+                              setItems((prev) =>
+                                prev.map((r, i) =>
+                                  i === idx
+                                    ? { ...r, quantity: (r.quantity || 0) + 1 }
+                                    : r
+                                )
+                              );
+                            step();
+                            const interval = window.setInterval(step, 120);
+                            const clearAll = () => {
+                              if (interval) window.clearInterval(interval);
+                              if (timer) window.clearTimeout(timer);
+                              document.removeEventListener("mouseup", clearAll);
+                              (
+                                e.currentTarget as HTMLButtonElement
+                              ).removeEventListener("mouseleave", clearAll);
+                            };
+                            document.addEventListener("mouseup", clearAll);
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).addEventListener("mouseleave", clearAll);
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <div className="col-span-3 md:col-span-2">
+                      <input
+                        ref={(el) => {
+                          priceRefs.current[idx] = el;
+                        }}
+                        type="number"
+                        placeholder="単価（任意）"
+                        value={row.unitPrice ?? ""}
+                        onChange={(e) =>
+                          setItems((prev) =>
+                            prev.map((r, i) =>
+                              i === idx
+                                ? {
+                                    ...r,
+                                    unitPrice: e.target.value
+                                      ? Number(e.target.value)
+                                      : undefined,
+                                  }
+                                : r
+                            )
+                          )
+                        }
+                        onWheel={(e) =>
+                          (e.currentTarget as HTMLInputElement).blur()
+                        }
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="col-span-12 md:col-span-2 flex justify-end">
+                      <button
+                        onClick={() => removeRow(idx)}
+                        className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white shadow rounded-lg p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900">
+                  指名の追加（任意）
+                </h2>
+                <button
+                  onClick={addEngagementRow}
+                  className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+                >
+                  行を追加
+                </button>
+              </div>
+              <div className="space-y-2">
+                {engagements.map((row, idx) => (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-12 gap-2 items-center"
+                  >
+                    <div className="col-span-5 md:col-span-5">
+                      <select
+                        value={row.castId}
+                        onChange={(e) =>
+                          setEngagements((prev) =>
+                            prev.map((r, i) =>
+                              i === idx ? { ...r, castId: e.target.value } : r
+                            )
+                          )
+                        }
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      >
+                        <option value="">キャストを選択</option>
+                        {casts.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.stageName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-6 md:col-span-6">
+                      <select
+                        value={row.role}
+                        onChange={(e) => {
+                          const role = e.target.value as typeof row.role;
+                          // 役割に合わせて指名種別を自動設定
+                          const roleToTypeName: Record<string, string> = {
+                            primary: "本指名",
+                            inhouse: "場内指名",
+                            help: "ヘルプ",
+                            douhan: "同伴",
+                            after: "アフター",
+                          };
+                          const name = roleToTypeName[role];
+                          const hit = nominationTypes.find(
+                            (t) => t.display_name === name
+                          );
+                          setEngagements((prev) =>
+                            prev.map((r, i) =>
+                              i === idx
+                                ? {
+                                    ...r,
+                                    role,
+                                    nominationTypeId: hit?.id,
+                                  }
+                                : r
+                            )
+                          );
+                        }}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      >
+                        <option value="primary">本指名</option>
+                        <option value="inhouse">場内指名</option>
+                        <option value="help">ヘルプ</option>
+                        <option value="douhan">同伴</option>
+                        <option value="after">アフター</option>
+                      </select>
+                    </div>
+                    <div className="col-span-1 md:col-span-1 flex justify-end">
+                      <button
+                        onClick={() => removeEngagementRow(idx)}
+                        className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white shadow rounded-lg p-5 space-y-4">
+              <h2 className="text-lg font-medium text-gray-900">
+                精算（任意）
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={markCompleted}
+                    onChange={(e) => setMarkCompleted(e.target.checked)}
+                  />
+                  <span className="text-sm text-gray-700">
+                    登録と同時に精算する
+                    <span
+                      className="ml-1 text-gray-400 cursor-help"
+                      title="過去日を選ぶと自動でONになります。必要に応じて手動で切り替え可能です。"
+                    >
+                      ⓘ
+                    </span>
+                  </span>
+                </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    支払い方法
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) =>
+                      setPaymentMethod(e.target.value as PaymentMethod)
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    disabled={!markCompleted}
+                  >
+                    <option value="cash">現金</option>
+                    <option value="card">カード</option>
+                    <option value="mixed">混合</option>
+                  </select>
+                </div>
+                <div className="text-xs text-gray-500">
+                  チェックのON/OFFはいつでも変更できます。
+                </div>
+              </div>
+              {markCompleted && paymentMethod === "mixed" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      現金
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={mixedCash}
+                      onChange={(e) =>
+                        setMixedCash(parseInt(e.target.value || "0", 10))
                       }
                       onWheel={(e) =>
                         (e.currentTarget as HTMLInputElement).blur()
                       }
-                      className="w-full px-2 py-1 text-sm text-center border-l border-r"
+                      className="mt-1 w-full border rounded px-3 py-2 text-sm"
                     />
-                    <button
-                      type="button"
-                      className="px-2 py-1 text-gray-600 hover:bg-gray-50"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        let timer: number | undefined;
-                        const step = () =>
-                          setItems((prev) =>
-                            prev.map((r, i) =>
-                              i === idx
-                                ? { ...r, quantity: (r.quantity || 0) + 1 }
-                                : r
-                            )
-                          );
-                        step();
-                        const interval = window.setInterval(step, 120);
-                        const clearAll = () => {
-                          if (interval) window.clearInterval(interval);
-                          if (timer) window.clearTimeout(timer);
-                          document.removeEventListener("mouseup", clearAll);
-                          (
-                            e.currentTarget as HTMLButtonElement
-                          ).removeEventListener("mouseleave", clearAll);
-                        };
-                        document.addEventListener("mouseup", clearAll);
-                        (e.currentTarget as HTMLButtonElement).addEventListener(
-                          "mouseleave",
-                          clearAll
-                        );
-                      }}
-                    >
-                      +
-                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      カード
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={mixedCard}
+                      onChange={(e) =>
+                        setMixedCard(parseInt(e.target.value || "0", 10))
+                      }
+                      onWheel={(e) =>
+                        (e.currentTarget as HTMLInputElement).blur()
+                      }
+                      className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <div className="text-sm">
+                      合計: ¥{(mixedCash + mixedCard).toLocaleString()} / 目標:
+                      ¥{estimatedTotal.toLocaleString()}
+                      <br />
+                      {mixedCash + mixedCard !== estimatedTotal && (
+                        <span className="text-red-600">
+                          合計が一致していません
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="col-span-3 md:col-span-2">
-                  <input
-                    ref={(el) => {
-                      priceRefs.current[idx] = el;
-                    }}
-                    type="number"
-                    placeholder="単価（任意）"
-                    value={row.unitPrice ?? ""}
-                    onChange={(e) =>
-                      setItems((prev) =>
-                        prev.map((r, i) =>
-                          i === idx
-                            ? {
-                                ...r,
-                                unitPrice: e.target.value
-                                  ? Number(e.target.value)
-                                  : undefined,
-                              }
-                            : r
-                        )
-                      )
-                    }
-                    onWheel={(e) =>
-                      (e.currentTarget as HTMLInputElement).blur()
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div className="col-span-12 md:col-span-2 flex justify-end">
-                  <button
-                    onClick={() => removeRow(idx)}
-                    className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
-                  >
-                    削除
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">
-              指名の追加（任意）
-            </h2>
-            <button
-              onClick={addEngagementRow}
-              className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
-            >
-              行を追加
-            </button>
-          </div>
-          <div className="space-y-2">
-            {engagements.map((row, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-5 md:col-span-5">
-                  <select
-                    value={row.castId}
-                    onChange={(e) =>
-                      setEngagements((prev) =>
-                        prev.map((r, i) =>
-                          i === idx ? { ...r, castId: e.target.value } : r
-                        )
-                      )
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">キャストを選択</option>
-                    {casts.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.stageName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-span-6 md:col-span-6">
-                  <select
-                    value={row.role}
-                    onChange={(e) => {
-                      const role = e.target.value as typeof row.role;
-                      // 役割に合わせて指名種別を自動設定
-                      const roleToTypeName: Record<string, string> = {
-                        primary: "本指名",
-                        inhouse: "場内指名",
-                        help: "ヘルプ",
-                        douhan: "同伴",
-                        after: "アフター",
-                      };
-                      const name = roleToTypeName[role];
-                      const hit = nominationTypes.find(
-                        (t) => t.display_name === name
-                      );
-                      setEngagements((prev) =>
-                        prev.map((r, i) =>
-                          i === idx
-                            ? {
-                                ...r,
-                                role,
-                                nominationTypeId: hit?.id,
-                              }
-                            : r
-                        )
-                      );
-                    }}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="primary">本指名</option>
-                    <option value="inhouse">場内指名</option>
-                    <option value="help">ヘルプ</option>
-                    <option value="douhan">同伴</option>
-                    <option value="after">アフター</option>
-                  </select>
-                </div>
-                <div className="col-span-1 md:col-span-1 flex justify-end">
-                  <button
-                    onClick={() => removeEngagementRow(idx)}
-                    className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
-                  >
-                    削除
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-5 space-y-4">
-          <h2 className="text-lg font-medium text-gray-900">精算（任意）</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={markCompleted}
-                onChange={(e) => setMarkCompleted(e.target.checked)}
-              />
-              <span className="text-sm text-gray-700">
-                登録と同時に精算する
-                <span
-                  className="ml-1 text-gray-400 cursor-help"
-                  title="過去日を選ぶと自動でONになります。必要に応じて手動で切り替え可能です。"
-                >
-                  ⓘ
-                </span>
-              </span>
-            </label>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                支払い方法
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as PaymentMethod)
-                }
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-                disabled={!markCompleted}
-              >
-                <option value="cash">現金</option>
-                <option value="card">カード</option>
-                <option value="mixed">混合</option>
-              </select>
-            </div>
-            <div className="text-xs text-gray-500">
-              チェックのON/OFFはいつでも変更できます。
+              )}
             </div>
           </div>
-          {markCompleted && paymentMethod === "mixed" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  現金
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={mixedCash}
-                  onChange={(e) =>
-                    setMixedCash(parseInt(e.target.value || "0", 10))
-                  }
-                  onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                  className="mt-1 w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  カード
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={mixedCard}
-                  onChange={(e) =>
-                    setMixedCard(parseInt(e.target.value || "0", 10))
-                  }
-                  onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                  className="mt-1 w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex items-end">
-                <div className="text-sm">
-                  合計: ¥{(mixedCash + mixedCard).toLocaleString()} / 目標: ¥
+
+          {/* Aside summary */}
+          <aside className="lg:col-span-1">
+            <div className="bg-white shadow rounded-lg p-5 sticky top-24">
+              <h3 className="text-base font-semibold text-gray-900 mb-3">
+                確認
+              </h3>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>
+                  <span className="text-gray-500">来店:</span> {visitDate}{" "}
+                  {visitTime}
+                </li>
+                <li>
+                  <span className="text-gray-500">テーブル:</span>{" "}
+                  {tableId || "未選択"}
+                </li>
+                <li>
+                  <span className="text-gray-500">人数:</span> {numGuests}名
+                </li>
+                <li>
+                  <span className="text-gray-500">顧客:</span>{" "}
+                  {customerQuery || "未指定"}
+                </li>
+                <li>
+                  <span className="text-gray-500">明細行:</span> {items.length}{" "}
+                  行
+                </li>
+                <li>
+                  <span className="text-gray-500">予想小計:</span> ¥
+                  {estimatedSubtotal.toLocaleString()}
+                </li>
+                <li>
+                  <span className="text-gray-500">予想サ料:</span> ¥
+                  {estimatedService.toLocaleString()}
+                </li>
+                <li>
+                  <span className="text-gray-500">予想税額:</span> ¥
+                  {estimatedTax.toLocaleString()}
+                </li>
+                <li>
+                  <span className="text-gray-500">予想合計:</span> ¥
                   {estimatedTotal.toLocaleString()}
-                  <br />
-                  {mixedCash + mixedCard !== estimatedTotal && (
-                    <span className="text-red-600">合計が一致していません</span>
-                  )}
+                </li>
+                <li>
+                  <span className="text-gray-500">精算:</span>{" "}
+                  {markCompleted ? `実行（${paymentMethod}）` : "なし"}
+                </li>
+              </ul>
+              <button
+                disabled={isSubmitDisabled}
+                onClick={handleSubmit}
+                className="mt-4 w-full px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
+              >
+                {submitting ? "登録中..." : "登録する"}
+              </button>
+              {markCompleted && paymentMethod === "mixed" && (
+                <div className="mt-2 text-xs text-gray-600">
+                  内訳: 現金 ¥{mixedCash.toLocaleString()} / カード ¥
+                  {mixedCard.toLocaleString()}
                 </div>
-              </div>
+              )}
+              {!tableId && (
+                <p className="text-xs text-red-600 mt-2">
+                  テーブルを選択してください。
+                </p>
+              )}
+              {(items.length === 0 ||
+                items.some((r) => !r.productId || r.quantity <= 0)) && (
+                <p className="text-xs text-red-600 mt-1">
+                  明細の入力に不備があります。
+                </p>
+              )}
             </div>
-          )}
-        </div>
-        <div className="bg-white shadow rounded-lg p-5 sticky top-24">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">確認</h3>
-          <ul className="text-sm text-gray-700 space-y-1">
-            <li>
-              <span className="text-gray-500">来店:</span> {visitDate}{" "}
-              {visitTime}
-            </li>
-            <li>
-              <span className="text-gray-500">テーブル:</span>{" "}
-              {tableId || "未選択"}
-            </li>
-            <li>
-              <span className="text-gray-500">人数:</span> {numGuests}名
-            </li>
-            <li>
-              <span className="text-gray-500">顧客:</span>{" "}
-              {customerQuery || "未指定"}
-            </li>
-            <li>
-              <span className="text-gray-500">明細行:</span> {items.length} 行
-            </li>
-            <li>
-              <span className="text-gray-500">予想小計:</span> ¥
-              {estimatedSubtotal.toLocaleString()}
-            </li>
-            <li>
-              <span className="text-gray-500">予想サ料:</span> ¥
-              {estimatedService.toLocaleString()}
-            </li>
-            <li>
-              <span className="text-gray-500">予想税額:</span> ¥
-              {estimatedTax.toLocaleString()}
-            </li>
-            <li>
-              <span className="text-gray-500">予想合計:</span> ¥
-              {estimatedTotal.toLocaleString()}
-            </li>
-            <li>
-              <span className="text-gray-500">精算:</span>{" "}
-              {markCompleted ? `実行（${paymentMethod}）` : "なし"}
-            </li>
-          </ul>
-          <button
-            disabled={isSubmitDisabled}
-            onClick={handleSubmit}
-            className="mt-4 w-full px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
-          >
-            {submitting ? "登録中..." : "登録する"}
-          </button>
-          {markCompleted && paymentMethod === "mixed" && (
-            <div className="mt-2 text-xs text-gray-600">
-              内訳: 現金 ¥{mixedCash.toLocaleString()} / カード ¥
-              {mixedCard.toLocaleString()}
-            </div>
-          )}
-          {!tableId && (
-            <p className="text-xs text-red-600 mt-2">
-              テーブルを選択してください。
-            </p>
-          )}
-          {(items.length === 0 ||
-            items.some((r) => !r.productId || r.quantity <= 0)) && (
-            <p className="text-xs text-red-600 mt-1">
-              明細の入力に不備があります。
-            </p>
-          )}
+          </aside>
         </div>
       </div>
     </Access>
