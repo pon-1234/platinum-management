@@ -565,10 +565,19 @@ export default function ManualEntryPage() {
                         {products
                           .filter((p) => {
                             const q = (row.search || "").toLowerCase();
-                            return (
-                              p.name.toLowerCase().includes(q) ||
-                              String(p.id).includes(q)
-                            );
+                            const fields = [
+                              p.name,
+                              (p as unknown as { nameKana?: string }).nameKana,
+                              (p as unknown as { shortName?: string })
+                                .shortName,
+                              (p as unknown as { alias?: string }).alias,
+                              (p as unknown as { sku?: string }).sku,
+                              (p as unknown as { code?: string }).code,
+                              String(p.id),
+                            ]
+                              .filter(Boolean)
+                              .map((s) => String(s).toLowerCase());
+                            return fields.some((f) => f.includes(q));
                           })
                           .slice(0, 20)
                           .map((p) => (

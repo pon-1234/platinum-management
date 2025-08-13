@@ -2,6 +2,12 @@
 export interface Product {
   id: number;
   name: string;
+  // Optional searchable fields if present in DB
+  nameKana?: string;
+  shortName?: string;
+  alias?: string;
+  sku?: string;
+  code?: string;
   category: string;
   price: number;
   cost: number;

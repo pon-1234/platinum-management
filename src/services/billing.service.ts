@@ -105,7 +105,21 @@ export class BillingService extends BaseService {
       .order("created_at", { ascending: false });
 
     if (params.query) {
-      query = query.ilike("name", `%${params.query}%`);
+      const q = params.query;
+      // name / name_kana / short_name / alias / sku / code を横断検索（存在するカラムのみヒット）
+      // Supabase(PostgREST)の or フィルタを活用
+      query = query.or(
+        [
+          `name.ilike.%${q}%`,
+          `name_kana.ilike.%${q}%`,
+          `short_name.ilike.%${q}%`,
+          `alias.ilike.%${q}%`,
+          `sku.ilike.%${q}%`,
+          `code.ilike.%${q}%`,
+          // 数字コードにも対応
+          `id.eq.${Number(q) || 0}`,
+        ].join(",")
+      );
     }
 
     if (params.category) {
