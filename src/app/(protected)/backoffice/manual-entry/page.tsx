@@ -22,6 +22,7 @@ export default function ManualEntryPage() {
   const [numGuests, setNumGuests] = useState<number>(1);
   const [customerId, setCustomerId] = useState<string>("");
   const [note, setNote] = useState<string>("");
+  const [externalSlipId, setExternalSlipId] = useState<string>("");
   const [tables, setTables] = useState<Table[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [casts, setCasts] = useState<Array<{ id: string; stageName: string }>>(
@@ -115,7 +116,8 @@ export default function ManualEntryPage() {
         tableId: parseInt(tableId, 10),
         numGuests,
         checkInAt: checkInIso,
-        notes: note || undefined,
+        notes:
+          (externalSlipId ? `[ext:${externalSlipId}] ` : "") + (note || ""),
       };
       if (customerId) payload.customerId = customerId;
       const visit = await billingService.createVisit(payload);
@@ -163,6 +165,7 @@ export default function ManualEntryPage() {
       setItems([{ productId: "", quantity: 1 }]);
       setEngagements([{ castId: "", role: "inhouse" }]);
       setNote("");
+      setExternalSlipId("");
     } catch (e) {
       if (process.env.NODE_ENV === "development") console.error(e);
       toast.error("登録に失敗しました");
