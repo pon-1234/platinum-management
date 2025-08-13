@@ -19,6 +19,7 @@ import {
   TableCellsIcon,
   StarIcon,
   ShieldCheckIcon,
+  BeakerIcon,
 } from "@heroicons/react/24/outline";
 
 interface NavigationItem {
@@ -91,10 +92,22 @@ const navigationItems: NavigationItem[] = [
     resource: "inventory",
   },
   {
+    name: "ボトル管理",
+    href: "/bottle-keep",
+    icon: BeakerIcon,
+    resource: "bottle_keep",
+  },
+  {
     name: "レポート",
     href: "/reports",
     icon: ChartBarIcon,
     resource: "reports",
+  },
+  {
+    name: "バックオフィス手入力",
+    href: "/backoffice/manual-entry",
+    icon: CreditCardIcon,
+    resource: "billing",
   },
   {
     name: "プロフィール",
