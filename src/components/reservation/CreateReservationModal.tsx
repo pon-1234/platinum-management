@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { reservationService } from "@/services/reservation.service";
-import { revalidatePath } from "next/cache";
+import { useRouter } from "next/navigation";
 import { customerService } from "@/services/customer.service";
 import { castService } from "@/services/cast.service";
 import { createReservationSchema } from "@/lib/validations/reservation";
@@ -29,6 +29,7 @@ export function CreateReservationModal({
   onSuccess,
   initialDate,
 }: CreateReservationModalProps) {
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [casts, setCasts] = useState<Cast[]>([]);
   const [availableTables, setAvailableTables] = useState<Table[]>([]);
@@ -110,7 +111,7 @@ export function CreateReservationModal({
     setIsLoading(true);
     try {
       await reservationService.createReservation(data);
-      revalidatePath("/bookings");
+      router.refresh();
       toast.success("予約を作成しました");
       reset();
       onSuccess();
