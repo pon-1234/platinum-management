@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PayrollService } from "@/services/payroll.service";
 import { z } from "zod";
-import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
+import {
+  parseJsonOrThrow,
+  parseQueryOrThrow,
+  ZodRequestError,
+} from "@/lib/utils/api-validate";
 
 const postSchema = z.object({
   castId: z.string().uuid(),
@@ -50,10 +54,16 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const castId = searchParams.get("castId") || undefined;
-    const periodStart = searchParams.get("periodStart");
-    const periodEnd = searchParams.get("periodEnd");
+    const getSchema = z.object({
+      castId: z.string().uuid().optional(),
+      periodStart: z.string().optional(),
+      periodEnd: z.string().optional(),
+    });
+
+    const { castId, periodStart, periodEnd } = parseQueryOrThrow(
+      getSchema,
+      request
+    );
 
     const calculations = await PayrollService.getCalculations(
       castId,
@@ -63,6 +73,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(calculations);
   } catch (error) {
+    if (error instanceof ZodRequestError) {
+      return NextResponse.json(
+        { error: error.message, details: error.zodError.flatten() },
+        { status: 400 }
+      );
+    }
     console.error("Failed to get payroll calculations:", error);
     return NextResponse.json(
       { error: "Failed to get payroll calculations" },
