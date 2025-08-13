@@ -70,7 +70,7 @@ export type PaymentStatus = "pending" | "completed" | "cancelled";
 export type PaymentMethod = "cash" | "card" | "mixed";
 
 export interface CreateVisitData {
-  customerId: string;
+  customerId?: string;
   tableId: number;
   numGuests: number;
   checkInAt?: string;
