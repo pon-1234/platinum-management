@@ -187,17 +187,20 @@ export class BillingService extends BaseService {
   async createVisit(data: CreateVisitData): Promise<Visit> {
     const staffId = await this.getCurrentStaffId(this.supabase);
 
+    // Build insert payload, omitting optional fields when not provided
+    const insertPayload: Record<string, unknown> = {
+      table_id: data.tableId,
+      num_guests: data.numGuests,
+      check_in_at: data.checkInAt || new Date().toISOString(),
+      notes: data.notes || null,
+      created_by: staffId,
+      updated_by: staffId,
+    };
+    if (data.customerId) insertPayload.customer_id = data.customerId;
+
     const { data: visit, error } = await this.supabase
       .from("visits")
-      .insert({
-        customer_id: data.customerId,
-        table_id: data.tableId,
-        num_guests: data.numGuests,
-        check_in_at: data.checkInAt || new Date().toISOString(),
-        notes: data.notes || null,
-        created_by: staffId,
-        updated_by: staffId,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
