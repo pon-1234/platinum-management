@@ -198,13 +198,28 @@ export default function ManualEntryPage() {
       }
 
       // 3) キャスト割り当て（任意）
+      // Helper: role -> default nomination type id
+      const roleToTypeName: Record<string, string> = {
+        primary: "本指名",
+        inhouse: "場内指名",
+        help: "ヘルプ",
+        douhan: "同伴",
+        after: "アフター",
+      };
+      const pickTypeId = (role: string): string | undefined => {
+        const name = roleToTypeName[role];
+        const hit = nominationTypes.find((t) => t.display_name === name);
+        return hit?.id;
+      };
+
       for (const e of engagements) {
         if (!e.castId) continue;
+        const typeId = e.nominationTypeId || pickTypeId(e.role);
         await VisitSessionService.addCastEngagement(
           visit.id,
           e.castId,
           e.role,
-          e.nominationTypeId || undefined
+          typeId
         );
       }
 
