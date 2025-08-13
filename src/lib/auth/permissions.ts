@@ -73,6 +73,11 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     redirectTo: "/dashboard",
   },
   {
+    path: "/backoffice",
+    allowedRoles: ["admin", "manager", "cashier"],
+    redirectTo: "/dashboard",
+  },
+  {
     path: "/profile",
     allowedRoles: ["admin", "manager", "hall", "cashier", "cast"],
   },
