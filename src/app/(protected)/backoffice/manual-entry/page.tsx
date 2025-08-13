@@ -1362,19 +1362,19 @@ export default function ManualEntryPage() {
                   行
                 </li>
                 <li>
-                  <span className="text-gray-500">予想小計:</span> ¥
+                  <span className="text-gray-500">税抜（小計）:</span> ¥
                   {estimatedSubtotal.toLocaleString()}
                 </li>
                 <li>
-                  <span className="text-gray-500">予想サ料:</span> ¥
+                  <span className="text-gray-500">サービス料:</span> ¥
                   {estimatedService.toLocaleString()}
                 </li>
                 <li>
-                  <span className="text-gray-500">予想税額:</span> ¥
+                  <span className="text-gray-500">税額（10%）:</span> ¥
                   {estimatedTax.toLocaleString()}
                 </li>
                 <li>
-                  <span className="text-gray-500">予想合計:</span> ¥
+                  <span className="text-gray-500">税込（合計）:</span> ¥
                   {estimatedTotal.toLocaleString()}
                 </li>
                 <li>
