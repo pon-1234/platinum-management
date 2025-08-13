@@ -258,16 +258,18 @@ export class BillingService extends BaseService {
       });
     }
     // Update table occupancy status (do not fail the flow)
-    this.supabase
-      .from("tables")
-      .update({
-        current_status: "occupied",
-        current_visit_id: visit.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.tableId)
-      .then(() => void 0)
-      .catch(() => void 0);
+    try {
+      await this.supabase
+        .from("tables")
+        .update({
+          current_status: "occupied",
+          current_visit_id: visit.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.tableId);
+    } catch {
+      // ignore occupancy update failure
+    }
 
     return this.mapToVisit(visit);
   }

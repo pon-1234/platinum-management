@@ -43,8 +43,8 @@ export default function PayrollPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCasts();
-    fetchSavedCalculations();
+    void fetchCasts();
+    void fetchSavedCalculations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]);
 
