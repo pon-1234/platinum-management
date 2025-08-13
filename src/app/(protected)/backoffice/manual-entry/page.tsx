@@ -52,6 +52,8 @@ export default function ManualEntryPage() {
     return visitDate < today; // 過去日はデフォルトで精算
   });
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [mixedCash, setMixedCash] = useState<number>(0);
+  const [mixedCard, setMixedCard] = useState<number>(0);
 
   useEffect(() => {
     // 日付変更時に自動で既定の精算フラグを更新（ユーザー操作後は手動で切替可）
@@ -141,6 +143,17 @@ export default function ManualEntryPage() {
     }, 0);
   }, [items, productMap]);
 
+  // 予想サービス料・税額・合計（必要に応じて計算式を調整）
+  const estimatedService = useMemo(() => 0, []);
+  const estimatedTax = useMemo(
+    () => Math.floor((estimatedSubtotal + estimatedService) * 0.1),
+    [estimatedSubtotal, estimatedService]
+  );
+  const estimatedTotal = useMemo(
+    () => estimatedSubtotal + estimatedService + estimatedTax,
+    [estimatedSubtotal, estimatedService, estimatedTax]
+  );
+
   const isSubmitDisabled =
     submitting ||
     !tableId ||
@@ -225,6 +238,13 @@ export default function ManualEntryPage() {
 
       // 4)（任意）即時精算（チェックアウト）
       if (markCompleted) {
+        if (paymentMethod === "mixed") {
+          if (mixedCash + mixedCard !== estimatedTotal) {
+            toast.error("内訳合計が合計金額と一致していません");
+            setSubmitting(false);
+            return;
+          }
+        }
         try {
           await billingService.processPayment(visit.id, {
             method: paymentMethod,
@@ -244,6 +264,8 @@ export default function ManualEntryPage() {
       setEngagements([{ castId: "", role: "inhouse" }]);
       setNote("");
       setExternalSlipId("");
+      setMixedCash(0);
+      setMixedCard(0);
     } catch (e) {
       if (process.env.NODE_ENV === "development") console.error(e);
       toast.error("登録に失敗しました");
@@ -293,16 +315,21 @@ export default function ManualEntryPage() {
                 テーブル
               </label>
               <select
+                id="table-select"
                 value={tableId}
                 onChange={(e) => setTableId(e.target.value)}
                 className="mt-1 w-full border rounded px-3 py-2 text-sm"
               >
                 <option value="">選択してください</option>
-                {tables.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.tableName}（定員{t.capacity}）
-                  </option>
-                ))}
+                {tables.map((t) => {
+                  const badge =
+                    t.currentStatus === "available" ? "空き" : "満席";
+                  return (
+                    <option key={t.id} value={t.id}>
+                      {t.tableName}（{t.capacity}） {badge}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <div>
@@ -636,8 +663,7 @@ export default function ManualEntryPage() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white shadow rounded-lg p-5">
+        <div className="bg-white shadow rounded-lg p-5 sticky top-24">
           <h3 className="text-base font-semibold text-gray-900 mb-3">確認</h3>
           <ul className="text-sm text-gray-700 space-y-1">
             <li>
@@ -663,6 +689,18 @@ export default function ManualEntryPage() {
               {estimatedSubtotal.toLocaleString()}
             </li>
             <li>
+              <span className="text-gray-500">予想サ料:</span> ¥
+              {estimatedService.toLocaleString()}
+            </li>
+            <li>
+              <span className="text-gray-500">予想税額:</span> ¥
+              {estimatedTax.toLocaleString()}
+            </li>
+            <li>
+              <span className="text-gray-500">予想合計:</span> ¥
+              {estimatedTotal.toLocaleString()}
+            </li>
+            <li>
               <span className="text-gray-500">精算:</span>{" "}
               {markCompleted ? `実行（${paymentMethod}）` : "なし"}
             </li>
@@ -674,6 +712,12 @@ export default function ManualEntryPage() {
           >
             {submitting ? "登録中..." : "登録する"}
           </button>
+          {markCompleted && paymentMethod === "mixed" && (
+            <div className="mt-2 text-xs text-gray-600">
+              内訳: 現金 ¥{mixedCash.toLocaleString()} / カード ¥
+              {mixedCard.toLocaleString()}
+            </div>
+          )}
           {!tableId && (
             <p className="text-xs text-red-600 mt-2">
               テーブルを選択してください。
