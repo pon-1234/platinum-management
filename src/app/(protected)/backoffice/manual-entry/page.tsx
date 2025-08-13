@@ -8,7 +8,7 @@ import { castService } from "@/services/cast.service";
 import { NominationTypeService } from "@/services/nomination-type.service";
 import { VisitSessionService } from "@/services/visit-session.service";
 import type { Table } from "@/types/reservation.types";
-import type { Product } from "@/types/billing.types";
+import type { Product, PaymentMethod } from "@/types/billing.types";
 import { toast } from "react-hot-toast";
 
 export default function ManualEntryPage() {
@@ -41,6 +41,19 @@ export default function ManualEntryPage() {
     }>
   >([{ castId: "", role: "inhouse" }]);
   const [submitting, setSubmitting] = useState(false);
+  const [markCompleted, setMarkCompleted] = useState<boolean>(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return visitDate < today; // 過去日はデフォルトで精算
+  });
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+
+  useEffect(() => {
+    // 日付変更時に自動で既定の精算フラグを更新（ユーザー操作後は手動で切替可）
+    const today = new Date().toISOString().slice(0, 10);
+    setMarkCompleted((prev) =>
+      prev === true || prev === false ? visitDate < today : visitDate < today
+    );
+  }, [visitDate]);
 
   useEffect(() => {
     (async () => {
@@ -128,6 +141,21 @@ export default function ManualEntryPage() {
           e.role,
           e.nominationTypeId || undefined
         );
+      }
+
+      // 4)（任意）即時精算（チェックアウト）
+      if (markCompleted) {
+        try {
+          await billingService.processPayment(visit.id, {
+            method: paymentMethod,
+            amount: 0,
+            notes: note || undefined,
+          });
+        } catch (e) {
+          if (process.env.NODE_ENV === "development") console.error(e);
+          toast.error("精算に失敗しました");
+          return; // ここで終了（再試行可能）
+        }
       }
 
       toast.success("手入力の登録が完了しました");
@@ -424,6 +452,42 @@ export default function ManualEntryPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-5 space-y-4">
+          <h2 className="text-lg font-medium text-gray-900">精算（任意）</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={markCompleted}
+                onChange={(e) => setMarkCompleted(e.target.checked)}
+              />
+              <span className="text-sm text-gray-700">
+                登録と同時に精算する
+              </span>
+            </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                支払い方法
+              </label>
+              <select
+                value={paymentMethod}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value as PaymentMethod)
+                }
+                className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                disabled={!markCompleted}
+              >
+                <option value="cash">現金</option>
+                <option value="card">カード</option>
+                <option value="mixed">混合</option>
+              </select>
+            </div>
+            <div className="text-xs text-gray-500">
+              過去日を選択した場合は既定で精算にチェックが入ります。
+            </div>
           </div>
         </div>
 
