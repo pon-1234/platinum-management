@@ -17,7 +17,7 @@ graph TB
         D[スキャン履歴画面]
         E[精度分析画面]
     end
-    
+
     subgraph "Service Layer"
         F[BusinessCardScanService]
         G[OCRProcessingService]
@@ -25,33 +25,33 @@ graph TB
         I[DataExtractionService]
         J[CustomerMatchingService]
     end
-    
+
     subgraph "Data Layer"
         K[business_card_scans]
         L[ocr_results]
         M[scan_accuracy_logs]
         N[extracted_customer_data]
     end
-    
+
     subgraph "External Services"
         O[OCR API (Google Vision)]
         P[Image Storage (S3)]
         Q[Customer Database]
         R[Company Database]
     end
-    
+
     A --> F
     B --> H
     C --> I
     D --> F
     E --> F
-    
+
     F --> K
     G --> L
     H --> P
     I --> N
     J --> Q
-    
+
     G --> O
     H --> P
     I --> R
@@ -63,6 +63,7 @@ graph TB
 #### 新規テーブル設計
 
 **business_card_scans (名刺スキャン記録)**
+
 ```sql
 CREATE TABLE business_card_scans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -86,6 +87,7 @@ CREATE TABLE business_card_scans (
 ```
 
 **ocr_results (OCR処理結果)**
+
 ```sql
 CREATE TABLE ocr_results (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -103,6 +105,7 @@ CREATE TABLE ocr_results (
 ```
 
 **extracted_customer_data (抽出顧客データ)**
+
 ```sql
 CREATE TABLE extracted_customer_data (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -128,6 +131,7 @@ CREATE TABLE extracted_customer_data (
 ```
 
 **scan_accuracy_logs (スキャン精度ログ)**
+
 ```sql
 CREATE TABLE scan_accuracy_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -145,6 +149,7 @@ CREATE TABLE scan_accuracy_logs (
 ```
 
 **business_card_templates (名刺テンプレート)**
+
 ```sql
 CREATE TABLE business_card_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -168,9 +173,11 @@ CREATE TABLE business_card_templates (
 ### Service Layer Components
 
 #### BusinessCardScanService
+
 名刺スキャンの全体的な制御を担当するサービス
 
 **主要メソッド:**
+
 - `initiateScan(imageFile: File, scanOptions: ScanOptions): Promise<BusinessCardScan>`
 - `getScanStatus(scanId: string): Promise<ScanStatus>`
 - `getScanHistory(filters: ScanHistoryFilters): Promise<BusinessCardScan[]>`
@@ -178,9 +185,11 @@ CREATE TABLE business_card_templates (
 - `deleteScanData(scanId: string, deleteOptions: DeleteOptions): Promise<void>`
 
 #### OCRProcessingService
+
 OCR処理を担当するサービス
 
 **主要メソッド:**
+
 - `processImage(imageUrl: string, provider: string): Promise<OCRResult>`
 - `extractTextFromImage(imageFile: File): Promise<ExtractedText>`
 - `validateOCRResult(ocrResult: OCRResult): Promise<ValidationResult>`
@@ -188,9 +197,11 @@ OCR処理を担当するサービス
 - `compareOCRProviders(imageUrl: string): Promise<ProviderComparison>`
 
 #### ImageProcessingService
+
 画像処理・最適化を担当するサービス
 
 **主要メソッド:**
+
 - `preprocessImage(imageFile: File): Promise<ProcessedImage>`
 - `detectBusinessCard(imageFile: File): Promise<CardDetectionResult>`
 - `enhanceImageQuality(imageFile: File): Promise<EnhancedImage>`
@@ -198,9 +209,11 @@ OCR処理を担当するサービス
 - `validateImageFormat(imageFile: File): Promise<FormatValidation>`
 
 #### DataExtractionService
+
 抽出データの処理・検証を担当するサービス
 
 **主要メソッド:**
+
 - `extractCustomerData(ocrResult: OCRResult): Promise<ExtractedCustomerData>`
 - `validateExtractedData(extractedData: ExtractedCustomerData): Promise<ValidationResult>`
 - `suggestCorrections(extractedData: ExtractedCustomerData): Promise<CorrectionSuggestions>`
@@ -208,9 +221,11 @@ OCR処理を担当するサービス
 - `enrichDataWithExternalSources(extractedData: ExtractedCustomerData): Promise<EnrichedData>`
 
 #### CustomerMatchingService
+
 既存顧客との照合を担当するサービス
 
 **主要メソッド:**
+
 - `findSimilarCustomers(extractedData: ExtractedCustomerData): Promise<SimilarCustomer[]>`
 - `calculateMatchScore(customer1: Customer, customer2: ExtractedCustomerData): Promise<number>`
 - `suggestCustomerMerge(customerId: string, extractedDataId: string): Promise<MergeSuggestion>`
@@ -220,45 +235,55 @@ OCR処理を担当するサービス
 ### UI Components
 
 #### BusinessCardScanModal
+
 名刺スキャンのメインモーダル
 
 **機能:**
+
 - 画像アップロード・カメラ撮影
 - リアルタイム名刺検出
 - 処理進捗表示
 - エラーハンドリング
 
 #### ImagePreviewComponent
+
 画像プレビューと編集コンポーネント
 
 **機能:**
+
 - 画像プレビュー表示
 - 名刺領域の手動調整
 - 画像回転・補正
 - 品質確認
 
 #### ExtractedDataEditor
+
 抽出データの確認・編集コンポーネント
 
 **機能:**
+
 - 抽出結果の表示
 - 信頼度スコア表示
 - 手動修正機能
 - バリデーション結果表示
 
 #### ScanHistoryViewer
+
 スキャン履歴の表示コンポーネント
 
 **機能:**
+
 - スキャン履歴一覧
 - 詳細情報表示
 - 再処理機能
 - データエクスポート
 
 #### AccuracyAnalyticsDashboard
+
 精度分析ダッシュボード
 
 **機能:**
+
 - 精度統計の表示
 - エラーパターン分析
 - 改善提案表示
@@ -273,11 +298,11 @@ interface BusinessCardScan {
   id: string;
   originalImageUrl: string;
   processedImageUrl?: string;
-  scanMethod: 'upload' | 'camera' | 'batch';
-  imageFormat: 'jpeg' | 'png' | 'pdf';
+  scanMethod: "upload" | "camera" | "batch";
+  imageFormat: "jpeg" | "png" | "pdf";
   imageSizeBytes: number;
   imageDimensions: { width: number; height: number };
-  scanStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  scanStatus: "pending" | "processing" | "completed" | "failed";
   processingStartTime?: Date;
   processingEndTime?: Date;
   processingDurationMs?: number;
@@ -294,7 +319,7 @@ interface BusinessCardScan {
 interface OCRResult {
   id: string;
   businessCardScanId: string;
-  ocrProvider: 'google_vision' | 'aws_textract' | 'azure_cognitive';
+  ocrProvider: "google_vision" | "aws_textract" | "azure_cognitive";
   rawOcrResponse: any;
   extractedText: string;
   confidenceScore: number;
@@ -307,7 +332,7 @@ interface OCRResult {
 interface ExtractedCustomerData {
   id: string;
   businessCardScanId: string;
-  extractionMethod: 'regex' | 'nlp' | 'manual';
+  extractionMethod: "regex" | "nlp" | "manual";
   extractedName?: string;
   extractedNameKana?: string;
   extractedCompany?: string;
@@ -348,7 +373,7 @@ interface ValidationResult {
 interface ValidationError {
   field: string;
   message: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: "error" | "warning" | "info";
 }
 
 interface ScanAccuracyLog {
@@ -358,7 +383,7 @@ interface ScanAccuracyLog {
   extractedValue?: string;
   correctedValue?: string;
   isCorrect: boolean;
-  correctionType: 'none' | 'minor' | 'major' | 'complete';
+  correctionType: "none" | "minor" | "major" | "complete";
   accuracyScore: number;
   errorCategory: string;
   feedbackProvidedBy?: string;
@@ -374,8 +399,8 @@ interface ScanOptions {
 
 interface ProcessingHints {
   expectedLanguage?: string;
-  cardOrientation?: 'portrait' | 'landscape';
-  textDensity?: 'low' | 'medium' | 'high';
+  cardOrientation?: "portrait" | "landscape";
+  textDensity?: "low" | "medium" | "high";
   companyName?: string;
 }
 ```

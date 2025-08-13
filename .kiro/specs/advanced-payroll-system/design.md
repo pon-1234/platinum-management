@@ -18,14 +18,14 @@ graph TB
         C[給与明細表示画面]
         D[キャスト成績画面]
     end
-    
+
     subgraph "Service Layer"
         E[PayrollRuleService]
         F[PayrollCalculationService]
         G[PayrollReportService]
         H[NominationService]
     end
-    
+
     subgraph "Data Layer"
         I[payroll_rules]
         J[nomination_types]
@@ -34,18 +34,18 @@ graph TB
         M[payroll_calculations]
         N[payroll_details]
     end
-    
+
     subgraph "External Systems"
         O[Cast Management]
         P[Attendance System]
         Q[Sales/Order System]
     end
-    
+
     A --> E
     B --> F
     C --> G
     D --> G
-    
+
     E --> I
     E --> J
     F --> I
@@ -56,7 +56,7 @@ graph TB
     G --> M
     G --> N
     H --> J
-    
+
     F --> O
     F --> P
     F --> Q
@@ -67,6 +67,7 @@ graph TB
 #### 新規テーブル設計
 
 **payroll_rules (給与計算ルール)**
+
 ```sql
 CREATE TABLE payroll_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,6 +85,7 @@ CREATE TABLE payroll_rules (
 ```
 
 **nomination_types (指名種別)**
+
 ```sql
 CREATE TABLE nomination_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -97,6 +99,7 @@ CREATE TABLE nomination_types (
 ```
 
 **sales_tiers (売上スライド)**
+
 ```sql
 CREATE TABLE sales_tiers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -111,6 +114,7 @@ CREATE TABLE sales_tiers (
 ```
 
 **item_back_rates (項目別バック率)**
+
 ```sql
 CREATE TABLE item_back_rates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -124,6 +128,7 @@ CREATE TABLE item_back_rates (
 ```
 
 **cast_payroll_assignments (キャスト給与ルール割り当て)**
+
 ```sql
 CREATE TABLE cast_payroll_assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -139,6 +144,7 @@ CREATE TABLE cast_payroll_assignments (
 ```
 
 **payroll_calculations (給与計算結果)**
+
 ```sql
 CREATE TABLE payroll_calculations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -163,6 +169,7 @@ CREATE TABLE payroll_calculations (
 ```
 
 **payroll_details (給与計算詳細)**
+
 ```sql
 CREATE TABLE payroll_details (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -180,8 +187,9 @@ CREATE TABLE payroll_details (
 #### 既存テーブルの拡張
 
 **order_items テーブルに指名種別を追加**
+
 ```sql
-ALTER TABLE order_items 
+ALTER TABLE order_items
 ADD COLUMN nomination_type_id UUID REFERENCES nomination_types(id),
 ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 ```
@@ -191,9 +199,11 @@ ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 ### Service Layer Components
 
 #### PayrollRuleService
+
 給与計算ルールの管理を担当するサービス
 
 **主要メソッド:**
+
 - `createPayrollRule(ruleData: PayrollRuleInput): Promise<PayrollRule>`
 - `updatePayrollRule(id: string, ruleData: Partial<PayrollRuleInput>): Promise<PayrollRule>`
 - `getPayrollRules(filters?: PayrollRuleFilters): Promise<PayrollRule[]>`
@@ -201,15 +211,18 @@ ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 - `validateRuleConsistency(ruleData: PayrollRuleInput): Promise<ValidationResult>`
 
 #### PayrollCalculationService
+
 給与計算の実行を担当するサービス
 
 **主要メソッド:**
+
 - `calculateMonthlyPayroll(castId: string, year: number, month: number): Promise<PayrollCalculation>`
 - `calculateBulkPayroll(castIds: string[], year: number, month: number): Promise<PayrollCalculation[]>`
 - `recalculatePayroll(calculationId: string): Promise<PayrollCalculation>`
 - `approvePayrollCalculation(calculationId: string, approvedBy: string): Promise<void>`
 
 **計算ロジック:**
+
 1. 基本給計算（時給 × 勤務時間）
 2. 売上スライド適用
 3. 指名種別別バック計算
@@ -218,18 +231,22 @@ ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 6. 最終金額確定
 
 #### NominationService
+
 指名種別の管理を担当するサービス
 
 **主要メソッド:**
+
 - `createNominationType(typeData: NominationTypeInput): Promise<NominationType>`
 - `updateNominationType(id: string, typeData: Partial<NominationTypeInput>): Promise<NominationType>`
 - `getNominationTypes(): Promise<NominationType[]>`
 - `recordNomination(orderId: number, nominationTypeId: string, castId: string): Promise<void>`
 
 #### PayrollReportService
+
 給与レポートの生成を担当するサービス
 
 **主要メソッド:**
+
 - `generatePayrollSummary(year: number, month: number): Promise<PayrollSummary>`
 - `generateCastPayrollDetail(castId: string, calculationId: string): Promise<PayrollDetail>`
 - `generatePayrollComparison(castId: string, periods: DateRange[]): Promise<PayrollComparison>`
@@ -238,9 +255,11 @@ ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 ### UI Components
 
 #### PayrollRuleManagement
+
 給与計算ルールの設定・管理画面
 
 **機能:**
+
 - ルール一覧表示
 - 新規ルール作成フォーム
 - ルール編集・削除
@@ -248,9 +267,11 @@ ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 - ルール有効性検証
 
 #### MonthlyPayrollCalculation
+
 月次給与計算の実行画面
 
 **機能:**
+
 - 計算対象期間選択
 - 対象キャスト選択
 - 一括計算実行
@@ -259,18 +280,22 @@ ADD COLUMN nomination_fee INTEGER DEFAULT 0;
 - 計算結果承認
 
 #### PayrollDetailView
+
 給与明細の表示画面
 
 **機能:**
+
 - 給与明細詳細表示
 - 計算根拠の表示
 - 過去履歴の参照
 - PDF出力機能
 
 #### CastPerformanceDashboard
+
 キャスト個人の成績表示画面
 
 **機能:**
+
 - 当月売上・給与見込み表示
 - 日別・週別推移グラフ
 - 目標達成状況表示
@@ -326,7 +351,7 @@ interface PayrollCalculation {
   grossAmount: number;
   netAmount: number;
   details: PayrollDetail[];
-  calculationStatus: 'draft' | 'calculated' | 'approved' | 'paid';
+  calculationStatus: "draft" | "calculated" | "approved" | "paid";
 }
 
 interface PayrollDetail {

@@ -1,6 +1,7 @@
 # Migration Guide: Attendance Store Split
 
 ## Overview
+
 The monolithic `useAttendanceStore` has been split into 4 specialized stores for better performance and maintainability:
 
 1. **useAttendanceDashboardStore** - Dashboard data and statistics
@@ -11,31 +12,27 @@ The monolithic `useAttendanceStore` has been split into 4 specialized stores for
 ## Migration Examples
 
 ### Before (Monolithic Store)
+
 ```typescript
-import { useAttendanceStore } from '@/stores';
+import { useAttendanceStore } from "@/stores";
 
 function DashboardComponent() {
-  const { 
-    dashboardData, 
-    dashboardLoading,
-    fetchDashboard 
-  } = useAttendanceStore();
-  
+  const { dashboardData, dashboardLoading, fetchDashboard } =
+    useAttendanceStore();
+
   // ...
 }
 ```
 
 ### After (Split Stores)
+
 ```typescript
-import { useAttendanceDashboardStore } from '@/stores/attendance-dashboard.store';
+import { useAttendanceDashboardStore } from "@/stores/attendance-dashboard.store";
 
 function DashboardComponent() {
-  const { 
-    dashboardData, 
-    isLoading,
-    fetchDashboard 
-  } = useAttendanceDashboardStore();
-  
+  const { dashboardData, isLoading, fetchDashboard } =
+    useAttendanceDashboardStore();
+
   // ...
 }
 ```
@@ -43,16 +40,19 @@ function DashboardComponent() {
 ## Store Mapping
 
 ### Dashboard Related
+
 - `dashboardData` → `useAttendanceDashboardStore().dashboardData`
 - `dashboardLoading` → `useAttendanceDashboardStore().isLoading`
 - `fetchDashboard()` → `useAttendanceDashboardStore().fetchDashboard()`
 
 ### Schedule Related
+
 - `weeklySchedule` → `useAttendanceScheduleStore().weeklySchedule`
 - `scheduleLoading` → `useAttendanceScheduleStore().isLoading`
 - `fetchWeeklySchedule()` → `useAttendanceScheduleStore().fetchWeeklySchedule()`
 
 ### Shift Requests
+
 - `shiftRequests` → `useShiftRequestStore().shiftRequests`
 - `requestsLoading` → `useShiftRequestStore().isLoading`
 - `fetchShiftRequests()` → `useShiftRequestStore().fetchShiftRequests()`
@@ -61,6 +61,7 @@ function DashboardComponent() {
 - `rejectShiftRequest()` → `useShiftRequestStore().rejectShiftRequest()`
 
 ### Time Clock
+
 - `todayRecord` → `useAttendanceTimeClockStore().todayRecord`
 - `recordLoading` → `useAttendanceTimeClockStore().isLoading`
 - `clockIn()` → `useAttendanceTimeClockStore().clockIn()`
@@ -69,12 +70,14 @@ function DashboardComponent() {
 - `endBreak()` → `useAttendanceTimeClockStore().endBreak()`
 
 ## Benefits
+
 1. **Better Performance**: Components only subscribe to the data they need
 2. **Improved Type Safety**: Each store has focused types
 3. **Easier Maintenance**: Smaller, focused stores are easier to understand
 4. **Reduced Re-renders**: Changes in one area don't trigger re-renders in unrelated components
 
 ## Next Steps
+
 1. Update all components using `useAttendanceStore`
 2. Remove the old monolithic store after migration
 3. Update tests to use the new stores

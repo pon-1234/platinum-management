@@ -35,6 +35,7 @@ docs/ Directory (Detailed Documentation):
 ### 1. Credential Management System
 
 **Environment Variable Schema:**
+
 ```bash
 # Database Connection
 POSTGRES_URL_NON_POOLING=postgresql://user:password@host:port/database
@@ -44,26 +45,29 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 **Script Configuration Interface:**
+
 ```javascript
 // Updated script pattern
 const config = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY
+  serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 };
 
 if (!config.supabaseUrl || !config.serviceKey) {
-  throw new Error('Missing required environment variables');
+  throw new Error("Missing required environment variables");
 }
 ```
 
 ### 2. Database Setup Consolidation
 
 **Single Source of Truth:**
+
 - `supabase/V1_init_schema.sql` as the authoritative schema
 - `DATABASE_SETUP.md` as the single setup guide
 - Removal of conflicting `MIGRATION_GUIDE.md`
 
 **Setup Process Flow:**
+
 ```mermaid
 graph TD
     A[Developer Setup] --> B[Copy .env.local.example]
@@ -76,6 +80,7 @@ graph TD
 ### 3. File Cleanup System
 
 **Removal Strategy:**
+
 1. **Archive Directory**: Complete removal of `supabase/migrations/archive/`
 2. **Backup Files**: Deletion of `.backup` files
 3. **Redundant Scripts**: Consolidation or removal of duplicate setup scripts
@@ -106,8 +111,8 @@ interface SecurityAuditResult {
   hardcodedCredentials: {
     file: string;
     line: number;
-    type: 'password' | 'key' | 'token';
-    severity: 'high' | 'medium' | 'low';
+    type: "password" | "key" | "token";
+    severity: "high" | "medium" | "low";
   }[];
   gitHistoryRisk: boolean;
   remediationSteps: string[];
@@ -121,15 +126,15 @@ interface SecurityAuditResult {
 ```javascript
 function validateEnvironmentVariables() {
   const required = [
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY'
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
   ];
-  
-  const missing = required.filter(key => !process.env[key]);
-  
+
+  const missing = required.filter((key) => !process.env[key]);
+
   if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+    throw new Error(`Missing environment variables: ${missing.join(", ")}`);
   }
 }
 ```
@@ -141,7 +146,7 @@ function safeFileOperation(operation, filePath) {
   try {
     return operation(filePath);
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === "ENOENT") {
       console.log(`File not found (safe to ignore): ${filePath}`);
       return null;
     }
@@ -168,20 +173,20 @@ function safeFileOperation(operation, filePath) {
 
 ```javascript
 // Example security test
-describe('Security Compliance', () => {
-  test('should not contain hardcoded credentials', () => {
+describe("Security Compliance", () => {
+  test("should not contain hardcoded credentials", () => {
     const sensitivePatterns = [
       /password\s*[:=]\s*["'][^"']+["']/i,
       /key\s*[:=]\s*["'][^"']+["']/i,
-      /token\s*[:=]\s*["'][^"']+["']/i
+      /token\s*[:=]\s*["'][^"']+["']/i,
     ];
-    
+
     // Scan all JavaScript/TypeScript files
-    const files = glob.sync('**/*.{js,ts,json}', { ignore: 'node_modules/**' });
-    
-    files.forEach(file => {
-      const content = fs.readFileSync(file, 'utf8');
-      sensitivePatterns.forEach(pattern => {
+    const files = glob.sync("**/*.{js,ts,json}", { ignore: "node_modules/**" });
+
+    files.forEach((file) => {
+      const content = fs.readFileSync(file, "utf8");
+      sensitivePatterns.forEach((pattern) => {
         expect(content).not.toMatch(pattern);
       });
     });

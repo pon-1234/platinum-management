@@ -17,10 +17,10 @@ graph TD
     E --> F[複数クエリ実行]
     F --> G[アプリケーション側集計]
     G --> H[大量データ転送]
-    
+
     I[検索リクエスト] --> J[ILIKE クエリ]
     J --> K[フルテーブルスキャン]
-    
+
     L[リアルタイム更新] --> M[全テーブル再取得]
     M --> N[全コンポーネント再描画]
 ```
@@ -32,10 +32,10 @@ graph TD
     A[フロントエンド] --> B[Server Actions]
     B --> C[データベースRPC]
     C --> D[高速レスポンス]
-    
+
     E[検索リクエスト] --> F[Trigramインデックス]
     F --> G[高速検索結果]
-    
+
     H[リアルタイム更新] --> I[差分データ]
     I --> J[部分更新]
     J --> K[最小限の再描画]
@@ -48,16 +48,19 @@ graph TD
 #### 1.1 フォールバック処理の削除
 
 **対象ファイル:**
+
 - `src/app/(protected)/dashboard/actions.ts`
 - `src/services/attendance/attendance-reporting.service.ts`
 - その他のサービスファイル
 
 **設計方針:**
+
 - 全てのフォールバック関数を削除
 - RPC関数の呼び出しに失敗した場合は適切なエラーハンドリング
 - 開発環境でのスキーマ不整合の早期検出
 
 **実装パターン:**
+
 ```typescript
 // 修正前（非効率）
 async function getDashboardStats() {
@@ -85,6 +88,7 @@ async function getDashboardStats() {
 #### 1.2 インデックス最適化
 
 **Trigramインデックスの実装:**
+
 ```sql
 -- PostgreSQL拡張機能の有効化
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -92,16 +96,16 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- 顧客検索用GINインデックス
 CREATE INDEX idx_customers_search ON customers
 USING gin (
-  name gin_trgm_ops, 
-  name_kana gin_trgm_ops, 
-  phone_number gin_trgm_ops, 
+  name gin_trgm_ops,
+  name_kana gin_trgm_ops,
+  phone_number gin_trgm_ops,
   line_id gin_trgm_ops
 );
 
 -- スタッフ検索用GINインデックス
 CREATE INDEX idx_staffs_search ON staffs
 USING gin (
-  full_name gin_trgm_ops, 
+  full_name gin_trgm_ops,
   full_name_kana gin_trgm_ops
 );
 
@@ -115,6 +119,7 @@ CREATE INDEX idx_attendance_date_range ON attendance_records (work_date, staff_i
 #### 2.1 差分更新システム
 
 **現在の問題:**
+
 ```typescript
 // 非効率: 全データ再取得
 subscribeToAllTableUpdates(callback: (tables: Table[]) => void) {
@@ -127,6 +132,7 @@ subscribeToAllTableUpdates(callback: (tables: Table[]) => void) {
 ```
 
 **最適化後の設計:**
+
 ```typescript
 // 効率的: 差分更新
 subscribeToTableUpdates(
@@ -135,13 +141,13 @@ subscribeToTableUpdates(
 ) {
   // 初回ロード
   this.searchTables().then(onInitialLoad);
-  
+
   // 差分更新
   this.supabase.channel("table-updates")
-    .on("postgres_changes", { 
-      event: "UPDATE", 
-      schema: "public", 
-      table: "tables" 
+    .on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "tables"
     }, (payload) => {
       const updatedTable = this.mapToTable(payload.new);
       onUpdate(updatedTable);
@@ -152,11 +158,12 @@ subscribeToTableUpdates(
 #### 2.2 フロントエンド状態管理の最適化
 
 **React状態管理パターン:**
+
 ```typescript
 // 最適化されたリアルタイムコンポーネント
 function OptimizedRealTimeTableDashboard() {
   const [tables, setTables] = useState<Map<string, Table>>(new Map());
-  
+
   useEffect(() => {
     const unsubscribe = tableService.subscribeToTableUpdates(
       // 単一テーブル更新
@@ -169,10 +176,10 @@ function OptimizedRealTimeTableDashboard() {
         setTables(tableMap);
       }
     );
-    
+
     return unsubscribe;
   }, []);
-  
+
   return (
     <div>
       {Array.from(tables.values()).map(table => (
@@ -195,6 +202,7 @@ const MemoizedTableCard = React.memo(({ table }: { table: Table }) => {
 **対象:** `AttendanceClient.tsx`
 
 **分割戦略:**
+
 ```typescript
 // 修正前: 巨大なコンポーネント
 function AttendanceClient() {
@@ -203,7 +211,7 @@ function AttendanceClient() {
   const [dashboardData, setDashboardData] = useState();
   const [scheduleData, setScheduleData] = useState();
   // ... 多数の状態
-  
+
   return (
     <div>
       {activeTab === "dashboard" && <DashboardContent />}
@@ -216,7 +224,7 @@ function AttendanceClient() {
 // 修正後: 責務分離
 function AttendanceClient() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  
+
   return (
     <div>
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
@@ -240,6 +248,7 @@ function AttendanceDashboard() {
 #### 3.2 仮想化とメモ化の実装
 
 **リスト表示の最適化:**
+
 ```typescript
 import { FixedSizeList as List } from 'react-window';
 
@@ -276,6 +285,7 @@ const MemoizedCustomerRow = React.memo(({ customer }: { customer: Customer }) =>
 #### 4.1 Promise.allの活用
 
 **修正対象の特定:**
+
 ```typescript
 // 非効率な直列処理
 async function loadDashboardData() {
@@ -290,7 +300,7 @@ async function loadDashboardData() {
   const [stats, alerts, activities] = await Promise.all([
     getStats(),
     getAlerts(),
-    getActivities()
+    getActivities(),
   ]);
   return { stats, alerts, activities };
 }
@@ -299,21 +309,22 @@ async function loadDashboardData() {
 #### 4.2 エラーハンドリングの改善
 
 **堅牢な並列処理:**
+
 ```typescript
 async function loadDashboardDataWithErrorHandling() {
   const results = await Promise.allSettled([
     getStats(),
     getAlerts(),
-    getActivities()
+    getActivities(),
   ]);
-  
+
   return {
-    stats: results[0].status === 'fulfilled' ? results[0].value : null,
-    alerts: results[1].status === 'fulfilled' ? results[1].value : [],
-    activities: results[2].status === 'fulfilled' ? results[2].value : [],
+    stats: results[0].status === "fulfilled" ? results[0].value : null,
+    alerts: results[1].status === "fulfilled" ? results[1].value : [],
+    activities: results[2].status === "fulfilled" ? results[2].value : [],
     errors: results
-      .filter(r => r.status === 'rejected')
-      .map(r => (r as PromiseRejectedResult).reason)
+      .filter((r) => r.status === "rejected")
+      .map((r) => (r as PromiseRejectedResult).reason),
   };
 }
 ```
@@ -325,6 +336,7 @@ async function loadDashboardDataWithErrorHandling() {
 #### 1. 集計クエリの最適化
 
 **RPC関数の活用:**
+
 ```sql
 -- ダッシュボード統計の高速取得
 CREATE OR REPLACE FUNCTION get_optimized_dashboard_stats(report_date DATE)
@@ -337,7 +349,7 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   WITH stats AS (
-    SELECT 
+    SELECT
       COUNT(DISTINCT c.id) as customer_count,
       COALESCE(SUM(oi.total_price), 0) as total_sales,
       COUNT(DISTINCT v.id) as visit_count
@@ -346,7 +358,7 @@ BEGIN
     LEFT JOIN order_items oi ON v.id = oi.visit_id
     WHERE DATE(v.check_in_at) = report_date
   )
-  SELECT 
+  SELECT
     s.customer_count,
     s.total_sales,
     s.visit_count,
@@ -359,6 +371,7 @@ $$ LANGUAGE plpgsql;
 #### 2. 検索クエリの最適化
 
 **Trigramを活用した高速検索:**
+
 ```sql
 -- 顧客検索の最適化
 CREATE OR REPLACE FUNCTION search_customers_optimized(
@@ -375,7 +388,7 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     c.id,
     c.name,
     c.name_kana,
@@ -386,7 +399,7 @@ BEGIN
       similarity(c.phone_number, search_term)
     ) as sim
   FROM customers c
-  WHERE 
+  WHERE
     c.name % search_term OR
     c.name_kana % search_term OR
     c.phone_number % search_term
@@ -402,6 +415,7 @@ $$ LANGUAGE plpgsql;
 ### 1. データベースエラーの処理
 
 **統一されたエラーハンドリング:**
+
 ```typescript
 class DatabaseError extends Error {
   constructor(
@@ -410,26 +424,26 @@ class DatabaseError extends Error {
     public details?: unknown
   ) {
     super(message);
-    this.name = 'DatabaseError';
+    this.name = "DatabaseError";
   }
 }
 
 function handleDatabaseError(error: PostgrestError): never {
-  if (error.code === '42883') {
+  if (error.code === "42883") {
     throw new DatabaseError(
-      'Required database function is missing. Please run migrations.',
-      'MISSING_FUNCTION',
+      "Required database function is missing. Please run migrations.",
+      "MISSING_FUNCTION",
       error
     );
   }
-  
-  if (error.code === 'PGRST116') {
-    throw new DatabaseError('Record not found', 'NOT_FOUND', error);
+
+  if (error.code === "PGRST116") {
+    throw new DatabaseError("Record not found", "NOT_FOUND", error);
   }
-  
+
   throw new DatabaseError(
     `Database operation failed: ${error.message}`,
-    error.code || 'UNKNOWN',
+    error.code || "UNKNOWN",
     error
   );
 }
@@ -438,25 +452,26 @@ function handleDatabaseError(error: PostgrestError): never {
 ### 2. リアルタイム接続エラーの処理
 
 **接続復旧機能:**
+
 ```typescript
 class RealtimeConnectionManager {
   private retryCount = 0;
   private maxRetries = 5;
   private baseDelay = 1000;
-  
+
   async connectWithRetry(callback: () => Promise<void>): Promise<void> {
     try {
       await callback();
       this.retryCount = 0; // 成功時はリセット
     } catch (error) {
       if (this.retryCount >= this.maxRetries) {
-        throw new Error('Maximum retry attempts reached');
+        throw new Error("Maximum retry attempts reached");
       }
-      
+
       const delay = this.baseDelay * Math.pow(2, this.retryCount);
       this.retryCount++;
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return this.connectWithRetry(callback);
     }
   }
@@ -468,24 +483,25 @@ class RealtimeConnectionManager {
 ### 1. パフォーマンステスト
 
 **データベースクエリのベンチマーク:**
+
 ```typescript
-describe('Database Performance Tests', () => {
-  test('Dashboard stats should load within 1 second', async () => {
+describe("Database Performance Tests", () => {
+  test("Dashboard stats should load within 1 second", async () => {
     const startTime = Date.now();
     await getDashboardStats();
     const endTime = Date.now();
-    
+
     expect(endTime - startTime).toBeLessThan(1000);
   });
-  
-  test('Customer search should handle 10k records efficiently', async () => {
+
+  test("Customer search should handle 10k records efficiently", async () => {
     // 10,000件のテストデータを作成
     await createTestCustomers(10000);
-    
+
     const startTime = Date.now();
-    const results = await searchCustomers({ query: 'テスト' });
+    const results = await searchCustomers({ query: "テスト" });
     const endTime = Date.now();
-    
+
     expect(endTime - startTime).toBeLessThan(500);
     expect(results.length).toBeGreaterThan(0);
   });
@@ -495,25 +511,26 @@ describe('Database Performance Tests', () => {
 ### 2. リアルタイム機能のテスト
 
 **WebSocket接続のテスト:**
+
 ```typescript
-describe('Realtime Updates', () => {
-  test('Should receive table updates in real-time', async () => {
+describe("Realtime Updates", () => {
+  test("Should receive table updates in real-time", async () => {
     const updates: Table[] = [];
-    
+
     const unsubscribe = tableService.subscribeToTableUpdates(
       (table) => updates.push(table),
       () => {}
     );
-    
+
     // テーブル状態を変更
-    await tableService.updateTableStatus('table-1', 'occupied');
-    
+    await tableService.updateTableStatus("table-1", "occupied");
+
     // 更新が受信されるまで待機
     await waitFor(() => {
       expect(updates).toHaveLength(1);
-      expect(updates[0].currentStatus).toBe('occupied');
+      expect(updates[0].currentStatus).toBe("occupied");
     });
-    
+
     unsubscribe();
   });
 });
@@ -524,6 +541,7 @@ describe('Realtime Updates', () => {
 ### 1. RPC関数のセキュリティ
 
 **適切な権限制御:**
+
 ```sql
 -- RPC関数にRLSを適用
 CREATE OR REPLACE FUNCTION get_dashboard_stats(report_date DATE)
@@ -536,7 +554,7 @@ BEGIN
   IF NOT is_admin_or_manager() THEN
     RAISE EXCEPTION 'Insufficient privileges';
   END IF;
-  
+
   -- 統計データを返す
   RETURN QUERY ...;
 END;
@@ -546,21 +564,22 @@ $$ LANGUAGE plpgsql;
 ### 2. 検索機能のセキュリティ
 
 **SQLインジェクション対策:**
+
 ```typescript
 // パラメータ化クエリの使用
 async function searchCustomersSecure(searchTerm: string) {
   // 入力値の検証
   if (!searchTerm || searchTerm.length < 2) {
-    throw new Error('Search term must be at least 2 characters');
+    throw new Error("Search term must be at least 2 characters");
   }
-  
+
   // エスケープ処理
-  const sanitizedTerm = searchTerm.replace(/[%_]/g, '\\$&');
-  
-  const { data, error } = await supabase.rpc('search_customers_optimized', {
-    search_term: sanitizedTerm
+  const sanitizedTerm = searchTerm.replace(/[%_]/g, "\\$&");
+
+  const { data, error } = await supabase.rpc("search_customers_optimized", {
+    search_term: sanitizedTerm,
   });
-  
+
   if (error) throw error;
   return data;
 }

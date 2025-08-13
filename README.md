@@ -21,6 +21,7 @@ cp .env.local.example .env.local
 ```
 
 以下の環境変数を設定してください：
+
 - `NEXT_PUBLIC_SUPABASE_URL`: SupabaseプロジェクトのURL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabaseの匿名キー
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabaseのサービスロールキー（サーバーサイドのみ）

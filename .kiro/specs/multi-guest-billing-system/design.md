@@ -17,41 +17,41 @@ graph TB
         D[テーブル管理画面]
         E[顧客分析画面]
     end
-    
+
     subgraph "Service Layer"
         F[VisitGuestService]
         G[MultiGuestOrderService]
         H[MultiGuestBillingService]
         I[GuestAnalyticsService]
     end
-    
+
     subgraph "Data Layer"
         J[visit_guests]
         K[guest_orders]
         L[guest_cast_assignments]
         M[guest_billing_splits]
     end
-    
+
     subgraph "External Systems"
         N[Customer Management]
         O[Cast Management]
         P[Table Management]
         Q[Billing System]
     end
-    
+
     A --> F
     B --> G
     C --> H
     D --> F
     E --> I
-    
+
     F --> J
     G --> K
     G --> L
     H --> M
     I --> J
     I --> K
-    
+
     F --> N
     G --> O
     H --> Q
@@ -63,6 +63,7 @@ graph TB
 #### 新規テーブル設計
 
 **visit_guests (来店ゲスト)**
+
 ```sql
 CREATE TABLE visit_guests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -86,6 +87,7 @@ CREATE TABLE visit_guests (
 ```
 
 **guest_orders (ゲスト別注文)**
+
 ```sql
 CREATE TABLE guest_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -101,6 +103,7 @@ CREATE TABLE guest_orders (
 ```
 
 **guest_cast_assignments (ゲスト-キャスト担当関係)**
+
 ```sql
 CREATE TABLE guest_cast_assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -117,6 +120,7 @@ CREATE TABLE guest_cast_assignments (
 ```
 
 **guest_billing_splits (ゲスト別会計分割)**
+
 ```sql
 CREATE TABLE guest_billing_splits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -137,16 +141,18 @@ CREATE TABLE guest_billing_splits (
 #### 既存テーブルの拡張
 
 **visits テーブルの拡張**
+
 ```sql
-ALTER TABLE visits 
+ALTER TABLE visits
 ADD COLUMN total_guests INTEGER NOT NULL DEFAULT 1,
 ADD COLUMN billing_type VARCHAR(20) NOT NULL DEFAULT 'single', -- 'single', 'split', 'mixed'
 ADD COLUMN primary_customer_id UUID REFERENCES customers(id);
 ```
 
 **order_items テーブルの拡張**
+
 ```sql
-ALTER TABLE order_items 
+ALTER TABLE order_items
 ADD COLUMN is_shared_item BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN target_guest_id UUID REFERENCES visit_guests(id);
 ```
@@ -156,9 +162,11 @@ ADD COLUMN target_guest_id UUID REFERENCES visit_guests(id);
 ### Service Layer Components
 
 #### VisitGuestService
+
 来店ゲストの管理を担当するサービス
 
 **主要メソッド:**
+
 - `addGuestToVisit(visitId: string, customerData: CustomerInput, guestType: string): Promise<VisitGuest>`
 - `updateGuestInfo(guestId: string, updateData: Partial<VisitGuestInput>): Promise<VisitGuest>`
 - `getVisitGuests(visitId: string): Promise<VisitGuest[]>`
@@ -166,9 +174,11 @@ ADD COLUMN target_guest_id UUID REFERENCES visit_guests(id);
 - `transferGuestToNewVisit(guestId: string, newVisitId: string): Promise<void>`
 
 #### MultiGuestOrderService
+
 複数ゲストの注文管理を担当するサービス
 
 **主要メソッド:**
+
 - `createGuestOrder(visitGuestId: string, orderData: OrderInput): Promise<GuestOrder>`
 - `assignOrderToGuest(orderItemId: number, guestId: string, quantity: number): Promise<void>`
 - `createSharedOrder(visitId: string, orderData: OrderInput, guestShares: GuestShare[]): Promise<void>`
@@ -176,9 +186,11 @@ ADD COLUMN target_guest_id UUID REFERENCES visit_guests(id);
 - `getGuestOrders(visitGuestId: string): Promise<GuestOrder[]>`
 
 #### MultiGuestBillingService
+
 複数ゲストの会計処理を担当するサービス
 
 **主要メソッド:**
+
 - `calculateIndividualBills(visitId: string): Promise<IndividualBill[]>`
 - `processSplitBilling(visitId: string, splitData: BillingSplitInput[]): Promise<BillingSplit[]>`
 - `processIndividualPayment(guestId: string, paymentData: PaymentInput): Promise<void>`
@@ -186,9 +198,11 @@ ADD COLUMN target_guest_id UUID REFERENCES visit_guests(id);
 - `validateBillingConsistency(visitId: string): Promise<ValidationResult>`
 
 #### GuestAnalyticsService
+
 ゲスト分析とレポート生成を担当するサービス
 
 **主要メソッド:**
+
 - `generateGuestConsumptionReport(customerId: string, dateRange: DateRange): Promise<ConsumptionReport>`
 - `analyzeCastGuestRelationships(castId: string, dateRange: DateRange): Promise<RelationshipAnalysis>`
 - `getGroupVisitPatterns(dateRange: DateRange): Promise<GroupPattern[]>`
@@ -197,36 +211,44 @@ ADD COLUMN target_guest_id UUID REFERENCES visit_guests(id);
 ### UI Components
 
 #### MultiGuestReceptionForm
+
 来店受付時の複数ゲスト登録フォーム
 
 **機能:**
+
 - 主要顧客の選択・登録
 - 同伴者の追加・情報入力
 - 席順・関係性の設定
 - テーブル割り当て
 
 #### GuestOrderManagement
+
 ゲスト別注文管理コンポーネント
 
 **機能:**
+
 - ゲスト選択UI
 - 個別注文・共有注文の区別
 - 担当キャストの割り当て
 - 注文履歴の表示
 
 #### MultiGuestBillingInterface
+
 複数ゲスト会計処理インターフェース
 
 **機能:**
+
 - ゲスト別消費明細表示
 - 会計方法選択（個別/合算/分割）
 - 支払い方法の個別設定
 - 会計状況のリアルタイム表示
 
 #### GroupTableManagement
+
 グループテーブル管理コンポーネント
 
 **機能:**
+
 - テーブル別ゲスト情報表示
 - 担当キャスト状況表示
 - 部分退店処理
@@ -242,7 +264,7 @@ interface VisitGuest {
   visitId: string;
   customerId: string;
   customer: Customer;
-  guestType: 'main' | 'companion' | 'additional';
+  guestType: "main" | "companion" | "additional";
   seatPosition?: number;
   relationshipToMain?: string;
   isPrimaryPayer: boolean;
@@ -272,7 +294,7 @@ interface GuestCastAssignment {
   visitGuestId: string;
   castId: string;
   cast: Cast;
-  assignmentType: 'shimei' | 'dohan' | 'after' | 'help';
+  assignmentType: "shimei" | "dohan" | "after" | "help";
   startTime: Date;
   endTime?: Date;
   isPrimaryAssignment: boolean;
@@ -284,10 +306,10 @@ interface BillingSplit {
   visitId: string;
   visitGuestId: string;
   guest: VisitGuest;
-  splitType: 'individual' | 'shared' | 'treated';
+  splitType: "individual" | "shared" | "treated";
   splitAmount: number;
   paymentMethod?: string;
-  paymentStatus: 'pending' | 'completed' | 'cancelled';
+  paymentStatus: "pending" | "completed" | "cancelled";
   paidAt?: Date;
 }
 
@@ -296,7 +318,7 @@ interface GroupBill {
   totalAmount: number;
   guestBills: IndividualBill[];
   sharedItems: SharedItem[];
-  billingType: 'individual' | 'split' | 'group';
+  billingType: "individual" | "split" | "group";
 }
 
 interface IndividualBill {

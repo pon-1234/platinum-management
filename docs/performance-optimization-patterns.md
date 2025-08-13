@@ -5,6 +5,7 @@
 ### Pattern 1: Converting Sequential Awaits to Parallel
 
 **Before (Sequential):**
+
 ```typescript
 // Inefficient: Each query waits for the previous one to complete
 async function loadDashboardData() {
@@ -17,13 +18,14 @@ async function loadDashboardData() {
 ```
 
 **After (Parallel):**
+
 ```typescript
 // Efficient: All queries execute simultaneously
 async function loadDashboardData() {
   const [stats, alerts, activities] = await Promise.all([
     getStats(),
     getAlerts(),
-    getActivities()
+    getActivities(),
   ]);
   return { stats, alerts, activities };
 }
@@ -33,21 +35,22 @@ async function loadDashboardData() {
 ### Pattern 2: Robust Error Handling with Promise.allSettled
 
 **When you need all results even if some fail:**
+
 ```typescript
 async function loadDashboardDataWithErrorHandling() {
   const results = await Promise.allSettled([
     getStats(),
     getAlerts(),
-    getActivities()
+    getActivities(),
   ]);
-  
+
   return {
-    stats: results[0].status === 'fulfilled' ? results[0].value : null,
-    alerts: results[1].status === 'fulfilled' ? results[1].value : [],
-    activities: results[2].status === 'fulfilled' ? results[2].value : [],
+    stats: results[0].status === "fulfilled" ? results[0].value : null,
+    alerts: results[1].status === "fulfilled" ? results[1].value : [],
+    activities: results[2].status === "fulfilled" ? results[2].value : [],
     errors: results
-      .filter(r => r.status === 'rejected')
-      .map(r => (r as PromiseRejectedResult).reason)
+      .filter((r) => r.status === "rejected")
+      .map((r) => (r as PromiseRejectedResult).reason),
   };
 }
 ```
@@ -55,22 +58,23 @@ async function loadDashboardDataWithErrorHandling() {
 ### Pattern 3: Conditional Parallel Processing
 
 **When some queries depend on others:**
+
 ```typescript
 async function loadCustomerDashboard(customerId: string) {
   // First, get customer data
   const customer = await getCustomer(customerId);
-  
+
   if (!customer) {
-    throw new Error('Customer not found');
+    throw new Error("Customer not found");
   }
-  
+
   // Then load related data in parallel
   const [visits, orders, bottleKeeps] = await Promise.all([
     getCustomerVisits(customerId),
     getCustomerOrders(customerId),
-    getCustomerBottleKeeps(customerId)
+    getCustomerBottleKeeps(customerId),
   ]);
-  
+
   return { customer, visits, orders, bottleKeeps };
 }
 ```
@@ -78,16 +82,17 @@ async function loadCustomerDashboard(customerId: string) {
 ### Pattern 4: Batch Operations
 
 **Processing multiple items efficiently:**
+
 ```typescript
 async function updateMultipleItems(items: Item[]) {
   // Process all updates in parallel
   const results = await Promise.allSettled(
-    items.map(item => updateItem(item.id, item.data))
+    items.map((item) => updateItem(item.id, item.data))
   );
-  
-  const successful = results.filter(r => r.status === 'fulfilled').length;
-  const failed = results.filter(r => r.status === 'rejected').length;
-  
+
+  const successful = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
+
   return { successful, failed, total: items.length };
 }
 ```
@@ -95,28 +100,27 @@ async function updateMultipleItems(items: Item[]) {
 ## Applied Examples in Our Codebase
 
 ### 1. Attendance Dashboard Optimization
+
 ```typescript
 // Already optimized in attendance-reporting.service.ts
-const [
-  weekAttendanceResult,
-  pendingShiftRequestsResult,
-  correctionsResult,
-] = await Promise.all([
-  attendanceTrackingService.search({
-    startDate: weekStartStr,
-    endDate: today,
-  }),
-  shiftRequestService.getPendingCount(),
-  attendanceTrackingService.getCorrectionRequestsCount(),
-]);
+const [weekAttendanceResult, pendingShiftRequestsResult, correctionsResult] =
+  await Promise.all([
+    attendanceTrackingService.search({
+      startDate: weekStartStr,
+      endDate: today,
+    }),
+    shiftRequestService.getPendingCount(),
+    attendanceTrackingService.getCorrectionRequestsCount(),
+  ]);
 ```
 
 ### 2. Customer Search Optimization
+
 ```typescript
 // Optimized in customer.service.ts
 // When search results return IDs, fetch full details in parallel
 const customerDetails = await Promise.all(
-  customerIds.map(id => getCustomerById(id))
+  customerIds.map((id) => getCustomerById(id))
 );
 ```
 
@@ -131,6 +135,7 @@ const customerDetails = await Promise.all(
 ## Common Anti-Patterns to Avoid
 
 ### Anti-Pattern 1: Unnecessary Sequential Processing
+
 ```typescript
 // Bad: Sequential when parallel would work
 for (const id of ids) {
@@ -139,10 +144,11 @@ for (const id of ids) {
 }
 
 // Good: Parallel processing
-const items = await Promise.all(ids.map(id => getItem(id)));
+const items = await Promise.all(ids.map((id) => getItem(id)));
 ```
 
 ### Anti-Pattern 2: Not Handling Partial Failures
+
 ```typescript
 // Bad: One failure crashes everything
 const [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()]);
@@ -152,20 +158,17 @@ const results = await Promise.allSettled([fetchA(), fetchB(), fetchC()]);
 ```
 
 ### Anti-Pattern 3: Creating Too Many Concurrent Requests
+
 ```typescript
 // Bad: May overwhelm the database
-const results = await Promise.all(
-  thousandsOfIds.map(id => fetchItem(id))
-);
+const results = await Promise.all(thousandsOfIds.map((id) => fetchItem(id)));
 
 // Good: Batch processing with concurrency control
 const batchSize = 10;
 const results = [];
 for (let i = 0; i < thousandsOfIds.length; i += batchSize) {
   const batch = thousandsOfIds.slice(i, i + batchSize);
-  const batchResults = await Promise.all(
-    batch.map(id => fetchItem(id))
-  );
+  const batchResults = await Promise.all(batch.map((id) => fetchItem(id)));
   results.push(...batchResults);
 }
 ```

@@ -9,9 +9,9 @@
 
 ##### **8.1. 構成思想：役割分担による品質と効率の最大化**
 
-*   **Gemini (調査・分析担当):** Web検索による最新情報の収集や、大規模コードベースの分析、客観的なコードレビューに専念します。
-*   **Claude (TDD実践者):** ユーザーと対話しながら、**Red-Green-RefactorのTDDサイクル**を回します。テストを先行させ、実装とリファクタリングを行います。
-*   **Code Hooks (品質保証・プロセス強制担当):** Linter/Formatterの自動実行、必須テストの実行、カバレッジチェックなどを機械的に強制し、プロセスの逸脱を防ぐ"ガードレール"として機能します。
+- **Gemini (調査・分析担当):** Web検索による最新情報の収集や、大規模コードベースの分析、客観的なコードレビューに専念します。
+- **Claude (TDD実践者):** ユーザーと対話しながら、**Red-Green-RefactorのTDDサイクル**を回します。テストを先行させ、実装とリファクタリングを行います。
+- **Code Hooks (品質保証・プロセス強制担当):** Linter/Formatterの自動実行、必須テストの実行、カバレッジチェックなどを機械的に強制し、プロセスの逸脱を防ぐ"ガードレール"として機能します。
 
 ---
 
@@ -41,15 +41,15 @@ graph TD
 ##### **8.3. 設計思想：AIへの指示とHooksの役割分担**
 
 1.  **「自動化できる／機械的に判定できる」ものは `Hooks` へ**
-    *   Linter実行、コードフォーマット、テスト実行、カバレッジ測定、ビルド確認など。
-    *   **メリット:** 実行が確実で高速。AIの思考（トークン）を消費しない。
+    - Linter実行、コードフォーマット、テスト実行、カバレッジ測定、ビルド確認など。
+    - **メリット:** 実行が確実で高速。AIの思考（トークン）を消費しない。
 
 2.  **「思考や判断を伴う」ものはAIへの指示書 (`claude.md`等) へ**
-    *   「TypeScriptを厳格に使う」「`any`型を原則禁止する」といったコーディング哲学や、設計思想に関するコメント記述ルールなど。
-    *   **メリット:** AIが作業の意図を理解し、より質の高い初期コードを生成する。
+    - 「TypeScriptを厳格に使う」「`any`型を原則禁止する」といったコーディング哲学や、設計思想に関するコメント記述ルールなど。
+    - **メリット:** AIが作業の意図を理解し、より質の高い初期コードを生成する。
 
 3.  **両方で対応するものは「併用」する**
-    *   AIに「テストの`skip`は禁止」と**宣言**し、`Hooks`で`grep "describe.skip"`のように**機械的チェック**も行う。二段構えで品質を担保する。
+    - AIに「テストの`skip`は禁止」と**宣言**し、`Hooks`で`grep "describe.skip"`のように**機械的チェック**も行う。二段構えで品質を担保する。
 
 ---
 
@@ -82,7 +82,7 @@ graph TD
         "matcher": "",
         "hooks": [
           // 1. CIスクリプト（品質チェック全体）を実行。一つでも失敗したらブロックする。
-          { 
+          {
             "type": "command",
             "command": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm playwright test",
             "blocking": true
@@ -110,22 +110,27 @@ graph TD
 ## Ⅰ. Code Generation Philosophy (Your Core Directives)
 
 #### 0. TDD First (Red-Green-Refactor)
+
 This is your primary development cycle. Follow these three rules religiously.
+
 1.  **Red** – Write a minimal failing test first.
 2.  **Green** – Write the simplest code to make the test pass.
 3.  **Refactor** – Eliminate duplication and improve design. Keep the tests green.
-> ⚠️ Hooks will guarantee the final tests pass, but you are **forbidden** to write implementation code before you have a failing test (Red).
+    > ⚠️ Hooks will guarantee the final tests pass, but you are **forbidden** to write implementation code before you have a failing test (Red).
 
 #### 1. Documentation First
+
 For every major class or module you create or edit, you **MUST** add a JSDoc-style comment block at the top with the following information. If the information is not available, ask me for it.
 
-/**
- * @design_doc   (URL to the design document)
- * @related_to   (Related class names with a brief note on their purpose)
- * @known_issues (URL to a ticket summarizing known bugs or limitations)
- */
+/\*\*
+
+- @design_doc (URL to the design document)
+- @related_to (Related class names with a brief note on their purpose)
+- @known_issues (URL to a ticket summarizing known bugs or limitations)
+  \*/
 
 #### 2. Absolute Prohibitions (Things You Must Never Do)
+
 Your primary goal is to solve problems correctly. The following are forbidden.
 
 - **DO NOT** relax conditions (e.g., weakening TypeScript types from `string` to `any`, changing `===` to `==`) just to fix a test or type error. Address the root cause.
@@ -140,17 +145,22 @@ Your primary goal is to solve problems correctly. The following are forbidden.
 ## Ⅱ. Workflow and Quality Gates (Your Responsibilities)
 
 #### 1. TDD Cycle & Automated Checks (Managed by Hooks)
+
 - **Red Phase:** When you write a test, a Hook runs it with `--related` to confirm it fails.
 - **Green/Refactor Phase:** When you write code, Hooks auto-format and lint it.
 - **On Finish (`Stop` Hook):** A full CI script (`lint`, `typecheck`, `test`, `build`, `playwright`) and a 100% test coverage check will run. **You cannot complete the task until they all pass.** Your role is to fix any errors reported by these hooks.
 
 #### 2. Completion Conditions (Finalization Tasks)
+
 After all `Stop` Hooks pass, your final responsibility is to:
+
 - **Update Documentation:** Review all changes and update all relevant documentation (e.g., `README.md`, API docs, etc.) accordingly. Ask me if you are unsure which documents need updating.
 
 ---
 
 ## Ⅲ. Gemini Delegation Policy
+
 - **Red/Green Phases:** **Do not use Gemini.** Focus on the fast TDD cycle.
 - **Refactor Phase:** You may use `gemini-search` or `gemini-analyze` for complex refactoring, researching new APIs, or getting a final review.
 - **Summarize Gemini's findings.** Do not paste its raw output.
+```

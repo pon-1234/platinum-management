@@ -1,6 +1,7 @@
 # Codebase Structure
 
 ## Root Directory
+
 - Configuration files: `package.json`, `tsconfig.json`, `.eslintrc.json`, `.prettierrc`
 - Environment examples: `.env.example`, `.env.local.example`
 - Next.js config: `next.config.ts`, `tailwind.config.ts`
@@ -8,7 +9,9 @@
 - Docker support: `Dockerfile`, `.dockerignore`
 
 ## `/src` - Source Code
+
 ### `/src/app` - Next.js App Router
+
 - `layout.tsx` - Root layout
 - `page.tsx` - Home page
 - `/auth` - Authentication pages
@@ -17,6 +20,7 @@
 - `/actions` - Server actions
 
 ### `/src/types` - TypeScript Definitions
+
 - `database.types.ts` - Supabase generated types
 - `auth.types.ts` - Authentication types
 - `staff.types.ts` - Staff management
@@ -32,6 +36,7 @@
 - `report.types.ts` - Reporting types
 
 ### Other Directories
+
 - `/src/components` - React components
 - `/src/lib` - Core utilities, Supabase client
 - `/src/services` - Business logic layer
@@ -40,15 +45,18 @@
 - `/src/utils` - Helper functions
 
 ## `/supabase` - Database
+
 - `V1_init_schema.sql` - Complete database schema
 - `/migrations/archive/` - Historical migrations (not for use)
 
 ## `/docs` - Documentation
+
 - `development_guide.md` - TDD and AI-driven development guide
 - `SYSTEM_DESIGN.md` - System architecture
 - Various setup and optimization guides
 
 ## Other Directories
+
 - `/.husky` - Git hooks configuration
 - `/bin` - Binary/script files
 - `/patches` - Package patches

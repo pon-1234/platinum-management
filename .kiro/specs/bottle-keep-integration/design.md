@@ -17,41 +17,41 @@ graph TB
         D[ボトルキープレポート画面]
         E[在庫管理画面]
     end
-    
+
     subgraph "Service Layer"
         F[BottleKeepIntegrationService]
         G[BottleKeepUsageService]
         H[BottleKeepAnalyticsService]
         I[BottleKeepNotificationService]
     end
-    
+
     subgraph "Data Layer"
         J[bottle_keeps - 既存]
         K[bottle_keep_usage - 既存]
         L[bottle_keep_locations]
         M[bottle_keep_notifications]
     end
-    
+
     subgraph "External Systems"
         N[Customer Management]
         O[Inventory Management]
         P[Sales System]
         Q[Notification System]
     end
-    
+
     A --> F
     B --> F
     C --> G
     D --> H
     E --> F
-    
+
     F --> J
     F --> L
     G --> K
     H --> J
     H --> K
     I --> M
-    
+
     F --> N
     F --> O
     G --> P
@@ -63,6 +63,7 @@ graph TB
 #### 新規テーブル設計
 
 **bottle_keep_locations (ボトル保管場所)**
+
 ```sql
 CREATE TABLE bottle_keep_locations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -78,6 +79,7 @@ CREATE TABLE bottle_keep_locations (
 ```
 
 **bottle_keep_notifications (ボトルキープ通知)**
+
 ```sql
 CREATE TABLE bottle_keep_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -94,6 +96,7 @@ CREATE TABLE bottle_keep_notifications (
 ```
 
 **bottle_keep_movement_logs (ボトル移動履歴)**
+
 ```sql
 CREATE TABLE bottle_keep_movement_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -110,8 +113,9 @@ CREATE TABLE bottle_keep_movement_logs (
 #### 既存テーブルの拡張
 
 **bottle_keeps テーブルの拡張**
+
 ```sql
-ALTER TABLE bottle_keeps 
+ALTER TABLE bottle_keeps
 ADD COLUMN location_id UUID REFERENCES bottle_keep_locations(id),
 ADD COLUMN priority_order INTEGER DEFAULT 0,
 ADD COLUMN last_used_date DATE,
@@ -123,8 +127,9 @@ ADD COLUMN deposit_amount INTEGER;
 ```
 
 **bottle_keep_usage テーブルの拡張**
+
 ```sql
-ALTER TABLE bottle_keep_usage 
+ALTER TABLE bottle_keep_usage
 ADD COLUMN usage_type VARCHAR(20) DEFAULT 'consumption', -- 'consumption', 'tasting', 'waste'
 ADD COLUMN cast_id UUID REFERENCES casts_profile(id),
 ADD COLUMN remaining_after_use INTEGER,
@@ -136,9 +141,11 @@ ADD COLUMN usage_reason TEXT;
 ### Service Layer Components
 
 #### BottleKeepIntegrationService
+
 ボトルキープと顧客管理の統合を担当するサービス
 
 **主要メソッド:**
+
 - `getCustomerBottleKeeps(customerId: string): Promise<CustomerBottleKeep[]>`
 - `addBottleKeepFromCustomerDetail(customerId: string, bottleData: BottleKeepInput): Promise<BottleKeep>`
 - `updateBottleKeepLocation(bottleKeepId: string, locationId: string): Promise<void>`
@@ -146,9 +153,11 @@ ADD COLUMN usage_reason TEXT;
 - `searchBottleKeeps(searchCriteria: BottleKeepSearchCriteria): Promise<BottleKeep[]>`
 
 #### BottleKeepUsageService
+
 ボトルキープの使用管理を担当するサービス
 
 **主要メソッド:**
+
 - `recordBottleUsage(bottleKeepId: string, usageData: UsageInput): Promise<BottleKeepUsage>`
 - `getUsageHistory(bottleKeepId: string): Promise<BottleKeepUsage[]>`
 - `calculateRemainingAmount(bottleKeepId: string): Promise<number>`
@@ -156,9 +165,11 @@ ADD COLUMN usage_reason TEXT;
 - `estimateConsumptionDate(bottleKeepId: string): Promise<Date>`
 
 #### BottleKeepAnalyticsService
+
 ボトルキープの分析・レポート生成を担当するサービス
 
 **主要メソッド:**
+
 - `generateCustomerBottleKeepReport(customerId: string, dateRange: DateRange): Promise<CustomerBottleKeepReport>`
 - `generateExpiryWarningReport(daysAhead: number): Promise<ExpiryWarningReport>`
 - `analyzeSalesContribution(dateRange: DateRange): Promise<SalesContributionAnalysis>`
@@ -166,9 +177,11 @@ ADD COLUMN usage_reason TEXT;
 - `generateLocationUtilizationReport(): Promise<LocationUtilizationReport>`
 
 #### BottleKeepNotificationService
+
 ボトルキープ関連の通知を担当するサービス
 
 **主要メソッド:**
+
 - `scheduleExpiryNotifications(bottleKeepId: string): Promise<void>`
 - `sendLowRemainingNotification(bottleKeepId: string): Promise<void>`
 - `notifyBottleConsumed(bottleKeepId: string): Promise<void>`
@@ -178,9 +191,11 @@ ADD COLUMN usage_reason TEXT;
 ### UI Components
 
 #### CustomerBottleKeepPanel
+
 顧客詳細画面内のボトルキープ表示パネル
 
 **機能:**
+
 - 顧客のボトルキープ一覧表示
 - 残量・期限の視覚的表示
 - 新規ボトルキープ追加ボタン
@@ -188,27 +203,33 @@ ADD COLUMN usage_reason TEXT;
 - 期限切れ警告の表示
 
 #### BottleKeepQuickAccess
+
 接客中の迅速なボトルキープ確認・操作コンポーネント
 
 **機能:**
+
 - 来店中顧客のボトルキープ表示
 - ワンクリック使用記録
 - 残量更新機能
 - 保管場所の表示
 
 #### BottleKeepLocationManager
+
 ボトル保管場所の管理コンポーネント
 
 **機能:**
+
 - 保管場所一覧・編集
 - 場所別ボトル表示
 - 容量管理
 - 移動履歴の表示
 
 #### BottleKeepAnalyticsDashboard
+
 ボトルキープ分析ダッシュボード
 
 **機能:**
+
 - 期限切れ予定一覧
 - 売上貢献度分析
 - 在庫推奨レポート
@@ -245,7 +266,7 @@ interface BottleKeepUsage {
   bottleKeepId: string;
   visitId: string;
   amountUsed: number;
-  usageType: 'consumption' | 'tasting' | 'waste';
+  usageType: "consumption" | "tasting" | "waste";
   castId?: string;
   cast?: Cast;
   remainingAfterUse: number;
@@ -258,11 +279,11 @@ interface BottleKeepUsage {
 interface BottleKeepNotification {
   id: string;
   bottleKeepId: string;
-  notificationType: 'expiry_warning' | 'low_remaining' | 'consumed';
+  notificationType: "expiry_warning" | "low_remaining" | "consumed";
   notificationDate: Date;
   isSent: boolean;
   sentAt?: Date;
-  recipientType: 'customer' | 'staff' | 'system';
+  recipientType: "customer" | "staff" | "system";
   recipientId?: string;
   message: string;
 }

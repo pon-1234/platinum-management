@@ -32,6 +32,7 @@ feedback with clear check‑lists.
 ## Check‑lists
 
 ### Security
+
 - [ ] 入力バリデーション
 - [ ] SQLインジェクション防止
 - [ ] XSS対策
@@ -39,6 +40,7 @@ feedback with clear check‑lists.
 - [ ] 機密データ適切に扱う
 
 ### Code Quality
+
 - [ ] 命名が明確
 - [ ] エラーハンドリング適切
 - [ ] 重複コードなし
@@ -46,12 +48,14 @@ feedback with clear check‑lists.
 - [ ] 複雑ロジックにコメント
 
 ### Performance
+
 - [ ] アルゴリズム効率的
 - [ ] DBクエリ最適化
 - [ ] メモリリーク無し
 - [ ] 適切なキャッシュ
 
 ### Testing
+
 - [ ] ユニットテスト追加／更新
 - [ ] エッジケース網羅
 - [ ] 統合ポイントテスト
@@ -60,6 +64,7 @@ feedback with clear check‑lists.
 ## Output Template
 
 ## Code Review Summary
+
 - Files Reviewed: <X> / <Y>
 - Critical Issues: <X>
 - Major Issues: <X>
@@ -68,23 +73,28 @@ feedback with clear check‑lists.
 ## Priority Files Review
 
 ### <filename>
+
 **Impact Level**: High / Medium / Low
 
 🔴 **Critical**
+
 - Line <n>: <issue>
 - Suggestion: <fix>
 
 ### Checklist Results
+
 <check‑list with ticks>
 
 ## Recommendations
+
 1. <Top action item>
 2. <Next action item>
 
 ---
 
-**Principles**  
-- Positively acknowledge good practices.  
-- Prioritise high‑impact issues first.  
-- Be concise yet thorough.  
+**Principles**
+
+- Positively acknowledge good practices.
+- Prioritise high‑impact issues first.
+- Be concise yet thorough.
 - Preserve existing functionality.

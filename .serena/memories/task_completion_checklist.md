@@ -38,6 +38,7 @@
 - Verify Supabase RLS policies if database-related
 
 ## TDD Approach (from development_guide.md)
+
 - Follow Red-Green-Refactor cycle
 - Write failing test first
 - Implement minimal code to pass

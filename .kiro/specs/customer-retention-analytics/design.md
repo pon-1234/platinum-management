@@ -17,7 +17,7 @@ graph TB
         D[コホート分析画面]
         E[カスタム分析画面]
     end
-    
+
     subgraph "Service Layer"
         F[CustomerRetentionService]
         G[ChurnAnalysisService]
@@ -25,7 +25,7 @@ graph TB
         I[CohortAnalysisService]
         J[CustomerSegmentationService]
     end
-    
+
     subgraph "Data Layer"
         K[customer_retention_metrics]
         L[churn_predictions]
@@ -33,26 +33,26 @@ graph TB
         N[cohort_analyses]
         O[retention_campaigns]
     end
-    
+
     subgraph "External Systems"
         P[Customer Data]
         Q[Visit Data]
         R[Sales Data]
         S[Campaign Management]
     end
-    
+
     A --> F
     B --> G
     C --> H
     D --> I
     E --> J
-    
+
     F --> K
     G --> L
     H --> M
     I --> N
     J --> O
-    
+
     F --> P
     F --> Q
     G --> R
@@ -64,6 +64,7 @@ graph TB
 #### 新規テーブル設計
 
 **customer_retention_metrics (顧客維持指標)**
+
 ```sql
 CREATE TABLE customer_retention_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -88,6 +89,7 @@ CREATE TABLE customer_retention_metrics (
 ```
 
 **churn_predictions (離反予測)**
+
 ```sql
 CREATE TABLE churn_predictions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -106,6 +108,7 @@ CREATE TABLE churn_predictions (
 ```
 
 **ltv_calculations (LTV計算)**
+
 ```sql
 CREATE TABLE ltv_calculations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -127,6 +130,7 @@ CREATE TABLE ltv_calculations (
 ```
 
 **cohort_analyses (コホート分析)**
+
 ```sql
 CREATE TABLE cohort_analyses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -146,6 +150,7 @@ CREATE TABLE cohort_analyses (
 ```
 
 **retention_campaigns (維持施策)**
+
 ```sql
 CREATE TABLE retention_campaigns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -167,6 +172,7 @@ CREATE TABLE retention_campaigns (
 ```
 
 **customer_behavior_patterns (顧客行動パターン)**
+
 ```sql
 CREATE TABLE customer_behavior_patterns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -190,9 +196,11 @@ CREATE TABLE customer_behavior_patterns (
 ### Service Layer Components
 
 #### CustomerRetentionService
+
 顧客維持分析の中核を担当するサービス
 
 **主要メソッド:**
+
 - `calculateRetentionMetrics(dateRange: DateRange): Promise<RetentionMetrics>`
 - `getCustomerSegmentation(date: Date): Promise<CustomerSegmentation>`
 - `analyzeVisitPatterns(customerId: string, dateRange: DateRange): Promise<VisitPattern>`
@@ -200,9 +208,11 @@ CREATE TABLE customer_behavior_patterns (
 - `updateRetentionMetrics(customerIds?: string[]): Promise<void>`
 
 #### ChurnAnalysisService
+
 離反分析と予測を担当するサービス
 
 **主要メソッド:**
+
 - `predictChurnRisk(customerId: string): Promise<ChurnPrediction>`
 - `identifyAtRiskCustomers(riskLevel: string): Promise<AtRiskCustomer[]>`
 - `analyzeChurnFactors(dateRange: DateRange): Promise<ChurnFactorAnalysis>`
@@ -210,9 +220,11 @@ CREATE TABLE customer_behavior_patterns (
 - `trackChurnPreventionEffectiveness(campaignId: string): Promise<EffectivenessReport>`
 
 #### LTVAnalysisService
+
 顧客生涯価値分析を担当するサービス
 
 **主要メソッド:**
+
 - `calculateCustomerLTV(customerId: string, method: string): Promise<LTVCalculation>`
 - `predictFutureLTV(customerId: string, months: number): Promise<LTVPrediction>`
 - `analyzeAcquisitionROI(acquisitionChannel: string, dateRange: DateRange): Promise<ROIAnalysis>`
@@ -220,9 +232,11 @@ CREATE TABLE customer_behavior_patterns (
 - `generateLTVReport(filters: LTVFilters): Promise<LTVReport>`
 
 #### CohortAnalysisService
+
 コホート分析を担当するサービス
 
 **主要メソッド:**
+
 - `createCohortAnalysis(cohortDefinition: CohortDefinition): Promise<CohortAnalysis>`
 - `calculateRetentionRates(cohortId: string): Promise<RetentionRates>`
 - `analyzeRevenueBycohort(cohortId: string): Promise<CohortRevenue>`
@@ -230,9 +244,11 @@ CREATE TABLE customer_behavior_patterns (
 - `generateCohortReport(analysisType: string, dateRange: DateRange): Promise<CohortReport>`
 
 #### CustomerSegmentationService
+
 顧客セグメンテーションを担当するサービス
 
 **主要メソッド:**
+
 - `segmentCustomers(criteria: SegmentationCriteria): Promise<CustomerSegments>`
 - `analyzeSegmentBehavior(segmentId: string): Promise<SegmentBehaviorAnalysis>`
 - `trackSegmentMigration(dateRange: DateRange): Promise<SegmentMigration>`
@@ -242,45 +258,55 @@ CREATE TABLE customer_behavior_patterns (
 ### UI Components
 
 #### RetentionDashboard
+
 リピート率分析のメインダッシュボード
 
 **機能:**
+
 - 期間別リピート率の表示
 - 顧客セグメント分布の表示
 - 主要KPIの表示
 - トレンド分析グラフ
 
 #### ChurnRiskAnalysisPanel
+
 離反リスク分析パネル
 
 **機能:**
+
 - 高リスク顧客一覧
 - 離反予測モデルの結果表示
 - 推奨アクションの表示
 - リスクスコア分布
 
 #### LTVAnalyticsDashboard
+
 LTV分析ダッシュボード
 
 **機能:**
+
 - 顧客別LTV表示
 - セグメント別LTV比較
 - ROI分析結果
 - 予測LTVグラフ
 
 #### CohortAnalysisVisualization
+
 コホート分析の可視化コンポーネント
 
 **機能:**
+
 - コホートテーブル表示
 - 維持率ヒートマップ
 - 期間別比較グラフ
 - カスタムコホート作成
 
 #### CustomerBehaviorAnalytics
+
 顧客行動分析コンポーネント
 
 **機能:**
+
 - 行動パターンの可視化
 - 季節性分析グラフ
 - 時間帯別分析
@@ -327,7 +353,7 @@ interface ChurnPrediction {
   customerId: string;
   customer: Customer;
   churnProbability: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
   daysToPredictedChurn?: number;
   contributingFactors: ChurnFactor[];
   recommendedActions: string[];
@@ -359,13 +385,13 @@ interface LTVCalculation {
 interface CohortAnalysis {
   id: string;
   cohortName: string;
-  cohortPeriod: 'monthly' | 'weekly' | 'quarterly';
+  cohortPeriod: "monthly" | "weekly" | "quarterly";
   cohortStartDate: Date;
   cohortEndDate: Date;
   totalCustomers: number;
   retentionRates: { [period: string]: number };
   revenueData?: { [period: string]: number };
-  analysisType: 'retention' | 'revenue' | 'behavior';
+  analysisType: "retention" | "revenue" | "behavior";
 }
 
 interface VisitPattern {
@@ -375,14 +401,14 @@ interface VisitPattern {
   preferredDays: number[];
   preferredHours: number[];
   seasonalTrends: SeasonalTrend[];
-  spendingPattern: 'consistent' | 'increasing' | 'decreasing' | 'volatile';
+  spendingPattern: "consistent" | "increasing" | "decreasing" | "volatile";
 }
 
 interface SeasonalTrend {
   period: string; // 'spring', 'summer', 'autumn', 'winter'
   visitFrequency: number;
   averageSpending: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
 }
 
 interface RetentionCampaign {
@@ -397,7 +423,7 @@ interface RetentionCampaign {
   successMetrics: { [metric: string]: any };
   actualResults?: { [metric: string]: any };
   roiCalculation?: number;
-  status: 'planned' | 'active' | 'completed' | 'cancelled';
+  status: "planned" | "active" | "completed" | "cancelled";
 }
 ```
 

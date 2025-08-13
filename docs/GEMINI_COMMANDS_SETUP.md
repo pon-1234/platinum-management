@@ -11,6 +11,7 @@
 2. **使い方:**
 
 ### gemini-search
+
 ```bash
 # Web検索を実行
 gemini-search "TypeScript best practices 2024"
@@ -18,6 +19,7 @@ gemini-search "React hooks performance optimization"
 ```
 
 ### gemini-analyze
+
 ```bash
 # ファイルの一般的なコードレビュー
 gemini-analyze src/app.ts
@@ -32,16 +34,19 @@ gemini-analyze src/utils/auth.ts "Security audit"
 現在のセッションでは既に使用可能ですが、新しいターミナルセッションでも使えるようにするには、以下をシェル設定ファイルに追加してください：
 
 ### bashの場合 (~/.bashrc または ~/.bash_profile)
+
 ```bash
 export PATH="$PATH:/Users/pon/claude-sbx/platinum-management/bin"
 ```
 
 ### zshの場合 (~/.zshrc)
+
 ```bash
 export PATH="$PATH:/Users/pon/claude-sbx/platinum-management/bin"
 ```
 
 設定後、以下のコマンドで反映：
+
 ```bash
 source ~/.zshrc  # または source ~/.bashrc
 ```
@@ -49,6 +54,7 @@ source ~/.zshrc  # または source ~/.bashrc
 ## 動作確認
 
 以下のコマンドで正しく設定されているか確認できます：
+
 ```bash
 which gemini-search
 which gemini-analyze

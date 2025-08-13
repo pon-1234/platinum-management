@@ -3,19 +3,22 @@
 ## 🏗️ 現在のシステム構成
 
 ### フロントエンド
+
 - **Framework**: Next.js 15 (App Router)
 - **UI**: React 19 + TypeScript
-- **Styling**: Tailwind CSS  
+- **Styling**: Tailwind CSS
 - **State**: Zustand + React Context
 - **Forms**: React Hook Form + Zod validation
 
 ### バックエンド
+
 - **Database**: Supabase (PostgreSQL)
 - **Auth**: Supabase Auth with RLS
 - **Storage**: Supabase Storage
 - **Realtime**: Supabase Realtime (WebSocket)
 
 ### 開発・品質管理
+
 - **Testing**: Vitest + Playwright
 - **Code Quality**: ESLint + Prettier + Husky
 - **CI/CD**: Vercel deployment
@@ -24,19 +27,21 @@
 ## 📊 実装済みサービス
 
 ### 認証・認可システム
+
 ```typescript
 AuthService
 ├── login/logout
-├── role-based access control  
+├── role-based access control
 ├── protected routes
 └── session management
 ```
 
 ### ビジネスロジック層
+
 ```typescript
 Services/
 ├── StaffService      ✅ 完了
-├── CustomerService   ✅ 完了  
+├── CustomerService   ✅ 完了
 ├── ReservationService ✅ 完了
 ├── TableService      ✅ 完了
 ├── CastService       ✅ 完了
@@ -49,11 +54,12 @@ Services/
 ```
 
 ### UI コンポーネント
+
 ```typescript
 Components/
 ├── auth/             ✅ 完了
 ├── staff/            ✅ 完了
-├── customers/        ✅ 完了  
+├── customers/        ✅ 完了
 ├── reservation/      ✅ 完了
 ├── table/            🔄 部分実装
 ├── cast/             ✅ 完了
@@ -68,19 +74,24 @@ Components/
 ### 1. リアルタイム機能強化
 
 #### Supabase Realtime活用
+
 ```typescript
 // 実装予定: リアルタイム席状況更新
 const useRealtimeTableStatus = () => {
   useEffect(() => {
     const subscription = supabase
-      .channel('table-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tables'
-      }, (payload) => {
-        // リアルタイム席状況更新
-      })
+      .channel("table-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tables",
+        },
+        (payload) => {
+          // リアルタイム席状況更新
+        }
+      )
       .subscribe();
 
     return () => subscription.unsubscribe();
@@ -91,6 +102,7 @@ const useRealtimeTableStatus = () => {
 ### 2. QRコード機能
 
 #### 必要ライブラリ
+
 ```json
 {
   "dependencies": {
@@ -101,13 +113,14 @@ const useRealtimeTableStatus = () => {
 ```
 
 #### QRコード生成・読み取り
+
 ```typescript
 // QRコード生成
 const generateStaffQR = (staffId: string) => {
   const qrData = {
     staffId,
     timestamp: Date.now(),
-    signature: generateSignature(staffId)
+    signature: generateSignature(staffId),
   };
   return QRCode.toDataURL(JSON.stringify(qrData));
 };
@@ -123,19 +136,20 @@ const scanQRCode = async (imageData: string) => {
 ### 3. カメラアクセス
 
 #### ブラウザAPI活用
+
 ```typescript
 // カメラアクセス (勤怠打刻用)
 const useCameraAccess = () => {
   const startCamera = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' }
+      video: { facingMode: "environment" },
     });
     return stream;
   };
 
   const captureImage = (video: HTMLVideoElement) => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     context?.drawImage(video, 0, 0);
     return canvas.toDataURL();
   };
@@ -145,19 +159,22 @@ const useCameraAccess = () => {
 ### 4. 画像処理・OCR
 
 #### 身分証確認用OCR
+
 ```typescript
 // 実装予定: Tesseract.js等でOCR
-import Tesseract from 'tesseract.js';
+import Tesseract from "tesseract.js";
 
 const extractIdInfo = async (imageFile: File) => {
-  const { data: { text } } = await Tesseract.recognize(imageFile, 'jpn');
-  
+  const {
+    data: { text },
+  } = await Tesseract.recognize(imageFile, "jpn");
+
   // 生年月日抽出ロジック
   const birthDateMatch = text.match(/\d{4}[年\/]\d{1,2}[月\/]\d{1,2}/);
-  
+
   return {
     birthDate: parseBirthDate(birthDateMatch?.[0]),
-    extractedText: text
+    extractedText: text,
   };
 };
 ```
@@ -165,6 +182,7 @@ const extractIdInfo = async (imageFile: File) => {
 ## 🗄️ データベーススキーマ拡張
 
 ### 在庫管理テーブル
+
 ```sql
 -- 商品マスタ (既存のproductsテーブル拡張)
 ALTER TABLE products ADD COLUMN category VARCHAR(50);
@@ -186,7 +204,8 @@ CREATE TABLE inventory_movements (
 );
 ```
 
-### ボトルキープテーブル  
+### ボトルキープテーブル
+
 ```sql
 CREATE TABLE bottle_keeps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -205,6 +224,7 @@ CREATE TABLE bottle_keeps (
 ```
 
 ### 法令対応テーブル
+
 ```sql
 -- 身分証確認記録
 CREATE TABLE id_verifications (
@@ -234,21 +254,22 @@ CREATE TABLE compliance_reports (
 ## 🔐 セキュリティ考慮事項
 
 ### RLS (Row Level Security) 拡張
+
 ```sql
 -- 在庫管理: admin/manager のみアクセス可能
 CREATE POLICY "inventory_policy" ON inventory_movements
   FOR ALL TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM staffs 
-      WHERE staffs.user_id = auth.uid() 
+      SELECT 1 FROM staffs
+      WHERE staffs.user_id = auth.uid()
       AND staffs.role IN ('admin', 'manager')
     )
   );
 
 -- 身分証情報: 暗号化 + 管理者限定
 CREATE POLICY "id_verification_policy" ON id_verifications
-  FOR ALL TO authenticated  
+  FOR ALL TO authenticated
   USING (
     EXISTS (
       SELECT 1 FROM staffs
@@ -259,49 +280,55 @@ CREATE POLICY "id_verification_policy" ON id_verifications
 ```
 
 ### 画像ファイル暗号化
+
 ```typescript
 // Supabase Storage bucket設定
 const createSecureBucket = async () => {
-  await supabase.storage.createBucket('id-documents', {
+  await supabase.storage.createBucket("id-documents", {
     public: false,
-    allowedMimeTypes: ['image/jpeg', 'image/png'],
-    fileSizeLimit: 10 * 1024 * 1024 // 10MB
+    allowedMimeTypes: ["image/jpeg", "image/png"],
+    fileSizeLimit: 10 * 1024 * 1024, // 10MB
   });
 
   // RLS設定: マネージャー以上のみアクセス
-  await supabase.storage.from('id-documents')
-    .createSignedUrl('path', 3600); // 1時間有効
+  await supabase.storage.from("id-documents").createSignedUrl("path", 3600); // 1時間有効
 };
 ```
 
 ## 📈 パフォーマンス最適化
 
 ### 1. データベースインデックス
+
 ```sql
 -- 在庫検索用インデックス
 CREATE INDEX idx_products_category ON products(category);
-CREATE INDEX idx_inventory_movements_product_date 
+CREATE INDEX idx_inventory_movements_product_date
   ON inventory_movements(product_id, created_at);
 
--- ボトルキープ検索用インデックス  
-CREATE INDEX idx_bottle_keeps_customer 
+-- ボトルキープ検索用インデックス
+CREATE INDEX idx_bottle_keeps_customer
   ON bottle_keeps(customer_id, status);
 ```
 
 ### 2. リアルタイム最適化
+
 ```typescript
 // 効率的なSubscription管理
 const useOptimizedRealtime = () => {
   useEffect(() => {
     // 必要な変更のみSubscribe
     const subscription = supabase
-      .channel('essential-updates')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public', 
-        table: 'tables',
-        filter: 'current_status=neq.available'
-      }, handleTableUpdate)
+      .channel("essential-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tables",
+          filter: "current_status=neq.available",
+        },
+        handleTableUpdate
+      )
       .subscribe();
 
     return () => subscription.unsubscribe();
@@ -312,12 +339,14 @@ const useOptimizedRealtime = () => {
 ## 🚀 デプロイメント戦略
 
 ### 段階的リリース計画
+
 1. **在庫管理** → 内部テスト → 本番リリース
-2. **ボトルキープ** → 小規模テスト → 段階展開  
+2. **ボトルキープ** → 小規模テスト → 段階展開
 3. **QRコード打刻** → パイロット導入 → 全面展開
 4. **法令対応** → 法務確認 → 正式運用
 
 ### 環境分離
+
 - **Development**: 開発・テスト用
 - **Staging**: 本番データでの最終確認
 - **Production**: 本番環境
