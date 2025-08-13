@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Access } from "@/components/auth/Access";
 import { billingService } from "@/services/billing.service";
 import { tableService } from "@/services/table.service";
+import { castService } from "@/services/cast.service";
+import { NominationTypeService } from "@/services/nomination-type.service";
+import { VisitSessionService } from "@/services/visit-session.service";
 import type { Table } from "@/types/reservation.types";
 import type { Product } from "@/types/billing.types";
 import { toast } from "react-hot-toast";
@@ -21,20 +24,39 @@ export default function ManualEntryPage() {
   const [note, setNote] = useState<string>("");
   const [tables, setTables] = useState<Table[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [casts, setCasts] = useState<Array<{ id: string; stageName: string }>>(
+    []
+  );
+  const [nominationTypes, setNominationTypes] = useState<
+    Array<{ id: string; display_name: string }>
+  >([]);
   const [items, setItems] = useState<
     Array<{ productId: number | ""; quantity: number; unitPrice?: number }>
   >([{ productId: "", quantity: 1 }]);
+  const [engagements, setEngagements] = useState<
+    Array<{
+      castId: string;
+      role: "primary" | "inhouse" | "help" | "douhan" | "after";
+      nominationTypeId?: string;
+    }>
+  >([{ castId: "", role: "inhouse" }]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const [ts, ps] = await Promise.all([
+        const [ts, ps, cs, nts] = await Promise.all([
           tableService.searchTables({ isActive: true }),
           billingService.searchProducts({ isActive: true, limit: 200 }),
+          castService.getAllCasts(1, 200),
+          NominationTypeService.getAllNominationTypes(),
         ]);
         setTables(ts);
         setProducts(ps);
+        setCasts(cs.data.map((c) => ({ id: c.id, stageName: c.stageName })));
+        setNominationTypes(
+          nts.map((t) => ({ id: t.id as string, display_name: t.display_name }))
+        );
       } catch (e) {
         if (process.env.NODE_ENV === "development") console.error(e);
         toast.error("初期データの取得に失敗しました");
@@ -52,6 +74,11 @@ export default function ManualEntryPage() {
     setItems((prev) => [...prev, { productId: "", quantity: 1 }]);
   const removeRow = (idx: number) =>
     setItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const addEngagementRow = () =>
+    setEngagements((prev) => [...prev, { castId: "", role: "inhouse" }]);
+  const removeEngagementRow = (idx: number) =>
+    setEngagements((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async () => {
     try {
@@ -92,9 +119,21 @@ export default function ManualEntryPage() {
         });
       }
 
+      // 3) キャスト割り当て（任意）
+      for (const e of engagements) {
+        if (!e.castId) continue;
+        await VisitSessionService.addCastEngagement(
+          visit.id,
+          e.castId,
+          e.role,
+          e.nominationTypeId || undefined
+        );
+      }
+
       toast.success("手入力の登録が完了しました");
       // フォーム初期化
       setItems([{ productId: "", quantity: 1 }]);
+      setEngagements([{ castId: "", role: "inhouse" }]);
       setNote("");
     } catch (e) {
       if (process.env.NODE_ENV === "development") console.error(e);
@@ -281,6 +320,103 @@ export default function ManualEntryPage() {
                 <div className="col-span-12 md:col-span-2 flex justify-end">
                   <button
                     onClick={() => removeRow(idx)}
+                    className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+                  >
+                    削除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900">
+              指名の追加（任意）
+            </h2>
+            <button
+              onClick={addEngagementRow}
+              className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+            >
+              行を追加
+            </button>
+          </div>
+          <div className="space-y-2">
+            {engagements.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-5 md:col-span-5">
+                  <select
+                    value={row.castId}
+                    onChange={(e) =>
+                      setEngagements((prev) =>
+                        prev.map((r, i) =>
+                          i === idx ? { ...r, castId: e.target.value } : r
+                        )
+                      )
+                    }
+                    className="w-full border rounded px-3 py-2 text-sm"
+                  >
+                    <option value="">キャストを選択</option>
+                    {casts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.stageName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-3 md:col-span-3">
+                  <select
+                    value={row.role}
+                    onChange={(e) =>
+                      setEngagements((prev) =>
+                        prev.map((r, i) =>
+                          i === idx
+                            ? {
+                                ...r,
+                                role: e.target.value as typeof row.role,
+                              }
+                            : r
+                        )
+                      )
+                    }
+                    className="w-full border rounded px-3 py-2 text-sm"
+                  >
+                    <option value="primary">本指名</option>
+                    <option value="inhouse">場内指名</option>
+                    <option value="help">ヘルプ</option>
+                    <option value="douhan">同伴</option>
+                    <option value="after">アフター</option>
+                  </select>
+                </div>
+                <div className="col-span-3 md:col-span-3">
+                  <select
+                    value={row.nominationTypeId || ""}
+                    onChange={(e) =>
+                      setEngagements((prev) =>
+                        prev.map((r, i) =>
+                          i === idx
+                            ? {
+                                ...r,
+                                nominationTypeId: e.target.value || undefined,
+                              }
+                            : r
+                        )
+                      )
+                    }
+                    className="w-full border rounded px-3 py-2 text-sm"
+                  >
+                    <option value="">指名種別（自動）</option>
+                    {nominationTypes.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.display_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-1 md:col-span-1 flex justify-end">
+                  <button
+                    onClick={() => removeEngagementRow(idx)}
                     className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
                   >
                     削除
