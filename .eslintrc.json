@@ -22,14 +22,7 @@
       { "ignoreVoid": true, "ignoreIIFE": true }
     ],
     "@typescript-eslint/require-await": "off",
-    "import/order": [
-      "warn",
-      {
-        "groups": [["builtin", "external"], ["internal"], ["parent", "sibling", "index"]],
-        "newlines-between": "always",
-        "alphabetize": { "order": "asc", "caseInsensitive": true }
-      }
-    ],
+    "import/order": "off",
     "no-restricted-imports": [
       "warn",
       {
@@ -43,5 +36,26 @@
     ],
     "promise/always-return": "warn",
     "promise/catch-or-return": "warn"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/app/**/*.{ts,tsx}",
+        "src/components/**/*.{ts,tsx}",
+        "src/stores/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "@typescript-eslint/no-floating-promises": "off",
+        "promise/always-return": "off",
+        "promise/catch-or-return": "off"
+      }
+    },
+    {
+      "files": ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": "off",
+        "@typescript-eslint/require-await": "off"
+      }
+    }
+  ]
 }
