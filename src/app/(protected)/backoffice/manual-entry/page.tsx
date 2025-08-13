@@ -65,6 +65,155 @@ export default function ManualEntryPage() {
     return tables.find((t) => String(t.id) === idStr);
   }, [tableId, tables]);
 
+  // Draft autosave & leave guard
+  const [dirty, setDirty] = useState(false);
+  const initializedRef = useRef(false);
+  const draftKey = "manual_entry_draft";
+
+  const serializeDraft = () =>
+    JSON.stringify({
+      visitDate,
+      visitTime,
+      tableId,
+      numGuests,
+      customerQuery,
+      customerId,
+      note,
+      externalSlipId,
+      items,
+      engagements,
+      markCompleted,
+      paymentMethod,
+      mixedCash,
+      mixedCard,
+    });
+
+  // mark dirty when the form changes (skip first run)
+  useEffect(() => {
+    if (initializedRef.current) {
+      setDirty(true);
+    } else {
+      initializedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    visitDate,
+    visitTime,
+    tableId,
+    numGuests,
+    customerQuery,
+    customerId,
+    note,
+    externalSlipId,
+    items,
+    engagements,
+    markCompleted,
+    paymentMethod,
+    mixedCash,
+    mixedCard,
+  ]);
+
+  // Offer restore if draft exists
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      toast(
+        (t) => (
+          <div className="flex items-center gap-3">
+            <span className="text-sm">保存された下書きを復元しますか？</span>
+            <button
+              className="px-2 py-1 text-xs border rounded"
+              onClick={() => {
+                try {
+                  const data = JSON.parse(raw);
+                  setVisitDate(data.visitDate || visitDate);
+                  setVisitTime(data.visitTime || visitTime);
+                  setTableId(data.tableId || "");
+                  setNumGuests(Number(data.numGuests) || 1);
+                  setCustomerQuery(data.customerQuery || "");
+                  setCustomerId(data.customerId || "");
+                  setNote(data.note || "");
+                  setExternalSlipId(data.externalSlipId || "");
+                  setItems(Array.isArray(data.items) ? data.items : items);
+                  setEngagements(
+                    Array.isArray(data.engagements)
+                      ? data.engagements
+                      : engagements
+                  );
+                  setMarkCompleted(Boolean(data.markCompleted));
+                  setPaymentMethod(
+                    (data.paymentMethod as PaymentMethod) || "cash"
+                  );
+                  setMixedCash(Number(data.mixedCash) || 0);
+                  setMixedCard(Number(data.mixedCard) || 0);
+                } catch {
+                  /* ignore */
+                }
+                toast.dismiss(t.id);
+              }}
+            >
+              復元
+            </button>
+            <button
+              className="px-2 py-1 text-xs border rounded"
+              onClick={() => {
+                localStorage.removeItem(draftKey);
+                toast.dismiss(t.id);
+              }}
+            >
+              破棄
+            </button>
+          </div>
+        ),
+        { duration: 6000 }
+      );
+    } catch {
+      /* noop */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // autosave every 30s
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      try {
+        localStorage.setItem(draftKey, serializeDraft());
+      } catch {
+        /* ignore */
+      }
+    }, 30000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    visitDate,
+    visitTime,
+    tableId,
+    numGuests,
+    customerQuery,
+    customerId,
+    note,
+    externalSlipId,
+    items,
+    engagements,
+    markCompleted,
+    paymentMethod,
+    mixedCash,
+    mixedCard,
+  ]);
+
+  // Leave guard (tab close/reload)
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (submitting) return;
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty, submitting]);
+
   useEffect(() => {
     // 日付変更時に自動で既定の精算フラグを更新（ユーザー操作後は手動で切替可）
     const today = new Date().toISOString().slice(0, 10);
