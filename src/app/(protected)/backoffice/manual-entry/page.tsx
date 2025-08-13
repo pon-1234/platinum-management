@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Access } from "@/components/auth/Access";
 import { billingService } from "@/services/billing.service";
 import { tableService } from "@/services/table.service";
@@ -37,8 +37,13 @@ export default function ManualEntryPage() {
     Array<{ id: string; display_name: string }>
   >([]);
   const [items, setItems] = useState<
-    Array<{ productId: number | ""; quantity: number; unitPrice?: number }>
-  >([{ productId: "", quantity: 1 }]);
+    Array<{
+      productId: number | "";
+      quantity: number;
+      unitPrice?: number;
+      search?: string;
+    }>
+  >([{ productId: "", quantity: 1, search: "" }]);
   const [engagements, setEngagements] = useState<
     Array<{
       castId: string;
@@ -161,9 +166,39 @@ export default function ManualEntryPage() {
     items.some((r) => !r.productId || r.quantity <= 0);
 
   const addRow = () =>
-    setItems((prev) => [...prev, { productId: "", quantity: 1 }]);
-  const removeRow = (idx: number) =>
+    setItems((prev) => [...prev, { productId: "", quantity: 1, search: "" }]);
+
+  // Refs for keyboard navigation
+  const productRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const qtyRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const priceRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  // Undo for row deletion
+  const removeRow = (idx: number) => {
+    const removed = items[idx];
     setItems((prev) => prev.filter((_, i) => i !== idx));
+    toast(
+      (t) => (
+        <div className="flex items-center gap-3">
+          <span className="text-sm">1 行削除しました</span>
+          <button
+            className="px-2 py-1 text-xs border rounded"
+            onClick={() => {
+              setItems((prev) => {
+                const next = [...prev];
+                next.splice(idx, 0, removed);
+                return next;
+              });
+              toast.dismiss(t.id);
+            }}
+          >
+            元に戻す
+          </button>
+        </div>
+      ),
+      { duration: 3000 }
+    );
+  };
 
   const addEngagementRow = () =>
     setEngagements((prev) => [...prev, { castId: "", role: "inhouse" }]);
@@ -174,6 +209,8 @@ export default function ManualEntryPage() {
     try {
       if (!tableId) {
         toast.error("テーブルを選択してください");
+        const el = document.getElementById("table-select");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
       if (
@@ -181,6 +218,13 @@ export default function ManualEntryPage() {
         items.some((r) => !r.productId || r.quantity <= 0)
       ) {
         toast.error("商品と数量を入力してください");
+        // scroll to first invalid row
+        const badIdx = items.findIndex((r) => !r.productId || r.quantity <= 0);
+        if (badIdx >= 0) {
+          const el = qtyRefs.current[badIdx] || productRefs.current[badIdx];
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+          el?.focus();
+        }
         return;
       }
 
@@ -428,51 +472,180 @@ export default function ManualEntryPage() {
           </div>
           <div className="space-y-2">
             {items.map((row, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+              <div
+                key={idx}
+                className="grid grid-cols-12 gap-2 items-center"
+                onKeyDown={(e) => {
+                  // Keyboard shortcuts per row
+                  if (e.key === "Enter" && e.shiftKey) {
+                    e.preventDefault();
+                    addRow();
+                    setTimeout(
+                      () => productRefs.current[items.length]?.focus(),
+                      0
+                    );
+                    return;
+                  }
+                  if (
+                    (e.ctrlKey || e.metaKey) &&
+                    (e.key === "ArrowUp" || e.key === "ArrowDown")
+                  ) {
+                    e.preventDefault();
+                    setItems((prev) =>
+                      prev.map((r, i) =>
+                        i === idx
+                          ? {
+                              ...r,
+                              quantity: Math.max(
+                                1,
+                                r.quantity + (e.key === "ArrowUp" ? 1 : -1)
+                              ),
+                            }
+                          : r
+                      )
+                    );
+                    return;
+                  }
+                  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+                    e.preventDefault();
+                    productRefs.current[idx]?.focus();
+                    return;
+                  }
+                  if (e.key === "Delete") {
+                    e.preventDefault();
+                    removeRow(idx);
+                    return;
+                  }
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    // move focus to next cell
+                    if (document.activeElement === productRefs.current[idx]) {
+                      qtyRefs.current[idx]?.focus();
+                    } else if (
+                      document.activeElement === qtyRefs.current[idx]
+                    ) {
+                      priceRefs.current[idx]?.focus();
+                    } else if (
+                      document.activeElement === priceRefs.current[idx]
+                    ) {
+                      if (idx === items.length - 1) {
+                        addRow();
+                        setTimeout(
+                          () => productRefs.current[items.length]?.focus(),
+                          0
+                        );
+                      } else {
+                        productRefs.current[idx + 1]?.focus();
+                      }
+                    }
+                  }
+                }}
+              >
                 <div className="col-span-6 md:col-span-6">
-                  <select
-                    value={row.productId}
-                    onChange={(e) => {
-                      const val = e.target.value
-                        ? Number(e.target.value)
-                        : ("" as const);
-                      setItems((prev) =>
-                        prev.map((r, i) =>
-                          i === idx ? { ...r, productId: val } : r
-                        )
-                      );
-                    }}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">商品を選択</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}（¥{p.price.toLocaleString()}）
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      ref={(el) => {
+                        productRefs.current[idx] = el;
+                      }}
+                      type="text"
+                      value={row.search || ""}
+                      onChange={(e) => {
+                        const q = e.target.value;
+                        setItems((prev) =>
+                          prev.map((r, i) =>
+                            i === idx ? { ...r, search: q } : r
+                          )
+                        );
+                      }}
+                      placeholder="商品名/コードで検索（Ctrl/⌘+Kでフォーカス）"
+                      className="w-full border rounded px-3 py-2 text-sm"
+                    />
+                    {(row.search || "").trim().length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border rounded shadow">
+                        {products
+                          .filter((p) => {
+                            const q = (row.search || "").toLowerCase();
+                            return (
+                              p.name.toLowerCase().includes(q) ||
+                              String(p.id).includes(q)
+                            );
+                          })
+                          .slice(0, 20)
+                          .map((p) => (
+                            <button
+                              type="button"
+                              key={p.id}
+                              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                              onClick={() => {
+                                setItems((prev) =>
+                                  prev.map((r, i) =>
+                                    i === idx
+                                      ? {
+                                          ...r,
+                                          productId: p.id,
+                                          search: `${p.name}（¥${p.price.toLocaleString()}）`,
+                                        }
+                                      : r
+                                  )
+                                );
+                                setTimeout(
+                                  () => qtyRefs.current[idx]?.focus(),
+                                  0
+                                );
+                              }}
+                            >
+                              {p.name}（¥{p.price.toLocaleString()}）
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="col-span-3 md:col-span-2">
                   <div className="flex items-center border rounded">
                     <button
                       type="button"
                       className="px-2 py-1 text-gray-600 hover:bg-gray-50"
-                      onClick={() =>
-                        setItems((prev) =>
-                          prev.map((r, i) =>
-                            i === idx
-                              ? {
-                                  ...r,
-                                  quantity: Math.max(1, (r.quantity || 1) - 1),
-                                }
-                              : r
-                          )
-                        )
-                      }
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        let timer: number | undefined;
+                        const step = () =>
+                          setItems((prev) =>
+                            prev.map((r, i) =>
+                              i === idx
+                                ? {
+                                    ...r,
+                                    quantity: Math.max(
+                                      1,
+                                      (r.quantity || 1) - 1
+                                    ),
+                                  }
+                                : r
+                            )
+                          );
+                        step();
+                        const interval = window.setInterval(step, 120);
+                        const clearAll = () => {
+                          if (interval) window.clearInterval(interval);
+                          if (timer) window.clearTimeout(timer);
+                          document.removeEventListener("mouseup", clearAll);
+                          (
+                            e.currentTarget as HTMLButtonElement
+                          ).removeEventListener("mouseleave", clearAll);
+                        };
+                        document.addEventListener("mouseup", clearAll);
+                        (e.currentTarget as HTMLButtonElement).addEventListener(
+                          "mouseleave",
+                          clearAll
+                        );
+                      }}
                     >
                       -
                     </button>
                     <input
+                      ref={(el) => {
+                        qtyRefs.current[idx] = el;
+                      }}
                       type="number"
                       min={1}
                       value={row.quantity}
@@ -488,20 +661,41 @@ export default function ManualEntryPage() {
                           )
                         )
                       }
+                      onWheel={(e) =>
+                        (e.currentTarget as HTMLInputElement).blur()
+                      }
                       className="w-full px-2 py-1 text-sm text-center border-l border-r"
                     />
                     <button
                       type="button"
                       className="px-2 py-1 text-gray-600 hover:bg-gray-50"
-                      onClick={() =>
-                        setItems((prev) =>
-                          prev.map((r, i) =>
-                            i === idx
-                              ? { ...r, quantity: (r.quantity || 0) + 1 }
-                              : r
-                          )
-                        )
-                      }
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        let timer: number | undefined;
+                        const step = () =>
+                          setItems((prev) =>
+                            prev.map((r, i) =>
+                              i === idx
+                                ? { ...r, quantity: (r.quantity || 0) + 1 }
+                                : r
+                            )
+                          );
+                        step();
+                        const interval = window.setInterval(step, 120);
+                        const clearAll = () => {
+                          if (interval) window.clearInterval(interval);
+                          if (timer) window.clearTimeout(timer);
+                          document.removeEventListener("mouseup", clearAll);
+                          (
+                            e.currentTarget as HTMLButtonElement
+                          ).removeEventListener("mouseleave", clearAll);
+                        };
+                        document.addEventListener("mouseup", clearAll);
+                        (e.currentTarget as HTMLButtonElement).addEventListener(
+                          "mouseleave",
+                          clearAll
+                        );
+                      }}
                     >
                       +
                     </button>
@@ -509,6 +703,9 @@ export default function ManualEntryPage() {
                 </div>
                 <div className="col-span-3 md:col-span-2">
                   <input
+                    ref={(el) => {
+                      priceRefs.current[idx] = el;
+                    }}
                     type="number"
                     placeholder="単価（任意）"
                     value={row.unitPrice ?? ""}
@@ -525,6 +722,9 @@ export default function ManualEntryPage() {
                             : r
                         )
                       )
+                    }
+                    onWheel={(e) =>
+                      (e.currentTarget as HTMLInputElement).blur()
                     }
                     className="w-full border rounded px-3 py-2 text-sm"
                   />
@@ -639,6 +839,12 @@ export default function ManualEntryPage() {
               />
               <span className="text-sm text-gray-700">
                 登録と同時に精算する
+                <span
+                  className="ml-1 text-gray-400 cursor-help"
+                  title="過去日を選ぶと自動でONになります。必要に応じて手動で切り替え可能です。"
+                >
+                  ⓘ
+                </span>
               </span>
             </label>
             <div>
@@ -659,9 +865,53 @@ export default function ManualEntryPage() {
               </select>
             </div>
             <div className="text-xs text-gray-500">
-              過去日を選択した場合は既定で精算にチェックが入ります。
+              チェックのON/OFFはいつでも変更できます。
             </div>
           </div>
+          {markCompleted && paymentMethod === "mixed" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  現金
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={mixedCash}
+                  onChange={(e) =>
+                    setMixedCash(parseInt(e.target.value || "0", 10))
+                  }
+                  onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                  className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  カード
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={mixedCard}
+                  onChange={(e) =>
+                    setMixedCard(parseInt(e.target.value || "0", 10))
+                  }
+                  onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                  className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex items-end">
+                <div className="text-sm">
+                  合計: ¥{(mixedCash + mixedCard).toLocaleString()} / 目標: ¥
+                  {estimatedTotal.toLocaleString()}
+                  <br />
+                  {mixedCash + mixedCard !== estimatedTotal && (
+                    <span className="text-red-600">合計が一致していません</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div className="bg-white shadow rounded-lg p-5 sticky top-24">
           <h3 className="text-base font-semibold text-gray-900 mb-3">確認</h3>
