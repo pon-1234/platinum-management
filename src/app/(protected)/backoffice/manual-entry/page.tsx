@@ -59,6 +59,11 @@ export default function ManualEntryPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [mixedCash, setMixedCash] = useState<number>(0);
   const [mixedCard, setMixedCard] = useState<number>(0);
+  const selectedTable = useMemo(() => {
+    const idStr = String(tableId || "");
+    // Table.id is string in types
+    return tables.find((t) => String(t.id) === idStr);
+  }, [tableId, tables]);
 
   useEffect(() => {
     // 日付変更時に自動で既定の精算フラグを更新（ユーザー操作後は手動で切替可）
@@ -224,6 +229,49 @@ export default function ManualEntryPage() {
     } catch {
       /* ignore */
     }
+  };
+
+  // Quick add bar state and handler
+  const [quickInput, setQuickInput] = useState<string>("");
+  const handleQuickAdd = () => {
+    const raw = quickInput.trim();
+    if (!raw) return;
+    // Parse pattern: "keyword x3" or "keyword×3" (supports ascii/zenkaku)
+    const m = raw.match(/^(.*?)[\s]*[x×＊*]\s*(\d+)$/i);
+    let query = raw;
+    let qty = 1;
+    if (m) {
+      query = m[1].trim();
+      qty = Math.max(1, parseInt(m[2], 10) || 1);
+    }
+    const q = query.toLowerCase();
+    const fieldsOf = (p: Product) =>
+      [
+        p.name,
+        (p as unknown as { nameKana?: string }).nameKana,
+        (p as unknown as { shortName?: string }).shortName,
+        (p as unknown as { alias?: string }).alias,
+        (p as unknown as { sku?: string }).sku,
+        (p as unknown as { code?: string }).code,
+        String(p.id),
+      ]
+        .filter(Boolean)
+        .map((s) => String(s).toLowerCase());
+    const hit = products.find((p) => fieldsOf(p).some((f) => f.includes(q)));
+    if (!hit) {
+      toast.error("該当する商品が見つかりません");
+      return;
+    }
+    setItems((prev) => [
+      ...prev,
+      {
+        productId: hit.id,
+        quantity: qty,
+        search: `${hit.name}（¥${hit.price.toLocaleString()}）`,
+      },
+    ]);
+    pushRecent(hit.id);
+    setQuickInput("");
   };
 
   // Undo for row deletion
@@ -440,8 +488,28 @@ export default function ManualEntryPage() {
                 onChange={(e) =>
                   setNumGuests(parseInt(e.target.value || "1", 10))
                 }
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                className={`mt-1 w-full border rounded px-3 py-2 text-sm ${
+                  selectedTable && numGuests > (selectedTable.capacity || 0)
+                    ? "border-orange-400 bg-orange-50"
+                    : ""
+                }`}
               />
+              {selectedTable && (
+                <div className="mt-1 text-xs">
+                  <span
+                    className={
+                      numGuests <= (selectedTable.capacity || 0)
+                        ? "text-green-700"
+                        : "text-orange-700"
+                    }
+                  >
+                    {numGuests}/{selectedTable.capacity}
+                  </span>
+                  {numGuests > (selectedTable.capacity || 0) && (
+                    <span className="ml-2 text-orange-700">定員超過</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -522,6 +590,27 @@ export default function ManualEntryPage() {
                 行を追加
               </button>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={quickInput}
+              onChange={(e) => setQuickInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleQuickAdd();
+                }
+              }}
+              placeholder="クイック追加: 商品名/コード×数量（例: ﾋﾞｰﾙ×3）"
+              className="flex-1 border rounded px-3 py-2 text-sm"
+            />
+            <button
+              onClick={handleQuickAdd}
+              className="px-3 py-2 text-sm border rounded hover:bg-gray-50"
+            >
+              追加
+            </button>
           </div>
           <div className="space-y-2">
             {items.map((row, idx) => (
