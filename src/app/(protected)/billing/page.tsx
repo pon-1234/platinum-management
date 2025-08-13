@@ -13,7 +13,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import OrderTicketManagement from "@/components/billing/OrderTicketManagement";
 import { useState as useReactState } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { createClient } from "@/lib/supabase/client";
+import { Access } from "@/components/auth/Access";
 import type {
   BillCalculation,
   VisitWithDetails,
@@ -43,7 +43,7 @@ export default function BillingPage() {
   const [delegateCashReceived, setDelegateCashReceived] =
     useReactState<number>(0);
   const [delegateNotes, setDelegateNotes] = useReactState<string>("");
-  const [userRole, setUserRole] = useReactState<string | null>(null);
+  // Access control is handled via <Access> component
 
   const loadBillingData = useCallback(async () => {
     try {
@@ -85,21 +85,7 @@ export default function BillingPage() {
     loadBillingData();
   }, [loadBillingData]);
 
-  // Fetch current user's role for UI guard
-  useEffect(() => {
-    const fetchRole = async () => {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.rpc(
-          "get_current_user_staff_role"
-        );
-        if (!error) setUserRole(data as string);
-      } catch {
-        setUserRole(null);
-      }
-    };
-    fetchRole();
-  }, [setUserRole]);
+  // (removed) client-side role fetch; unified with <Access>
 
   const handleClosingProcess = async () => {
     // Check for open visits first
@@ -168,28 +154,39 @@ export default function BillingPage() {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="rounded-md border-gray-300 text-sm"
             />
-            {(["admin", "manager", "cashier"].includes(userRole || "") ||
-              process.env.NODE_ENV === "development") && (
+            <Access
+              roles={["admin", "manager", "cashier"]}
+              resource="billing"
+              action="process"
+              require="any"
+            >
               <button
                 onClick={() => setDelegateOpen(true)}
                 className="inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 代行会計
               </button>
-            )}
+            </Access>
             {selectedDate === new Date().toISOString().split("T")[0] && (
-              <button
-                onClick={handleClosingProcess}
-                disabled={isAlreadyClosed}
-                className={`inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  isAlreadyClosed
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
-                }`}
+              <Access
+                roles={["admin", "manager", "cashier"]}
+                resource="billing"
+                action="manage"
+                require="any"
               >
-                <ClipboardDocumentListIcon className="-ml-1 mr-2 h-5 w-5" />
-                {isAlreadyClosed ? "レジ締め済み" : "レジ締め"}
-              </button>
+                <button
+                  onClick={handleClosingProcess}
+                  disabled={isAlreadyClosed}
+                  className={`inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    isAlreadyClosed
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                  }`}
+                >
+                  <ClipboardDocumentListIcon className="-ml-1 mr-2 h-5 w-5" />
+                  {isAlreadyClosed ? "レジ締め済み" : "レジ締め"}
+                </button>
+              </Access>
             )}
           </div>
         </div>
