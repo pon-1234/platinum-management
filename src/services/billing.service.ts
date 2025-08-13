@@ -198,7 +198,40 @@ export class BillingService extends BaseService {
       created_by: staffId,
       updated_by: staffId,
     };
-    if (data.customerId) insertPayload.customer_id = data.customerId;
+    let effectiveCustomerId: string | undefined = data.customerId;
+    if (!effectiveCustomerId) {
+      // Ensure a fallback customer exists (e.g., "未登録")
+      try {
+        const { data: existing } = await this.supabase
+          .from("customers")
+          .select("id")
+          .eq("name", "未登録")
+          .limit(1)
+          .maybeSingle();
+
+        if (existing?.id) {
+          effectiveCustomerId = existing.id as string;
+        } else {
+          // Create minimal placeholder customer
+          const { data: created } = await this.supabase
+            .from("customers")
+            .insert({
+              name: "未登録",
+              status: "active",
+              created_by: staffId,
+              updated_by: staffId,
+            })
+            .select("id")
+            .single();
+          if (created?.id) {
+            effectiveCustomerId = created.id as string;
+          }
+        }
+      } catch {
+        // If creating fallback fails, leave undefined; DB will still reject. Error handled below.
+      }
+    }
+    if (effectiveCustomerId) insertPayload.customer_id = effectiveCustomerId;
 
     const { data: visit, error } = await this.supabase
       .from("visits")
