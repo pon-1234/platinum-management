@@ -251,21 +251,23 @@ export class BillingService extends BaseService {
         reason: "initial",
         started_at: new Date().toISOString(),
       });
-      // Update table occupancy status for compatibility
-      await this.supabase
-        .from("tables")
-        .update({
-          current_status: "occupied",
-          current_visit_id: visit.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", data.tableId);
     } catch (e) {
       logger.warn("Failed to create initial table segment", "BillingService", {
         visitId: visit.id,
         tableId: data.tableId,
       });
     }
+    // Update table occupancy status (do not fail the flow)
+    this.supabase
+      .from("tables")
+      .update({
+        current_status: "occupied",
+        current_visit_id: visit.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.tableId)
+      .then(() => void 0)
+      .catch(() => void 0);
 
     return this.mapToVisit(visit);
   }

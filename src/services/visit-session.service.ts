@@ -145,7 +145,7 @@ export class VisitSessionService {
       .eq("visit_id", visitId)
       .eq("cast_id", castId)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       throw new Error("このキャストは既にアクティブです");
