@@ -193,6 +193,8 @@ export class BillingService extends BaseService {
       num_guests: data.numGuests,
       check_in_at: data.checkInAt || new Date().toISOString(),
       notes: data.notes || null,
+      status: "active",
+      payment_status: "pending",
       created_by: staffId,
       updated_by: staffId,
     };
