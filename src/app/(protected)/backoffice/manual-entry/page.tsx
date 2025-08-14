@@ -5,6 +5,11 @@ import { Access } from "@/components/auth/Access";
 import { billingService } from "@/services/billing.service";
 import { tableService } from "@/services/table.service";
 import { castService } from "@/services/cast.service";
+import { customerService } from "@/services/customer.service";
+import {
+  BottleKeepService,
+  type BottleKeep,
+} from "@/services/bottle-keep.service";
 import { NominationTypeService } from "@/services/nomination-type.service";
 import { VisitSessionService } from "@/services/visit-session.service";
 import type { Table } from "@/types/reservation.types";
@@ -30,9 +35,16 @@ export default function ManualEntryPage() {
   const [externalSlipId, setExternalSlipId] = useState<string>("");
   const [tables, setTables] = useState<Table[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [casts, setCasts] = useState<Array<{ id: string; stageName: string }>>(
-    []
+  const [casts, setCasts] = useState<
+    Array<{ id: string; stageName: string; staffId?: string }>
+  >([]);
+  const [presentStaffIds, setPresentStaffIds] = useState<Set<string>>(
+    new Set()
   );
+  const [customerBottles, setCustomerBottles] = useState<BottleKeep[]>([]);
+  const [queuedBottleServes, setQueuedBottleServes] = useState<
+    Array<{ bottleKeepId: string; amount: number }>
+  >([]);
   const [nominationTypes, setNominationTypes] = useState<
     Array<{ id: string; display_name: string }>
   >([]);
@@ -64,6 +76,7 @@ export default function ManualEntryPage() {
     // Table.id is string in types
     return tables.find((t) => String(t.id) === idStr);
   }, [tableId, tables]);
+  const [recentTableIds, setRecentTableIds] = useState<string[]>([]);
 
   // Draft autosave & leave guard
   const [dirty, setDirty] = useState(false);
@@ -174,6 +187,30 @@ export default function ManualEntryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Recent tables load
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("recent_tables");
+      if (raw) setRecentTableIds(JSON.parse(raw));
+    } catch {
+      setRecentTableIds([]);
+    }
+  }, []);
+
+  const pushRecentTable = (id: string) => {
+    try {
+      const raw = localStorage.getItem("recent_tables");
+      const ids: string[] = Array.isArray(raw ? JSON.parse(raw) : [])
+        ? JSON.parse(raw || "[]")
+        : [];
+      const next = [id, ...ids.filter((x) => x !== id)].slice(0, 10);
+      localStorage.setItem("recent_tables", JSON.stringify(next));
+      setRecentTableIds(next);
+    } catch {
+      /* ignore */
+    }
+  };
+
   // autosave every 30s
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -233,10 +270,44 @@ export default function ManualEntryPage() {
         ]);
         setTables(ts);
         setProducts(ps);
-        setCasts(cs.data.map((c) => ({ id: c.id, stageName: c.stageName })));
+        setCasts(
+          cs.data.map((c) => ({
+            id: c.id,
+            stageName: c.stageName,
+            staffId: c.staffId,
+          }))
+        );
         setNominationTypes(
           nts.map((t) => ({ id: t.id as string, display_name: t.display_name }))
         );
+        // Fetch today's present staff to sort cast options (本日出勤者を先頭に)
+        try {
+          const supabase = createClient();
+          const today = new Date().toISOString().slice(0, 10);
+          const { data: attendance } = await supabase
+            .from("attendance_records")
+            .select("staff_id")
+            .eq("attendance_date", today)
+            .not("clock_in_at", "is", null)
+            .is("clock_out_at", null);
+          const present = new Set(
+            (attendance || []).map((r: { staff_id: string }) => r.staff_id)
+          );
+          setPresentStaffIds(present);
+          setCasts((prev) => {
+            const next = [...prev];
+            next.sort((a, b) => {
+              const aP = a.staffId ? present.has(a.staffId) : false;
+              const bP = b.staffId ? present.has(b.staffId) : false;
+              if (aP === bP)
+                return a.stageName.localeCompare(b.stageName, "ja");
+              return aP ? -1 : 1;
+            });
+            return next;
+          });
+        } catch {
+          /* ignore attendance sorting */
+        }
       } catch (e) {
         if (process.env.NODE_ENV === "development") console.error(e);
         toast.error("初期データの取得に失敗しました");
@@ -244,7 +315,26 @@ export default function ManualEntryPage() {
     })();
   }, []);
 
-  // 顧客クイック検索（2文字以上で検索）
+  // Load bottle keeps when customer changes
+  useEffect(() => {
+    (async () => {
+      if (!customerId) {
+        setCustomerBottles([]);
+        return;
+      }
+      try {
+        const bottles = await BottleKeepService.getBottleKeeps(
+          undefined,
+          customerId
+        );
+        setCustomerBottles(bottles.filter((b) => b.status === "active"));
+      } catch {
+        setCustomerBottles([]);
+      }
+    })();
+  }, [customerId]);
+
+  // 顧客クイック検索（2文字以上で検索）: 最適化RPCを使用し、名前/ふりがな/電話末尾/ID/コード等も対象
   useEffect(() => {
     const q = customerQuery.trim();
     if (q.length < 2) {
@@ -255,25 +345,17 @@ export default function ManualEntryPage() {
     let active = true;
     (async () => {
       try {
-        // name / name_kana / phone_number を横断検索
-        const { data, error } = await supabase
-          .from("customers")
-          .select("id, name, name_kana, phone_number")
-          .or(
-            `name.ilike.%${q}%,name_kana.ilike.%${q}%,phone_number.ilike.%${q}%`
-          )
-          .order("updated_at", { ascending: false })
-          .limit(20);
+        const results = await customerService.searchCustomers(supabase, {
+          query: q,
+          limit: 20,
+          offset: 0,
+        });
         if (!active) return;
-        if (error) {
-          setCustomerOptions([]);
-          return;
-        }
         setCustomerOptions(
-          (data || []).map((c) => ({
-            id: c.id as string,
-            name: c.name as string,
-            phone: (c as any).phone_number as string | null,
+          (results || []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phoneNumber || null,
           }))
         );
       } catch {
@@ -303,10 +385,15 @@ export default function ManualEntryPage() {
   }, [items, productMap]);
 
   // 予想サービス料・税額・合計（必要に応じて計算式を調整）
-  const estimatedService = useMemo(() => 0, []);
+  const [serviceRate, setServiceRate] = useState<number>(0);
+  const [taxRate, setTaxRate] = useState<number>(10);
+  const estimatedService = useMemo(
+    () => Math.floor(estimatedSubtotal * (serviceRate / 100)),
+    [estimatedSubtotal, serviceRate]
+  );
   const estimatedTax = useMemo(
-    () => Math.floor((estimatedSubtotal + estimatedService) * 0.1),
-    [estimatedSubtotal, estimatedService]
+    () => Math.floor((estimatedSubtotal + estimatedService) * (taxRate / 100)),
+    [estimatedSubtotal, estimatedService, taxRate]
   );
   const estimatedTotal = useMemo(
     () => estimatedSubtotal + estimatedService + estimatedTax,
@@ -339,6 +426,22 @@ export default function ManualEntryPage() {
   >("search");
   const [popularIds, setPopularIds] = useState<number[]>([]);
   const [recentIds, setRecentIds] = useState<number[]>([]);
+  const [receiptRequested, setReceiptRequested] = useState<boolean>(false);
+  const [receiptName, setReceiptName] = useState<string>("");
+  const [lastItems, setLastItems] = useState<
+    Array<{
+      productId?: string | number;
+      quantity?: number;
+      unitPrice?: number;
+    }>
+  >([]);
+  const [lastEngagements, setLastEngagements] = useState<
+    Array<{
+      castId: string;
+      role: "primary" | "inhouse" | "help" | "douhan" | "after";
+      nominationTypeId?: string;
+    }>
+  >([]);
 
   useEffect(() => {
     void (async () => {
@@ -426,6 +529,20 @@ export default function ManualEntryPage() {
     ]);
     pushRecent(hit.id);
     setQuickInput("");
+  };
+
+  // Bottle keep serve queue helpers
+  const toggleQueueBottleServe = (bottleKeepId: string, amount: number) => {
+    setQueuedBottleServes((prev) => {
+      const exists = prev.find(
+        (q) => q.bottleKeepId === bottleKeepId && q.amount === amount
+      );
+      if (exists)
+        return prev.filter(
+          (q) => !(q.bottleKeepId === bottleKeepId && q.amount === amount)
+        );
+      return [...prev, { bottleKeepId, amount }];
+    });
   };
 
   // Undo for row deletion
@@ -540,7 +657,23 @@ export default function ManualEntryPage() {
         );
       }
 
-      // 4)（任意）即時精算（チェックアウト）
+      // 4) キープからの出庫反映（任意）
+      if (queuedBottleServes.length > 0) {
+        try {
+          for (const q of queuedBottleServes) {
+            await BottleKeepService.serveBottle({
+              bottle_keep_id: q.bottleKeepId,
+              visit_id: visit.id,
+              served_amount: q.amount,
+            });
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === "development") console.error(e);
+          toast.error("ボトル出庫の反映に失敗しました");
+        }
+      }
+
+      // 5)（任意）即時精算（チェックアウト）
       if (markCompleted) {
         if (paymentMethod === "mixed") {
           if (mixedCash + mixedCard !== estimatedTotal) {
@@ -553,7 +686,15 @@ export default function ManualEntryPage() {
           await billingService.processPayment(visit.id, {
             method: paymentMethod,
             amount: 0,
-            notes: note || undefined,
+            notes:
+              [
+                note || "",
+                receiptRequested ? `領収書発行:${receiptName || "あり"}` : "",
+                serviceRate ? `サ料:${serviceRate}%` : "",
+                taxRate !== 10 ? `税率:${taxRate}%` : "",
+              ]
+                .filter(Boolean)
+                .join(" | ") || undefined,
           });
         } catch (e) {
           if (process.env.NODE_ENV === "development") console.error(e);
@@ -563,13 +704,28 @@ export default function ManualEntryPage() {
       }
 
       toast.success("手入力の登録が完了しました");
-      // フォーム初期化
+      // フォーム初期化（前回明細の復元を可能にするため退避）
+      setLastItems(
+        items.map((r) => ({
+          productId: r.productId,
+          quantity: r.quantity,
+          unitPrice: r.unitPrice,
+        }))
+      );
+      setLastEngagements(
+        engagements.map((e) => ({
+          castId: e.castId,
+          role: e.role,
+          nominationTypeId: e.nominationTypeId,
+        }))
+      );
       setItems([{ productId: "", quantity: 1 }]);
       setEngagements([{ castId: "", role: "inhouse" }]);
       setNote("");
       setExternalSlipId("");
       setMixedCash(0);
       setMixedCard(0);
+      setQueuedBottleServes([]);
     } catch (e) {
       if (process.env.NODE_ENV === "development") console.error(e);
       toast.error("登録に失敗しました");
@@ -616,15 +772,75 @@ export default function ManualEntryPage() {
                     onChange={(e) => setVisitTime(e.target.value)}
                     className="mt-1 w-full border rounded px-3 py-2 text-sm"
                   />
+                  {/* Quick time suggestions */}
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                    {(() => {
+                      const now = new Date();
+                      const minutes = now.getMinutes();
+                      const rounded = new Date(now);
+                      rounded.setMinutes(Math.floor(minutes / 15) * 15, 0, 0);
+                      const format = (d: Date) => d.toISOString().slice(11, 16);
+                      const opts: string[] = [
+                        format(rounded),
+                        format(new Date(rounded.getTime() - 15 * 60000)),
+                        format(new Date(rounded.getTime() + 15 * 60000)),
+                      ];
+                      const last = (() => {
+                        try {
+                          const raw = localStorage.getItem("last_visit_time");
+                          return raw || null;
+                        } catch {
+                          return null;
+                        }
+                      })();
+                      const unique = Array.from(
+                        new Set([...(last ? [last] : []), ...opts])
+                      );
+                      return unique.map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          className="px-2 py-1 border rounded hover:bg-gray-50"
+                          onClick={() => setVisitTime(t)}
+                        >
+                          {t}
+                        </button>
+                      ));
+                    })()}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     テーブル
                   </label>
+                  {/* Recent table suggestions */}
+                  {recentTableIds.length > 0 && (
+                    <div className="mt-1 mb-1 flex flex-wrap gap-2 text-xs">
+                      {recentTableIds
+                        .map((id) =>
+                          tables.find((t) => String(t.id) === String(id))
+                        )
+                        .filter(Boolean)
+                        .slice(0, 6)
+                        .map((t) => (
+                          <button
+                            key={`rt-${(t as Table).id}`}
+                            type="button"
+                            className="px-2 py-1 border rounded hover:bg-gray-50"
+                            onClick={() => setTableId(String((t as Table).id))}
+                          >
+                            {(t as Table).tableName}
+                          </button>
+                        ))}
+                    </div>
+                  )}
                   <select
                     id="table-select"
                     value={tableId}
-                    onChange={(e) => setTableId(e.target.value)}
+                    onChange={(e) => {
+                      setTableId(e.target.value);
+                      if (e.target.value) pushRecentTable(e.target.value);
+                    }}
                     className="mt-1 w-full border rounded px-3 py-2 text-sm"
                   >
                     <option value="">選択してください</option>
@@ -722,6 +938,50 @@ export default function ManualEntryPage() {
                       >
                         クリア
                       </button>
+                    </div>
+                  )}
+                  {customerId && customerBottles.length > 0 && (
+                    <div className="mt-3 border rounded p-2 bg-gray-50">
+                      <div className="text-xs text-gray-700 mb-1 flex items-center justify-between">
+                        <span>キープボトル（出庫可）</span>
+                        {queuedBottleServes.length > 0 && (
+                          <button
+                            type="button"
+                            className="text-[11px] text-indigo-600 hover:underline"
+                            onClick={() => setQueuedBottleServes([])}
+                          >
+                            選択解除
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {customerBottles.slice(0, 6).map((b) => {
+                          const selected = queuedBottleServes.some(
+                            (q) => q.bottleKeepId === b.id
+                          );
+                          return (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => toggleQueueBottleServe(b.id, 10)}
+                              className={`px-2 py-1 rounded border text-xs ${
+                                selected
+                                  ? "bg-indigo-600 text-white border-indigo-600"
+                                  : "bg-white hover:bg-gray-100"
+                              }`}
+                              title={`${b.product?.name || "ボトル"} 残量:${b.remaining_percentage}%`}
+                            >
+                              {(b.product?.name || "ボトル").slice(0, 8)}
+                              <span className="ml-1 text-[10px] text-gray-500">
+                                {b.remaining_percentage}%
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-1">
+                        クリックで「出庫10%」をトグル。登録時にまとめて反映します。
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1282,6 +1542,69 @@ export default function ManualEntryPage() {
                   チェックのON/OFFはいつでも変更できます。
                 </div>
               </div>
+              {/* 税・サ料設定、領収書オプション */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    サービス料（%）
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    value={serviceRate}
+                    onChange={(e) =>
+                      setServiceRate(
+                        Math.max(0, Math.min(30, Number(e.target.value || 0)))
+                      )
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    税率（%）
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={taxRate}
+                    onChange={(e) =>
+                      setTaxRate(
+                        Math.max(0, Math.min(20, Number(e.target.value || 0)))
+                      )
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2 mt-6">
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={receiptRequested}
+                      onChange={(e) => setReceiptRequested(e.target.checked)}
+                    />
+                    領収書/レシートを発行する
+                  </label>
+                </div>
+              </div>
+              {receiptRequested && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      宛名（任意）
+                    </label>
+                    <input
+                      type="text"
+                      value={receiptName}
+                      onChange={(e) => setReceiptName(e.target.value)}
+                      className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                      placeholder="例: 株式会社〇〇 御中"
+                    />
+                  </div>
+                </div>
+              )}
               {markCompleted && paymentMethod === "mixed" && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1366,11 +1689,13 @@ export default function ManualEntryPage() {
                   {estimatedSubtotal.toLocaleString()}
                 </li>
                 <li>
-                  <span className="text-gray-500">サービス料:</span> ¥
-                  {estimatedService.toLocaleString()}
+                  <span className="text-gray-500">
+                    サービス料 ({serviceRate}%):
+                  </span>{" "}
+                  ¥{estimatedService.toLocaleString()}
                 </li>
                 <li>
-                  <span className="text-gray-500">税額（10%）:</span> ¥
+                  <span className="text-gray-500">税額（{taxRate}%）:</span> ¥
                   {estimatedTax.toLocaleString()}
                 </li>
                 <li>
@@ -1389,6 +1714,39 @@ export default function ManualEntryPage() {
               >
                 {submitting ? "登録中..." : "登録する"}
               </button>
+              {lastItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setItems(
+                      lastItems.map((r) => ({
+                        productId:
+                          r.productId === "" || r.productId === undefined
+                            ? ""
+                            : Number(r.productId),
+                        quantity: r.quantity ?? 1,
+                        unitPrice: r.unitPrice,
+                      }))
+                    );
+                    setEngagements(
+                      lastEngagements.length > 0
+                        ? lastEngagements.map((e) => ({
+                            castId: e.castId,
+                            role: e.role,
+                            nominationTypeId: e.nominationTypeId,
+                          }))
+                        : [{ castId: "", role: "inhouse" }]
+                    );
+                    setLastItems([]);
+                    setLastEngagements([]);
+                    setTimeout(() => productRefs.current[0]?.focus(), 0);
+                    toast.success("前回の明細を復元しました");
+                  }}
+                  className="mt-2 w-full px-5 py-2 border rounded text-sm hover:bg-gray-50"
+                >
+                  同じ明細で続けて入力
+                </button>
+              )}
               {markCompleted && paymentMethod === "mixed" && (
                 <div className="mt-2 text-xs text-gray-600">
                   内訳: 現金 ¥{mixedCash.toLocaleString()} / カード ¥

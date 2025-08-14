@@ -19,6 +19,8 @@ import { toast } from "react-hot-toast";
 import { ProductFormModal } from "../components/ProductFormModal";
 import { InventoryMovementModal } from "../components/InventoryMovementModal";
 import { getInventoryPageData } from "@/app/actions/inventory.actions";
+import { getInventoryMovements } from "@/app/actions/inventory.actions";
+import { Modal } from "@/components/ui/Modal";
 
 interface InventoryClientProps {
   initialData: {
@@ -49,6 +51,9 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const [total, setTotal] = useState<number>(
     initialData.totalCount ?? initialData.products.length
   );
+  const [showHistoryFor, setShowHistoryFor] = useState<Product | null>(null);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // デバウンス処理
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -94,6 +99,20 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const handleAddMovement = (product: Product) => {
     setSelectedProduct(product);
     setShowMovementForm(true);
+  };
+
+  const handleOpenHistory = async (product: Product) => {
+    setShowHistoryFor(product);
+    setHistoryLoading(true);
+    try {
+      const res = await getInventoryMovements({ productId: product.id });
+      if (res.success) setHistoryItems(res.data || []);
+      else setHistoryItems([]);
+    } catch {
+      setHistoryItems([]);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const handleCloseModals = () => {
@@ -362,6 +381,12 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
                         >
                           在庫調整
                         </button>
+                        <button
+                          onClick={() => handleOpenHistory(product)}
+                          className="text-gray-700 hover:text-gray-900"
+                        >
+                          履歴
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -386,6 +411,49 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
           product={selectedProduct}
           onClose={handleCloseModals}
         />
+      )}
+
+      {showHistoryFor && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowHistoryFor(null)}
+          title={`在庫移動履歴: ${showHistoryFor.name}`}
+        >
+          {historyLoading ? (
+            <div className="py-8 text-center text-sm text-gray-500">
+              読み込み中...
+            </div>
+          ) : historyItems.length === 0 ? (
+            <div className="py-8 text-center text-sm text-gray-500">
+              履歴がありません
+            </div>
+          ) : (
+            <div className="max-h-[60vh] overflow-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left">日時</th>
+                    <th className="px-4 py-2 text-left">区分</th>
+                    <th className="px-4 py-2 text-right">数量</th>
+                    <th className="px-4 py-2 text-left">理由</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {historyItems.map((m, i) => (
+                    <tr key={i}>
+                      <td className="px-4 py-2">
+                        {new Date(m.created_at).toLocaleString("ja-JP")}
+                      </td>
+                      <td className="px-4 py-2">{m.movement_type}</td>
+                      <td className="px-4 py-2 text-right">{m.quantity}</td>
+                      <td className="px-4 py-2">{m.reason || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Modal>
       )}
     </div>
   );
