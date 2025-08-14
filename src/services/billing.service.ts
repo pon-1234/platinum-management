@@ -892,6 +892,66 @@ export class BillingService extends BaseService {
     return updatedVisit;
   }
 
+  /**
+   * Mark visit as cancelled and free table occupancy.
+   */
+  async cancelVisit(visitId: string): Promise<void> {
+    // Update visit status
+    await this.updateVisit(visitId, {
+      status: "cancelled",
+      checkOutAt: new Date().toISOString(),
+    });
+
+    // Close active segments and free table occupancy
+    try {
+      let endSegQuery = this.supabase
+        .from("visit_table_segments")
+        .update({ ended_at: new Date().toISOString() })
+        .eq("visit_id", visitId);
+      endSegQuery = this.applyWhereNull(endSegQuery, "ended_at");
+      await endSegQuery;
+
+      await this.supabase
+        .from("tables")
+        .update({ current_status: "available", current_visit_id: null })
+        .eq("current_visit_id", visitId);
+    } catch (e) {
+      logger.warn(
+        "Failed to finalize segments/table on cancel",
+        "BillingService",
+        { visitId }
+      );
+    }
+  }
+
+  /**
+   * Danger: Hard delete a visit and related data.
+   */
+  async deleteVisit(visitId: string): Promise<void> {
+    // Delete order items
+    await this.supabase.from("order_items").delete().eq("visit_id", visitId);
+    // End and delete cast engagements
+    await this.supabase
+      .from("cast_engagements")
+      .delete()
+      .eq("visit_id", visitId);
+    // Close and delete table segments
+    await this.supabase
+      .from("visit_table_segments")
+      .update({ ended_at: new Date().toISOString() })
+      .eq("visit_id", visitId);
+    await this.supabase
+      .from("tables")
+      .update({ current_status: "available", current_visit_id: null })
+      .eq("current_visit_id", visitId);
+    await this.supabase
+      .from("visit_table_segments")
+      .delete()
+      .eq("visit_id", visitId);
+    // Finally delete visit
+    await this.supabase.from("visits").delete().eq("id", visitId);
+  }
+
   // ============= REPORTS =============
 
   async generateDailyReport(date: string): Promise<DailyReport> {

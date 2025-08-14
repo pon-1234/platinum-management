@@ -318,7 +318,7 @@ export default function BillingPage() {
                               ? `¥${v.totalAmount.toLocaleString()}`
                               : "-"}
                           </td>
-                          <td className="px-4 py-2 text-right">
+                          <td className="px-4 py-2 text-right space-x-3">
                             <button
                               className="text-indigo-600 hover:text-indigo-800"
                               onClick={async () => {
@@ -344,6 +344,44 @@ export default function BillingPage() {
                               }}
                             >
                               詳細
+                            </button>
+                            <button
+                              className="text-yellow-700 hover:text-yellow-900"
+                              onClick={async () => {
+                                if (
+                                  !confirm("この来店をキャンセルにしますか？")
+                                )
+                                  return;
+                                try {
+                                  await billingService.cancelVisit(v.id);
+                                  toast.success("キャンセルしました");
+                                  loadBillingData();
+                                } catch {
+                                  toast.error("キャンセルに失敗しました");
+                                }
+                              }}
+                            >
+                              キャンセル
+                            </button>
+                            <button
+                              className="text-red-600 hover:text-red-800"
+                              onClick={async () => {
+                                if (
+                                  !confirm(
+                                    "この来店を完全に削除します。元に戻せません。続行しますか？"
+                                  )
+                                )
+                                  return;
+                                try {
+                                  await billingService.deleteVisit(v.id);
+                                  toast.success("削除しました");
+                                  loadBillingData();
+                                } catch {
+                                  toast.error("削除に失敗しました");
+                                }
+                              }}
+                            >
+                              削除
                             </button>
                           </td>
                         </tr>
