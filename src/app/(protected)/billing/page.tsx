@@ -33,6 +33,11 @@ export default function BillingPage() {
   const [dayVisitsLoading, setDayVisitsLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailVisit, setDetailVisit] = useState<VisitWithDetails | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editTableId, setEditTableId] = useState<number | "">("");
+  const [editNumGuests, setEditNumGuests] = useState<number>(1);
+  const [editCheckIn, setEditCheckIn] = useState<string>("");
+  const [editCheckOut, setEditCheckOut] = useState<string>("");
   // Backoffice delegated checkout (by session id)
   const [delegateOpen, setDelegateOpen] = useReactState(false);
   const [delegateVisitId, setDelegateVisitId] = useReactState("");
@@ -322,7 +327,16 @@ export default function BillingPage() {
                                     await billingService.getVisitWithDetails(
                                       v.id
                                     );
+                                  if (!detail) {
+                                    toast.error("対象の来店が見つかりません");
+                                    return;
+                                  }
                                   setDetailVisit(detail);
+                                  setEditing(false);
+                                  setEditTableId(detail.tableId || "");
+                                  setEditNumGuests(detail.numGuests || 1);
+                                  setEditCheckIn(detail.checkInAt);
+                                  setEditCheckOut(detail.checkOutAt || "");
                                   setDetailOpen(true);
                                 } catch {
                                   toast.error("詳細の取得に失敗しました");
@@ -698,6 +712,15 @@ export default function BillingPage() {
           </div>
         ) : (
           <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <div className="font-medium">基本情報</div>
+              <button
+                className="text-indigo-600 hover:text-indigo-800"
+                onClick={() => setEditing((e) => !e)}
+              >
+                {editing ? "編集をやめる" : "編集"}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <div className="text-gray-500">顧客</div>
@@ -705,25 +728,143 @@ export default function BillingPage() {
               </div>
               <div>
                 <div className="text-gray-500">テーブル</div>
-                <div>{detailVisit.tableId ?? "-"}</div>
+                {editing ? (
+                  <input
+                    type="number"
+                    className="w-full border rounded px-2 py-1"
+                    value={editTableId === "" ? "" : String(editTableId)}
+                    onChange={(e) =>
+                      setEditTableId(
+                        e.target.value ? Number(e.target.value) : ""
+                      )
+                    }
+                  />
+                ) : (
+                  <div>{detailVisit.tableId ?? "-"}</div>
+                )}
               </div>
               <div>
                 <div className="text-gray-500">時間</div>
                 <div>
-                  {new Date(detailVisit.checkInAt).toLocaleString("ja-JP")}
-                  {detailVisit.checkOutAt && (
+                  {editing ? (
+                    <div className="grid grid-cols-1 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-500">
+                          チェックイン
+                        </label>
+                        <input
+                          type="datetime-local"
+                          className="w-full border rounded px-2 py-1"
+                          value={editCheckIn.slice(0, 16)}
+                          onChange={(e) =>
+                            setEditCheckIn(
+                              new Date(e.target.value).toISOString()
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">
+                          チェックアウト（任意）
+                        </label>
+                        <input
+                          type="datetime-local"
+                          className="w-full border rounded px-2 py-1"
+                          value={editCheckOut ? editCheckOut.slice(0, 16) : ""}
+                          onChange={(e) =>
+                            setEditCheckOut(
+                              e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : ""
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ) : (
                     <>
-                      <span> 〜 </span>
-                      {new Date(detailVisit.checkOutAt).toLocaleString("ja-JP")}
+                      {new Date(detailVisit.checkInAt).toLocaleString("ja-JP")}
+                      {detailVisit.checkOutAt && (
+                        <>
+                          <span> 〜 </span>
+                          {new Date(detailVisit.checkOutAt).toLocaleString(
+                            "ja-JP"
+                          )}
+                        </>
+                      )}
                     </>
                   )}
                 </div>
               </div>
               <div>
                 <div className="text-gray-500">人数</div>
-                <div>{detailVisit.numGuests}名</div>
+                {editing ? (
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full border rounded px-2 py-1"
+                    value={editNumGuests}
+                    onChange={(e) =>
+                      setEditNumGuests(Math.max(1, Number(e.target.value || 1)))
+                    }
+                  />
+                ) : (
+                  <div>{detailVisit.numGuests}名</div>
+                )}
               </div>
             </div>
+            {editing && (
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  className="px-3 py-1.5 border rounded"
+                  onClick={() => {
+                    setEditing(false);
+                    setEditTableId(detailVisit.tableId || "");
+                    setEditNumGuests(detailVisit.numGuests || 1);
+                    setEditCheckIn(detailVisit.checkInAt);
+                    setEditCheckOut(detailVisit.checkOutAt || "");
+                  }}
+                >
+                  取消
+                </button>
+                <button
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded"
+                  onClick={async () => {
+                    try {
+                      await billingService.updateVisit(detailVisit.id, {
+                        tableId:
+                          editTableId === "" ? undefined : Number(editTableId),
+                        numGuests: editNumGuests,
+                        // 型整合のため、チェックイン/アウトはnotesに追記で暫定保存（DBに専用カラムがない環境向け）
+                        notes: [
+                          detailVisit.notes || "",
+                          `checkInAt:${editCheckIn}`,
+                          editCheckOut ? `checkOutAt:${editCheckOut}` : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" | "),
+                      });
+                      const refreshed =
+                        await billingService.getVisitWithDetails(
+                          detailVisit.id
+                        );
+                      setDetailVisit(refreshed);
+                      setEditing(false);
+                      const visitsOfDay = await billingService.searchVisits({
+                        startDate: `${selectedDate}T00:00:00.000Z`,
+                        endDate: `${selectedDate}T23:59:59.999Z`,
+                      });
+                      setDayVisits(visitsOfDay);
+                      toast.success("更新しました");
+                    } catch (e) {
+                      toast.error("更新に失敗しました");
+                    }
+                  }}
+                >
+                  保存
+                </button>
+              </div>
+            )}
             <div>
               <div className="text-gray-500 mb-1">注文明細</div>
               <ul className="divide-y divide-gray-100">
