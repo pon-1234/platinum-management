@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { billingService } from "@/services/billing.service";
+import { VisitSessionService } from "@/services/visit-session.service";
+import { castService } from "@/services/cast.service";
+import { NominationTypeService } from "@/services/nomination-type.service";
 import type { Visit, DailyReport } from "@/types/billing.types";
 import {
   CalendarIcon,
@@ -38,6 +41,24 @@ export default function BillingPage() {
   const [editNumGuests, setEditNumGuests] = useState<number>(1);
   const [editCheckIn, setEditCheckIn] = useState<string>("");
   const [editCheckOut, setEditCheckOut] = useState<string>("");
+  // Order items editing state
+  const [editOrderItems, setEditOrderItems] = useState<
+    Record<number, { quantity: number; unitPrice: number; notes?: string }>
+  >({});
+  // Engagements state
+  const [engagements, setEngagements] = useState<Array<any>>([]);
+  const [engagementLoading, setEngagementLoading] = useState(false);
+  const [allCasts, setAllCasts] = useState<
+    Array<{ id: string; stageName: string }>
+  >([]);
+  const [nominationTypes, setNominationTypes] = useState<
+    Array<{ id: string; display_name: string }>
+  >([]);
+  const [newEngagement, setNewEngagement] = useState<{
+    castId: string;
+    role: "primary" | "inhouse" | "help" | "douhan" | "after";
+    nominationTypeId?: string;
+  }>({ castId: "", role: "inhouse" });
   // Backoffice delegated checkout (by session id)
   const [delegateOpen, setDelegateOpen] = useReactState(false);
   const [delegateVisitId, setDelegateVisitId] = useReactState("");
@@ -337,6 +358,54 @@ export default function BillingPage() {
                                   setEditNumGuests(detail.numGuests || 1);
                                   setEditCheckIn(detail.checkInAt);
                                   setEditCheckOut(detail.checkOutAt || "");
+                                  // Prepare order items edit buffer
+                                  const mapped: Record<
+                                    number,
+                                    {
+                                      quantity: number;
+                                      unitPrice: number;
+                                      notes?: string;
+                                    }
+                                  > = {};
+                                  (detail.orderItems || []).forEach((oi) => {
+                                    mapped[oi.id] = {
+                                      quantity: oi.quantity,
+                                      unitPrice: oi.unitPrice,
+                                      notes: oi.notes || undefined,
+                                    };
+                                  });
+                                  setEditOrderItems(mapped);
+                                  // Load engagements
+                                  setEngagementLoading(true);
+                                  try {
+                                    const session =
+                                      await VisitSessionService.getSessionDetails(
+                                        detail.id
+                                      );
+                                    setEngagements(
+                                      session?.cast_engagements || []
+                                    );
+                                    const [castsRes, types] = await Promise.all(
+                                      [
+                                        castService.getAllCasts(1, 200),
+                                        NominationTypeService.getAllNominationTypes(),
+                                      ]
+                                    );
+                                    setAllCasts(
+                                      castsRes.data.map((c) => ({
+                                        id: c.id,
+                                        stageName: c.stageName,
+                                      }))
+                                    );
+                                    setNominationTypes(
+                                      types.map((t) => ({
+                                        id: t.id as string,
+                                        display_name: t.display_name,
+                                      }))
+                                    );
+                                  } finally {
+                                    setEngagementLoading(false);
+                                  }
                                   setDetailOpen(true);
                                 } catch {
                                   toast.error("詳細の取得に失敗しました");
@@ -905,20 +974,270 @@ export default function BillingPage() {
             )}
             <div>
               <div className="text-gray-500 mb-1">注文明細</div>
-              <ul className="divide-y divide-gray-100">
+              <div className="space-y-2">
                 {(detailVisit.orderItems || []).map((oi) => (
-                  <li key={oi.id} className="py-1 flex justify-between">
-                    <span>
-                      {oi.product?.name ?? oi.productId} × {oi.quantity}
-                    </span>
-                    <span>¥{oi.totalPrice.toLocaleString()}</span>
-                  </li>
+                  <div
+                    key={oi.id}
+                    className="grid grid-cols-12 gap-2 items-center py-1 border-b border-gray-100"
+                  >
+                    <div
+                      className="col-span-4 truncate"
+                      title={oi.product?.name ?? String(oi.productId)}
+                    >
+                      {oi.product?.name ?? oi.productId}
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        min={1}
+                        className="w-full border rounded px-2 py-1 text-right"
+                        value={editOrderItems[oi.id]?.quantity ?? oi.quantity}
+                        onChange={(e) =>
+                          setEditOrderItems((prev) => ({
+                            ...prev,
+                            [oi.id]: {
+                              quantity: Math.max(
+                                1,
+                                Number(e.target.value || 1)
+                              ),
+                              unitPrice: prev[oi.id]?.unitPrice ?? oi.unitPrice,
+                              notes:
+                                (prev[oi.id]?.notes ?? oi.notes) || undefined,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        min={0}
+                        className="w-full border rounded px-2 py-1 text-right"
+                        value={editOrderItems[oi.id]?.unitPrice ?? oi.unitPrice}
+                        onChange={(e) =>
+                          setEditOrderItems((prev) => ({
+                            ...prev,
+                            [oi.id]: {
+                              quantity: prev[oi.id]?.quantity ?? oi.quantity,
+                              unitPrice: Math.max(
+                                0,
+                                Number(e.target.value || 0)
+                              ),
+                              notes:
+                                (prev[oi.id]?.notes ?? oi.notes) || undefined,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="text"
+                        className="w-full border rounded px-2 py-1"
+                        placeholder="備考"
+                        value={editOrderItems[oi.id]?.notes ?? oi.notes ?? ""}
+                        onChange={(e) =>
+                          setEditOrderItems((prev) => ({
+                            ...prev,
+                            [oi.id]: {
+                              quantity: prev[oi.id]?.quantity ?? oi.quantity,
+                              unitPrice: prev[oi.id]?.unitPrice ?? oi.unitPrice,
+                              notes: e.target.value || undefined,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <button
+                        className="px-2 py-1 text-xs border rounded mr-2"
+                        onClick={async () => {
+                          try {
+                            const payload = editOrderItems[oi.id];
+                            if (payload) {
+                              await billingService.updateOrderItem(oi.id, {
+                                quantity: payload.quantity,
+                                unitPrice: payload.unitPrice,
+                                notes: payload.notes,
+                              });
+                              const refreshed =
+                                await billingService.getVisitWithDetails(
+                                  detailVisit.id
+                                );
+                              setDetailVisit(refreshed);
+                              toast.success("明細を更新しました");
+                            }
+                          } catch {
+                            toast.error("明細の更新に失敗しました");
+                          }
+                        }}
+                      >
+                        保存
+                      </button>
+                      <button
+                        className="px-2 py-1 text-xs border rounded text-red-600"
+                        onClick={async () => {
+                          if (!confirm("この明細を削除しますか？")) return;
+                          try {
+                            await billingService.deleteOrderItem(oi.id);
+                            const refreshed =
+                              await billingService.getVisitWithDetails(
+                                detailVisit.id
+                              );
+                            setDetailVisit(refreshed);
+                            toast.success("明細を削除しました");
+                          } catch {
+                            toast.error("明細の削除に失敗しました");
+                          }
+                        }}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
                 ))}
                 {(!detailVisit.orderItems ||
                   detailVisit.orderItems.length === 0) && (
-                  <li className="py-1 text-gray-400">データなし</li>
+                  <div className="py-1 text-gray-400">データなし</div>
                 )}
-              </ul>
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-500 mb-1">指名・着席キャスト</div>
+              {engagementLoading ? (
+                <div className="text-xs text-gray-500">読み込み中...</div>
+              ) : (
+                <div className="space-y-2">
+                  {(engagements || []).map((e) => (
+                    <div
+                      key={e.id}
+                      className="flex items-center justify-between text-sm border-b border-gray-100 py-1"
+                    >
+                      <div className="truncate">
+                        {e.cast?.stage_name || e.cast_id}{" "}
+                        <span className="text-gray-400">/ {e.role}</span>
+                        {e.nomination_type?.display_name && (
+                          <span className="ml-1 text-gray-400">
+                            ({e.nomination_type.display_name})
+                          </span>
+                        )}
+                      </div>
+                      {e.is_active ? (
+                        <button
+                          className="text-xs text-red-600 hover:text-red-700"
+                          onClick={async () => {
+                            try {
+                              await VisitSessionService.endCastEngagement(e.id);
+                              const session =
+                                await VisitSessionService.getSessionDetails(
+                                  detailVisit.id
+                                );
+                              setEngagements(session?.cast_engagements || []);
+                              toast.success("終了しました");
+                            } catch {
+                              toast.error("終了に失敗しました");
+                            }
+                          }}
+                        >
+                          終了
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400">終了</span>
+                      )}
+                    </div>
+                  ))}
+                  <div className="pt-2 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                    <div>
+                      <label className="text-xs text-gray-500">キャスト</label>
+                      <select
+                        className="w-full border rounded px-2 py-1"
+                        value={newEngagement.castId}
+                        onChange={(e) =>
+                          setNewEngagement((p) => ({
+                            ...p,
+                            castId: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">選択</option>
+                        {allCasts.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.stageName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">役割</label>
+                      <select
+                        className="w-full border rounded px-2 py-1"
+                        value={newEngagement.role}
+                        onChange={(e) =>
+                          setNewEngagement((p) => ({
+                            ...p,
+                            role: e.target.value as typeof p.role,
+                          }))
+                        }
+                      >
+                        <option value="primary">本指名</option>
+                        <option value="inhouse">場内指名</option>
+                        <option value="help">ヘルプ</option>
+                        <option value="douhan">同伴</option>
+                        <option value="after">アフター</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">指名種別</label>
+                      <select
+                        className="w-full border rounded px-2 py-1"
+                        value={newEngagement.nominationTypeId || ""}
+                        onChange={(e) =>
+                          setNewEngagement((p) => ({
+                            ...p,
+                            nominationTypeId: e.target.value || undefined,
+                          }))
+                        }
+                      >
+                        <option value="">選択</option>
+                        {nominationTypes.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        className="px-3 py-1.5 text-sm border rounded"
+                        onClick={async () => {
+                          if (!newEngagement.castId) {
+                            toast.error("キャストを選択してください");
+                            return;
+                          }
+                          try {
+                            await VisitSessionService.addCastEngagement(
+                              detailVisit.id,
+                              newEngagement.castId,
+                              newEngagement.role,
+                              newEngagement.nominationTypeId
+                            );
+                            const session =
+                              await VisitSessionService.getSessionDetails(
+                                detailVisit.id
+                              );
+                            setEngagements(session?.cast_engagements || []);
+                            toast.success("指名を追加しました");
+                          } catch {
+                            toast.error("指名の追加に失敗しました");
+                          }
+                        }}
+                      >
+                        追加
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
