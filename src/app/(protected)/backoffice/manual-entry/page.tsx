@@ -287,8 +287,8 @@ export default function ManualEntryPage() {
           const { data: attendance } = await supabase
             .from("attendance_records")
             .select("staff_id")
-            .eq("attendance_date", today)
-            .is("clock_out_at", null);
+            .eq("date", today)
+            .is("clock_out", null);
           const present = new Set(
             (attendance || []).map((r: { staff_id: string }) => r.staff_id)
           );

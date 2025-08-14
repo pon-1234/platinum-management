@@ -29,6 +29,10 @@ export default function BillingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAlreadyClosed, setIsAlreadyClosed] = useState(false);
+  const [dayVisits, setDayVisits] = useState<Visit[]>([]);
+  const [dayVisitsLoading, setDayVisitsLoading] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailVisit, setDetailVisit] = useState<VisitWithDetails | null>(null);
   // Backoffice delegated checkout (by session id)
   const [delegateOpen, setDelegateOpen] = useReactState(false);
   const [delegateVisitId, setDelegateVisitId] = useReactState("");
@@ -59,7 +63,16 @@ export default function BillingPage() {
         await billingService.getDailyClosingStatus(selectedDate);
       setIsAlreadyClosed(closingStatus);
 
-      // Load active visits for today
+      // Load visits for the selected day (all statuses)
+      setDayVisitsLoading(true);
+      const visitsOfDay = await billingService.searchVisits({
+        startDate: `${selectedDate}T00:00:00.000Z`,
+        endDate: `${selectedDate}T23:59:59.999Z`,
+      });
+      setDayVisits(visitsOfDay);
+      setDayVisitsLoading(false);
+
+      // Load active visits for today (separately)
       const today = new Date().toISOString().split("T")[0];
       if (selectedDate === today) {
         const visits = await billingService.searchVisits({
@@ -233,6 +246,101 @@ export default function BillingPage() {
         </div>
       ) : (
         <div className="mt-8 space-y-8">
+          {/* Visits list for selected date */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">
+                選択日の来店一覧
+              </h3>
+              <span className="text-sm text-gray-500">
+                {dayVisitsLoading ? "読み込み中..." : `${dayVisits.length}件`}
+              </span>
+            </div>
+            <div className="px-6 py-4">
+              {dayVisitsLoading ? (
+                <div className="text-sm text-gray-500">読み込み中...</div>
+              ) : dayVisits.length === 0 ? (
+                <div className="text-sm text-gray-500">来店がありません</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left">テーブル</th>
+                        <th className="px-4 py-2 text-left">顧客</th>
+                        <th className="px-4 py-2 text-left">時間</th>
+                        <th className="px-4 py-2 text-left">人数</th>
+                        <th className="px-4 py-2 text-left">ステータス</th>
+                        <th className="px-4 py-2 text-right">合計</th>
+                        <th className="px-4 py-2 text-right">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {dayVisits.map((v) => (
+                        <tr key={v.id}>
+                          <td className="px-4 py-2">{v.tableId ?? "-"}</td>
+                          <td className="px-4 py-2">
+                            {(v as any).customer?.name ?? "-"}
+                          </td>
+                          <td className="px-4 py-2">
+                            {new Date(v.checkInAt).toLocaleTimeString("ja-JP", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                            {v.checkOutAt && (
+                              <>
+                                <span>〜</span>
+                                {new Date(v.checkOutAt).toLocaleTimeString(
+                                  "ja-JP",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">{v.numGuests}名</td>
+                          <td className="px-4 py-2">
+                            {v.status === "active"
+                              ? "滞在中"
+                              : v.status === "completed"
+                                ? "完了"
+                                : "キャンセル"}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {typeof v.totalAmount === "number"
+                              ? `¥${v.totalAmount.toLocaleString()}`
+                              : "-"}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              className="text-indigo-600 hover:text-indigo-800"
+                              onClick={async () => {
+                                try {
+                                  const detail =
+                                    await billingService.getVisitWithDetails(
+                                      v.id
+                                    );
+                                  setDetailVisit(detail);
+                                  setDetailOpen(true);
+                                } catch {
+                                  toast.error("詳細の取得に失敗しました");
+                                }
+                              }}
+                            >
+                              詳細
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Order Ticket Management */}
           <OrderTicketManagement onVisitUpdate={loadBillingData} />
 
@@ -576,6 +684,65 @@ export default function BillingPage() {
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* Visit detail modal */}
+      <Modal
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title="来店詳細"
+      >
+        {!detailVisit ? (
+          <div className="py-8 text-center text-sm text-gray-500">
+            読み込み中...
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-gray-500">顧客</div>
+                <div>{detailVisit.customer?.name ?? "-"}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">テーブル</div>
+                <div>{detailVisit.tableId ?? "-"}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">時間</div>
+                <div>
+                  {new Date(detailVisit.checkInAt).toLocaleString("ja-JP")}
+                  {detailVisit.checkOutAt && (
+                    <>
+                      <span> 〜 </span>
+                      {new Date(detailVisit.checkOutAt).toLocaleString("ja-JP")}
+                    </>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-gray-500">人数</div>
+                <div>{detailVisit.numGuests}名</div>
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-500 mb-1">注文明細</div>
+              <ul className="divide-y divide-gray-100">
+                {(detailVisit.orderItems || []).map((oi) => (
+                  <li key={oi.id} className="py-1 flex justify-between">
+                    <span>
+                      {oi.product?.name ?? oi.productId} × {oi.quantity}
+                    </span>
+                    <span>¥{oi.totalPrice.toLocaleString()}</span>
+                  </li>
+                ))}
+                {(!detailVisit.orderItems ||
+                  detailVisit.orderItems.length === 0) && (
+                  <li className="py-1 text-gray-400">データなし</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
