@@ -288,7 +288,6 @@ export default function ManualEntryPage() {
             .from("attendance_records")
             .select("staff_id")
             .eq("attendance_date", today)
-            .not("clock_in_at", "is", null)
             .is("clock_out_at", null);
           const present = new Set(
             (attendance || []).map((r: { staff_id: string }) => r.staff_id)
