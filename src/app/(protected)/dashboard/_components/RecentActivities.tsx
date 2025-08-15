@@ -214,6 +214,75 @@ function iconFor(type: ActivityType) {
   }
 }
 
+// 読み上げ用の日本語ラベル
+function typeJa(t: ActivityType): string {
+  switch (t) {
+    case "order":
+      return "注文";
+    case "visit":
+      return "来店";
+    case "bottle":
+      return "ボトル";
+    case "inventory":
+      return "在庫";
+    case "system":
+      return "システム";
+    default:
+      return "その他";
+  }
+}
+
+// 表示用タイトルの自然化（例: 「来店 active」→「来店（滞在中）」）
+function prettifyTitle(e: ReturnType<typeof normalize>): string {
+  const raw = e.title ?? "";
+  if (e.type === "visit") {
+    if (/active/i.test(raw)) return "来店（滞在中）";
+    if (/visit/i.test(raw) || /来店/i.test(raw)) return "来店";
+  }
+  return raw;
+}
+
+// 近接重複（30秒）を種類×タイトル×時間バケットで集約
+function collapseDuplicatesBucketed(
+  items: ReturnType<typeof normalize>[],
+  windowMs = 30 * 1000
+) {
+  if (!items || items.length === 0)
+    return [] as Array<ReturnType<typeof normalize> & { count?: number }>;
+  type Group = {
+    base: ReturnType<typeof normalize>;
+    count: number;
+    amount?: number;
+    maxTs: number;
+  };
+  const groups = new Map<string, Group>();
+  for (const i of items) {
+    const bucket = Math.floor(i.ts.getTime() / windowMs);
+    const key = `${i.type}|${i.title}|${bucket}`;
+    const g = groups.get(key);
+    if (g) {
+      g.count += 1;
+      g.maxTs = Math.max(g.maxTs, i.ts.getTime());
+      if (typeof i.amount === "number") g.amount = (g.amount ?? 0) + i.amount;
+    } else {
+      groups.set(key, {
+        base: i,
+        count: 1,
+        amount: typeof i.amount === "number" ? i.amount : undefined,
+        maxTs: i.ts.getTime(),
+      });
+    }
+  }
+  return Array.from(groups.values())
+    .map(({ base, count, amount, maxTs }) => ({
+      ...base,
+      ts: new Date(maxTs),
+      amount: typeof amount === "number" ? amount : base.amount,
+      count: count > 1 ? count : undefined,
+    }))
+    .sort((a, b) => b.ts.getTime() - a.ts.getTime());
+}
+
 export default function RecentActivities({
   events,
   isLoading,
@@ -239,7 +308,7 @@ export default function RecentActivities({
     () =>
       groupByDate(filtered).map(({ date, list }) => ({
         date,
-        list: collapseDuplicates(list),
+        list: collapseDuplicatesBucketed(list),
       })),
     [filtered]
   );
@@ -296,21 +365,43 @@ export default function RecentActivities({
                 day: "numeric",
                 weekday: "short",
               }).format(dateObj);
+              const stats = list.reduce(
+                (acc, x) => {
+                  if (x.type === "order") {
+                    acc.orderCount += 1;
+                    if (typeof x.amount === "number")
+                      acc.orderAmount += x.amount;
+                  }
+                  if (x.type === "visit") {
+                    acc.visitCount += 1;
+                  }
+                  return acc;
+                },
+                { orderCount: 0, orderAmount: 0, visitCount: 0 }
+              );
               return (
                 <div key={date}>
-                  <h4 className="mb-2 text-xs font-medium text-gray-500">
+                  <h4 className="mb-1 text-xs font-medium text-gray-500">
                     {dateLabel}
                   </h4>
+                  <div className="mb-2 flex items-center gap-2 text-[11px] text-gray-600">
+                    <span>
+                      注文 {stats.orderCount}件 /{" "}
+                      {yen.format(stats.orderAmount)}
+                    </span>
+                    <span aria-hidden>・</span>
+                    <span>来店 {stats.visitCount}件</span>
+                  </div>
                   <ul role="list" className="divide-y divide-gray-100">
                     {list.map((e) => (
                       <li key={e.id} className="flex items-center gap-3 py-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-400 ring-8 ring-white">
                           {iconFor(e.type)}
-                          <span className="sr-only">{e.type}</span>
+                          <span className="sr-only">{typeJa(e.type)}</span>
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm text-gray-700">
-                            {e.title}
+                            {prettifyTitle(e)}
                             {typeof e.amount === "number" && (
                               <span className="ml-1 font-medium text-gray-900">
                                 {yen.format(e.amount)}
