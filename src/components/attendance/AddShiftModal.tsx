@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ja } from "date-fns/locale";
 import { attendanceService } from "@/services/attendance.service";
 import { createClient } from "@/lib/supabase/client";
@@ -204,9 +204,11 @@ export function AddShiftModal({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {format(new Date(selectedDate), "yyyy年M月d日(E)", {
-                  locale: ja,
-                })}
+                {(() => {
+                  const d = new Date(selectedDate);
+                  const safe = isValid(d) ? d : new Date();
+                  return format(safe, "yyyy年M月d日(E)", { locale: ja });
+                })()}
               </h3>
               <p className="text-sm text-gray-600">新しいシフトを追加</p>
             </div>
