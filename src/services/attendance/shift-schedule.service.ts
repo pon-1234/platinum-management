@@ -227,7 +227,7 @@ export class ShiftScheduleService extends BaseService {
           *,
           staff:staff_id (
             id,
-            name
+            full_name
           )
         `
         )
@@ -412,13 +412,13 @@ export class ShiftScheduleService extends BaseService {
 
   private mapToConfirmedShift(
     data: Database["public"]["Tables"]["confirmed_shifts"]["Row"] & {
-      staff?: { id: string; name: string } | null;
+      staff?: { id: string; full_name?: string; name?: string } | null;
     }
   ): ConfirmedShift {
     return {
       id: data.id,
       staffId: data.staff_id,
-      staffName: data.staff?.name || undefined,
+      staffName: data.staff?.full_name || data.staff?.name || undefined,
       shiftTemplateId: null,
       shiftRequestId: null,
       date: data.shift_date,
