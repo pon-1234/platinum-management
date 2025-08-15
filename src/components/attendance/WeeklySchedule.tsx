@@ -7,7 +7,7 @@ import {
   PlusIcon,
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
-import { format, addWeeks, subWeeks, startOfWeek } from "date-fns";
+import { format, addWeeks, subWeeks, startOfWeek, isValid } from "date-fns";
 import { ja } from "date-fns/locale";
 import { attendanceService } from "@/services/attendance.service";
 import { ShiftDetailModal } from "./ShiftDetailModal";
@@ -29,7 +29,10 @@ export function WeeklySchedule({
   const [weeklyData, setWeeklyData] = useState<WeeklyScheduleType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-    const start = startOfWeek(new Date(selectedDate), { weekStartsOn: 0 });
+    const base = new Date(selectedDate);
+    const start = isValid(base)
+      ? startOfWeek(base, { weekStartsOn: 0 })
+      : startOfWeek(new Date(), { weekStartsOn: 0 });
     return format(start, "yyyy-MM-dd");
   });
 
@@ -62,10 +65,11 @@ export function WeeklySchedule({
 
   const navigateWeek = (direction: "prev" | "next") => {
     const currentDate = new Date(currentWeekStart);
+    const safeCurrent = isValid(currentDate) ? currentDate : new Date();
     const newDate =
       direction === "prev"
-        ? subWeeks(currentDate, 1)
-        : addWeeks(currentDate, 1);
+        ? subWeeks(safeCurrent, 1)
+        : addWeeks(safeCurrent, 1);
     const newWeekStart = format(
       startOfWeek(newDate, { weekStartsOn: 0 }),
       "yyyy-MM-dd"
@@ -186,15 +190,17 @@ export function WeeklySchedule({
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
               <span className="text-sm font-medium text-gray-900 px-3">
-                {format(new Date(currentWeekStart), "yyyy年M月d日", {
-                  locale: ja,
-                })}
+                {(() => {
+                  const d1 = new Date(currentWeekStart);
+                  const start = isValid(d1) ? d1 : new Date();
+                  return format(start, "yyyy年M月d日", { locale: ja });
+                })()}
                 {""}-{""}
-                {format(
-                  new Date(weeklyData?.weekEnd || currentWeekStart),
-                  "M月d日",
-                  { locale: ja }
-                )}
+                {(() => {
+                  const d2 = new Date(weeklyData?.weekEnd || currentWeekStart);
+                  const end = isValid(d2) ? d2 : new Date(currentWeekStart);
+                  return format(end, "M月d日", { locale: ja });
+                })()}
               </span>
               <button
                 onClick={() => navigateWeek("next")}
@@ -237,7 +243,10 @@ export function WeeklySchedule({
                       : "text-gray-900"
                   }`}
                 >
-                  {format(new Date(day.date), "d")}
+                  {(() => {
+                    const dd = new Date(day.date);
+                    return isValid(dd) ? format(dd, "d") : "-";
+                  })()}
                 </div>
                 <div className="text-xs text-gray-500">
                   {day.totalStaff}人予定
