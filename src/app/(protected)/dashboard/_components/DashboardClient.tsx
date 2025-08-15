@@ -237,6 +237,22 @@ export function DashboardClient({
       <section className="mt-8" role="region" aria-label="来店中とボトルキープ">
         <ActiveVisitsWithBottleKeep />
       </section>
+
+      {/* Alerts & Tasks placeholder (low stock / approvals etc.) */}
+      <section className="mt-8" role="region" aria-label="アラートとタスク">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-gray-500">
+              アラート & タスク
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-gray-500">
+              重要なアラート（在庫下限、期限ボトル、未承認シフトなど）をここに表示します。
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

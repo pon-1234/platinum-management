@@ -3,18 +3,20 @@ import {
   getRecentActivities,
   getHourlySales,
   getKpiTrends,
+  getDashboardAlerts,
 } from "./actions";
 import { DashboardClient } from "./_components/DashboardClient";
 import { DashboardFilterProvider } from "./_components/DashboardFilterProvider";
 
 export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
-  const [statsResult, activitiesResult, salesResult, kpiTrends] =
+  const [statsResult, activitiesResult, salesResult, kpiTrends, alerts] =
     await Promise.all([
       getDashboardStats(),
       getRecentActivities(),
       getHourlySales(),
       getKpiTrends(),
+      getDashboardAlerts(),
     ]);
 
   const error = [
