@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { RecentActivities } from "./RecentActivities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/common";
 const HourlySalesChartLazy = dynamic(
   () =>
     import("./HourlySalesChart").then((m) => ({ default: m.HourlySalesChart })),
@@ -123,7 +124,11 @@ export function DashboardClient({
             <CardTitle className="text-sm text-gray-500">登録顧客数</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div
+              className="text-2xl font-bold"
+              role="status"
+              aria-live="polite"
+            >
               {formatNumber(stats.totalCustomers)}人
             </div>
           </CardContent>
@@ -133,7 +138,11 @@ export function DashboardClient({
             <CardTitle className="text-sm text-gray-500">本日の予約</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div
+              className="text-2xl font-bold"
+              role="status"
+              aria-live="polite"
+            >
               {formatNumber(stats.todayReservations)}件
             </div>
           </CardContent>
@@ -143,7 +152,11 @@ export function DashboardClient({
             <CardTitle className="text-sm text-gray-500">本日の売上</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div
+              className="text-2xl font-bold"
+              role="status"
+              aria-live="polite"
+            >
               {formatCurrency(stats.todaySales)}
             </div>
           </CardContent>
@@ -167,9 +180,22 @@ export function DashboardClient({
           {recentActivities && recentActivities.length > 0 ? (
             <RecentActivities activities={recentActivities} />
           ) : (
-            <div className="bg-white shadow rounded-lg p-5 text-sm text-gray-500">
-              最近の活動はまだありません。
-            </div>
+            <Card>
+              <CardContent>
+                <EmptyState
+                  title="最近の活動はまだありません"
+                  description="予約作成や会計処理を行うと、ここに最新のアクティビティが表示されます。"
+                  action={
+                    <Link
+                      href="/bookings"
+                      className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                      予約を作成
+                    </Link>
+                  }
+                />
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
