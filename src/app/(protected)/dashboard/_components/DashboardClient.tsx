@@ -2,24 +2,21 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { RecentActivities } from "./RecentActivities";
+import RecentActivities from "./RecentActivities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/common";
 import { ActiveVisitsWithBottleKeep } from "@/components/dashboard/ActiveVisitsWithBottleKeep";
-const HourlySalesChartLazy = dynamic(
-  () =>
-    import("./HourlySalesChart").then((m) => ({ default: m.HourlySalesChart })),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        aria-busy="true"
-        aria-label="時間帯別売上を読み込み中"
-        className="h-[300px] w-full animate-pulse rounded-md bg-gray-100"
-      />
-    ),
-  }
-);
+import type { HourlySalesChartProps } from "./HourlySalesChart";
+const HourlySalesChartLazy = dynamic(() => import("./HourlySalesChart"), {
+  ssr: false,
+  loading: () => (
+    <div
+      aria-busy="true"
+      aria-label="時間帯別売上を読み込み中"
+      className="h-[300px] w-full animate-pulse rounded-md bg-gray-100"
+    />
+  ),
+}) as React.ComponentType<HourlySalesChartProps>;
 
 // ... (existing interfaces)
 interface DashboardStats {
@@ -211,13 +208,20 @@ export function DashboardClient({
           <HourlySalesChartLazy
             data={hourlySales.map((p) => ({
               hour: p.hour,
-              amount: p.total_sales,
+              sales: p.total_sales,
             }))}
           />
         </div>
         <div className="lg:col-span-1" role="region" aria-label="最近の活動">
           {recentActivities && recentActivities.length > 0 ? (
-            <RecentActivities activities={recentActivities} />
+            <RecentActivities
+              events={recentActivities.map((a) => ({
+                id: a.id,
+                type: a.activity_type,
+                message: a.details,
+                createdAt: a.created_at,
+              }))}
+            />
           ) : (
             <Card>
               <CardContent>
