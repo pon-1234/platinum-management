@@ -268,7 +268,9 @@ export class InventoryService extends BaseService {
   async getInventoryMovements(
     productId?: number,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    offset?: number,
+    limit?: number
   ): Promise<InventoryMovement[]> {
     try {
       let query = this.supabase
@@ -292,6 +294,13 @@ export class InventoryService extends BaseService {
 
       if (endDate) {
         query = query.lte("created_at", endDate);
+      }
+
+      // Pagination (optional)
+      if (typeof offset === "number" && typeof limit === "number") {
+        query = query.range(offset, offset + limit - 1);
+      } else if (typeof limit === "number") {
+        query = query.limit(limit);
       }
 
       const { data, error } = await query;

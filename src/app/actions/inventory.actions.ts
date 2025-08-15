@@ -116,15 +116,19 @@ const getInventoryMovementsSchema = z.object({
   productId: z.number().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
 });
 
 export const getInventoryMovements = createSafeAction(
   getInventoryMovementsSchema,
-  async ({ productId, startDate, endDate }) => {
+  async ({ productId, startDate, endDate, offset, limit }) => {
     const movements = await inventoryService.getInventoryMovements(
       productId,
       startDate,
-      endDate
+      endDate,
+      offset,
+      limit
     );
     return movements;
   }

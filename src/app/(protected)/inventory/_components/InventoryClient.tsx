@@ -54,6 +54,16 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const [showHistoryFor, setShowHistoryFor] = useState<Product | null>(null);
   const [historyItems, setHistoryItems] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyStart, setHistoryStart] = useState<string>(
+    new Date(new Date().setDate(new Date().getDate() - 30))
+      .toISOString()
+      .slice(0, 10)
+  );
+  const [historyEnd, setHistoryEnd] = useState<string>(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(20);
 
   // デバウンス処理
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -105,7 +115,13 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     setShowHistoryFor(product);
     setHistoryLoading(true);
     try {
-      const res = await getInventoryMovements({ productId: product.id });
+      const res = await getInventoryMovements({
+        productId: product.id,
+        startDate: `${historyStart}T00:00:00.000Z`,
+        endDate: `${historyEnd}T23:59:59.999Z`,
+        offset: (historyPage - 1) * historyPageSize,
+        limit: historyPageSize,
+      });
       if (res.success) setHistoryItems(res.data || []);
       else setHistoryItems([]);
     } catch {
@@ -428,29 +444,183 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
               履歴がありません
             </div>
           ) : (
-            <div className="max-h-[60vh] overflow-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left">日時</th>
-                    <th className="px-4 py-2 text-left">区分</th>
-                    <th className="px-4 py-2 text-right">数量</th>
-                    <th className="px-4 py-2 text-left">理由</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {historyItems.map((m, i) => (
-                    <tr key={i}>
-                      <td className="px-4 py-2">
-                        {new Date(m.created_at).toLocaleString("ja-JP")}
-                      </td>
-                      <td className="px-4 py-2">{m.movement_type}</td>
-                      <td className="px-4 py-2 text-right">{m.quantity}</td>
-                      <td className="px-4 py-2">{m.reason || "-"}</td>
+            <div className="space-y-3">
+              <div className="flex items-end gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500">開始日</label>
+                  <input
+                    type="date"
+                    value={historyStart}
+                    onChange={(e) => setHistoryStart(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500">終了日</label>
+                  <input
+                    type="date"
+                    value={historyEnd}
+                    onChange={(e) => setHistoryEnd(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                </div>
+                <button
+                  className="px-3 py-1.5 text-sm border rounded"
+                  onClick={() => handleOpenHistory(showHistoryFor)}
+                >
+                  適用
+                </button>
+                <button
+                  className="px-3 py-1.5 text-sm border rounded"
+                  onClick={async () => {
+                    // CSV export of current filter
+                    try {
+                      const res = await getInventoryMovements({
+                        productId: showHistoryFor.id,
+                        startDate: `${historyStart}T00:00:00.000Z`,
+                        endDate: `${historyEnd}T23:59:59.999Z`,
+                        // for export, fetch larger chunk
+                        offset: 0,
+                        limit: 1000,
+                      });
+                      const rows = (res.success ? res.data : []) as any[];
+                      const header = [
+                        ["日時", "区分", "数量", "理由"],
+                        ...rows.map((r) => [
+                          new Date(r.created_at).toISOString(),
+                          r.movement_type,
+                          String(r.quantity),
+                          r.reason || "",
+                        ]),
+                      ]
+                        .map((cols) =>
+                          cols
+                            .map((c) =>
+                              /[",\n]/.test(c)
+                                ? `"${String(c).replace(/"/g, '""')}"`
+                                : String(c)
+                            )
+                            .join(",")
+                        )
+                        .join("\n");
+                      const blob = new Blob([header], {
+                        type: "text/csv;charset=utf-8;",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `inventory_history_${showHistoryFor.id}_${historyStart}_${historyEnd}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                >
+                  CSVエクスポート
+                </button>
+              </div>
+
+              <div className="max-h-[50vh] overflow-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left">日時</th>
+                      <th className="px-4 py-2 text-left">区分</th>
+                      <th className="px-4 py-2 text-right">数量</th>
+                      <th className="px-4 py-2 text-left">理由</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {historyItems.map((m, i) => (
+                      <tr key={i}>
+                        <td className="px-4 py-2">
+                          {new Date(m.created_at).toLocaleString("ja-JP")}
+                        </td>
+                        <td className="px-4 py-2">{m.movement_type}</td>
+                        <td className="px-4 py-2 text-right">{m.quantity}</td>
+                        <td className="px-4 py-2">{m.reason || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <div className="text-xs text-gray-500">
+                  ページ: {historyPage}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+                    disabled={historyPage === 1}
+                    onClick={async () => {
+                      setHistoryPage((p) => Math.max(1, p - 1));
+                      setHistoryLoading(true);
+                      const res = await getInventoryMovements({
+                        productId: showHistoryFor.id,
+                        startDate: `${historyStart}T00:00:00.000Z`,
+                        endDate: `${historyEnd}T23:59:59.999Z`,
+                        offset: (historyPage - 2) * historyPageSize,
+                        limit: historyPageSize,
+                      });
+                      setHistoryItems(res.success ? res.data || [] : []);
+                      setHistoryLoading(false);
+                    }}
+                  >
+                    前へ
+                  </button>
+                  <button
+                    className="px-2 py-1 text-sm border rounded"
+                    onClick={async () => {
+                      setHistoryPage((p) => p + 1);
+                      setHistoryLoading(true);
+                      const res = await getInventoryMovements({
+                        productId: showHistoryFor.id,
+                        startDate: `${historyStart}T00:00:00.000Z`,
+                        endDate: `${historyEnd}T23:59:59.999Z`,
+                        offset: historyPage * historyPageSize,
+                        limit: historyPageSize,
+                      });
+                      const data = res.success ? res.data || [] : [];
+                      if (data.length === 0) {
+                        // no more data, rollback page advance
+                        setHistoryPage((p) => Math.max(1, p - 1));
+                      } else {
+                        setHistoryItems(data);
+                      }
+                      setHistoryLoading(false);
+                    }}
+                  >
+                    次へ
+                  </button>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={historyPageSize}
+                    onChange={async (e) => {
+                      const size = Number(e.target.value);
+                      setHistoryPageSize(size);
+                      setHistoryPage(1);
+                      setHistoryLoading(true);
+                      const res = await getInventoryMovements({
+                        productId: showHistoryFor.id,
+                        startDate: `${historyStart}T00:00:00.000Z`,
+                        endDate: `${historyEnd}T23:59:59.999Z`,
+                        offset: 0,
+                        limit: size,
+                      });
+                      setHistoryItems(res.success ? res.data || [] : []);
+                      setHistoryLoading(false);
+                    }}
+                  >
+                    {[10, 20, 50, 100].map((n) => (
+                      <option key={n} value={n}>
+                        {n}/頁
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           )}
         </Modal>
