@@ -102,20 +102,23 @@ export async function getRecentActivities() {
             .limit(5),
         ]);
         const act = [
-          ...(orders.data || []).map((o) => ({
-            type: "order",
+          ...(orders.data || []).map((o, idx) => ({
+            id: `order-${idx}-${o.created_at}`,
+            activity_type: "order",
             created_at: o.created_at,
-            message: `注文明細 ¥${Number(o.total_price || 0).toLocaleString()}`,
+            details: `注文明細 ¥${Number(o.total_price || 0).toLocaleString()}`,
           })),
-          ...(visits.data || []).map((v) => ({
-            type: "visit",
+          ...(visits.data || []).map((v, idx) => ({
+            id: `visit-${idx}-${v.created_at}`,
+            activity_type: "visit",
             created_at: v.created_at,
-            message: `来店 ${v.status}`,
+            details: `来店 ${v.status}`,
           })),
-          ...(reservations.data || []).map((r) => ({
-            type: "reservation",
+          ...(reservations.data || []).map((r, idx) => ({
+            id: `reservation-${idx}-${r.created_at}`,
+            activity_type: "reservation",
             created_at: r.created_at,
-            message: `予約 ${r.status}`,
+            details: `予約 ${r.status}`,
           })),
         ]
           .sort(
