@@ -4,6 +4,7 @@ import {
   getHourlySales,
 } from "./actions";
 import { DashboardClient } from "./_components/DashboardClient";
+import { DashboardFilterProvider } from "./_components/DashboardFilterProvider";
 
 export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
@@ -22,13 +23,15 @@ export default async function DashboardPage() {
     .join(", ");
 
   return (
-    <DashboardClient
-      initialStats={
-        statsResult.success && statsResult.data ? statsResult.data : null
-      }
-      recentActivities={activitiesResult.success ? activitiesResult.data : []}
-      hourlySales={salesResult.success ? salesResult.data : []}
-      error={error || null}
-    />
+    <DashboardFilterProvider>
+      <DashboardClient
+        initialStats={
+          statsResult.success && statsResult.data ? statsResult.data : null
+        }
+        recentActivities={activitiesResult.success ? activitiesResult.data : []}
+        hourlySales={salesResult.success ? salesResult.data : []}
+        error={error || null}
+      />
+    </DashboardFilterProvider>
   );
 }
