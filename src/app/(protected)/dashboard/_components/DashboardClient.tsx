@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { RecentActivities } from "./RecentActivities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/common";
+import { ActiveVisitsWithBottleKeep } from "@/components/dashboard/ActiveVisitsWithBottleKeep";
 const HourlySalesChartLazy = dynamic(
   () =>
     import("./HourlySalesChart").then((m) => ({ default: m.HourlySalesChart })),
@@ -231,6 +232,11 @@ export function DashboardClient({
           )}
         </div>
       </div>
+
+      {/* Active visits and bottle keep panel */}
+      <section className="mt-8" role="region" aria-label="来店中とボトルキープ">
+        <ActiveVisitsWithBottleKeep />
+      </section>
     </div>
   );
 }
