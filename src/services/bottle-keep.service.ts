@@ -84,6 +84,7 @@ export interface ServeBottleInput {
 }
 
 export class BottleKeepService {
+  private static readonly EXPIRY_SOON_DAYS = 30;
   // ボトルキープ一覧取得
   static async getBottleKeeps(
     status?: "active" | "consumed" | "expired" | "removed",
@@ -481,21 +482,100 @@ export class BottleKeepService {
   }> {
     const supabase = createClient();
 
-    const { data, error } = await supabase.rpc("get_bottle_keep_statistics");
+    try {
+      const { data, error } = await supabase.rpc("get_bottle_keep_statistics");
+      if (error) throw error;
+      return (
+        data || {
+          total_active: 0,
+          total_expired: 0,
+          total_consumed: 0,
+          expiring_soon: 0,
+          by_product: [],
+          by_customer: [],
+          recent_serves: [],
+        }
+      );
+    } catch {
+      // Fallback: テーブルから簡易集計
+      const { data: bottles } = await supabase
+        .from("bottle_keeps")
+        .select(
+          "id, status, expiry_date, bottle_number, customer_id, product_id"
+        );
 
-    if (error) throw error;
+      const now = new Date();
+      const soonMs = BottleKeepService.EXPIRY_SOON_DAYS * 24 * 60 * 60 * 1000;
+      let total_active = 0;
+      let total_expired = 0;
+      let total_consumed = 0;
+      let expiring_soon = 0;
 
-    return (
-      data || {
-        total_active: 0,
-        total_expired: 0,
-        total_consumed: 0,
-        expiring_soon: 0,
+      (bottles || []).forEach((b) => {
+        if (b.status === "active") total_active += 1;
+        if (b.status === "expired") total_expired += 1;
+        if (b.status === "consumed") total_consumed += 1;
+        if (b.expiry_date && b.status === "active") {
+          const d = new Date(b.expiry_date as string);
+          const diff = d.getTime() - now.getTime();
+          if (diff > 0 && diff <= soonMs) expiring_soon += 1;
+        }
+      });
+
+      // recent serves
+      const { data: serves } = await supabase
+        .from("bottle_keep_histories")
+        .select("bottle_keep_id, created_at")
+        .eq("action_type", "serve")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      let recent_serves: Array<{
+        bottle_id: string;
+        bottle_number: string;
+        product_name: string;
+        customer_name: string;
+        served_date: string;
+        remaining: number;
+      }> = [];
+
+      if (serves && serves.length) {
+        const ids = Array.from(
+          new Set(serves.map((s) => s.bottle_keep_id as string))
+        );
+        const { data: bkRows } = await supabase
+          .from("bottle_keeps")
+          .select(
+            `id, bottle_number, remaining_percentage, customer:customers(name), product:products(name)`
+          )
+          .in("id", ids);
+        const map = new Map((bkRows || []).map((r: any) => [r.id, r]));
+        recent_serves = (serves || []).map((s: any) => {
+          const r = map.get(s.bottle_keep_id);
+          return {
+            bottle_id: s.bottle_keep_id,
+            bottle_number: r?.bottle_number || "",
+            product_name: r?.product?.name || "",
+            customer_name: r?.customer?.name || "",
+            served_date: s.created_at,
+            remaining:
+              typeof r?.remaining_percentage === "number"
+                ? r.remaining_percentage
+                : 0,
+          };
+        });
+      }
+
+      return {
+        total_active,
+        total_expired,
+        total_consumed,
+        expiring_soon,
         by_product: [],
         by_customer: [],
-        recent_serves: [],
-      }
-    );
+        recent_serves,
+      };
+    }
   }
 
   // 顧客別統計情報取得
