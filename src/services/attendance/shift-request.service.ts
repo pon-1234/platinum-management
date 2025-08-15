@@ -52,7 +52,7 @@ export class ShiftRequestService extends BaseService {
       let query = this.supabase
         .from("shift_requests")
         .select("*")
-        .order("request_date", { ascending: false });
+        .order("requested_date", { ascending: false });
 
       if (params.staffId) {
         query = query.eq("staff_id", params.staffId);
@@ -63,11 +63,11 @@ export class ShiftRequestService extends BaseService {
       }
 
       if (params.startDate) {
-        query = query.gte("request_date", params.startDate);
+        query = query.gte("requested_date", params.startDate);
       }
 
       if (params.endDate) {
-        query = query.lte("request_date", params.endDate);
+        query = query.lte("requested_date", params.endDate);
       }
 
       if (params.limit) {
@@ -183,9 +183,9 @@ export class ShiftRequestService extends BaseService {
   ): ShiftRequest {
     return this.toCamelCase({
       id: data.id,
-      staffId: data.cast_id,
+      staffId: (data as any).staff_id,
       shiftTemplateId: null,
-      requestedDate: data.request_date,
+      requestedDate: (data as any).requested_date,
       startTime: data.start_time,
       endTime: data.end_time,
       status: data.status as "pending" | "approved" | "rejected",
