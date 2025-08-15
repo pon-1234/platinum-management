@@ -62,6 +62,11 @@ interface DashboardClientProps {
   hourlySales: HourlySale[];
   error: string | null;
   kpiTrends?: KpiTrendsData;
+  alerts?: {
+    lowStockCount: number;
+    expiringBottles: number;
+    pendingShifts: number;
+  };
 }
 
 export function DashboardClient({
@@ -70,6 +75,7 @@ export function DashboardClient({
   hourlySales,
   error,
   kpiTrends,
+  alerts,
 }: DashboardClientProps) {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
@@ -238,7 +244,7 @@ export function DashboardClient({
         <ActiveVisitsWithBottleKeep />
       </section>
 
-      {/* Alerts & Tasks placeholder (low stock / approvals etc.) */}
+      {/* Alerts & Tasks */}
       <section className="mt-8" role="region" aria-label="アラートとタスク">
         <Card>
           <CardHeader className="pb-2">
@@ -247,9 +253,43 @@ export function DashboardClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-gray-500">
-              重要なアラート（在庫下限、期限ボトル、未承認シフトなど）をここに表示します。
-            </div>
+            {alerts ? (
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center justify-between">
+                  <span className="text-gray-700">在庫下限</span>
+                  <Link
+                    href="/inventory"
+                    className="text-indigo-600 hover:text-indigo-700"
+                  >
+                    {alerts.lowStockCount} 件を見る
+                  </Link>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span className="text-gray-700">
+                    期限間近ボトル（30日以内）
+                  </span>
+                  <Link
+                    href="/bottle-keep"
+                    className="text-indigo-600 hover:text-indigo-700"
+                  >
+                    {alerts.expiringBottles} 件を見る
+                  </Link>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span className="text-gray-700">未承認シフト（本日）</span>
+                  <Link
+                    href="/attendance"
+                    className="text-indigo-600 hover:text-indigo-700"
+                  >
+                    {alerts.pendingShifts} 件を見る
+                  </Link>
+                </li>
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-500">
+                アラート情報を読み込み中…
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>

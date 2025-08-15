@@ -37,6 +37,7 @@ export default async function DashboardPage() {
         hourlySales={salesResult.success ? salesResult.data : []}
         error={error || null}
         kpiTrends={kpiTrends.success ? (kpiTrends.data as any) : undefined}
+        alerts={alerts.success ? (alerts.data as any) : undefined}
       />
     </DashboardFilterProvider>
   );
