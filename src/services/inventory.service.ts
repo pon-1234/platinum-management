@@ -571,10 +571,10 @@ export class InventoryService extends BaseService {
         p_limit: filter?.limit || 50,
       });
 
-      if (error) {
+      if (error || !data) {
         logger.error(
           "Inventory page data RPC error",
-          error,
+          error || new Error("empty result"),
           "InventoryService"
         );
         // Fallback: 手動で必要なデータを組み立て（RPC未導入/失敗時でもUIを継続）

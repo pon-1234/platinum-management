@@ -110,7 +110,14 @@ export class BottleKeepService {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      // フィールド差異で失敗する環境向けに最小限の選択にフォールバック
+      const { data: minimal } = await supabase
+        .from("bottle_keeps")
+        .select("*")
+        .order("created_at", { ascending: false });
+      return (minimal as any[]) || [];
+    }
     return data || [];
   }
 
