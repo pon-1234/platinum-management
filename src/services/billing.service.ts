@@ -942,23 +942,13 @@ export class BillingService extends BaseService {
 
   async generateDailyReport(date: string): Promise<DailyReport> {
     try {
-      // Use optimized RPC functions to get all report data efficiently
-      const [billingReport, topProducts, topCasts] = await Promise.all([
-        // Get basic billing statistics
-        this.supabase.rpc("generate_daily_billing_report", {
+      // Use optimized RPC function for basic stats (fallbacks below if missing)
+      const billingReport = await this.supabase.rpc(
+        "generate_daily_billing_report",
+        {
           report_date: date,
-        }),
-        // Get top products
-        this.supabase.rpc("get_top_products_with_details", {
-          report_date: date,
-          limit_count: 5,
-        }),
-        // Get top cast performance
-        this.supabase.rpc("get_top_cast_performance", {
-          report_date: date,
-          limit_count: 5,
-        }),
-      ]);
+        }
+      );
 
       if (billingReport.error) {
         logger.logDatabaseError(
@@ -978,38 +968,109 @@ export class BillingService extends BaseService {
 
       const reportData = billingReport.data;
 
+      // Top products: try RPC, then fallback to direct aggregation
+      let topProductsList: Array<{
+        productId: number;
+        productName: string;
+        quantity: number;
+        totalAmount: number;
+      }> = [];
+      const tp = await this.supabase.rpc("get_top_products_with_details", {
+        report_date: date,
+        limit_count: 5,
+      });
+      if (!tp.error && tp.data) {
+        topProductsList = (tp.data as any[]).map((p) => ({
+          productId: Number(p.product_id),
+          productName: p.product_name,
+          quantity: Number(p.quantity_sold),
+          totalAmount: Number(p.revenue),
+        }));
+      } else {
+        // Fallback: aggregate from order_items for the date
+        const start = `${date}T00:00:00.000Z`;
+        const end = `${date}T23:59:59.999Z`;
+        const { data: rows } = await this.supabase
+          .from("order_items")
+          .select(
+            `product_id, quantity, total_price, product:products(name), visit:visits(check_in_at)`
+          )
+          .gte("visit.check_in_at", start)
+          .lte("visit.check_in_at", end);
+        const byProduct = new Map<
+          number,
+          { name: string; qty: number; amt: number }
+        >();
+        (rows || []).forEach((r: any) => {
+          const id = Number(r.product_id);
+          const name = r.product?.name || String(id);
+          const cur = byProduct.get(id) || { name, qty: 0, amt: 0 };
+          cur.qty += Number(r.quantity || 0);
+          cur.amt += Number(r.total_price || 0);
+          byProduct.set(id, cur);
+        });
+        topProductsList = Array.from(byProduct.entries())
+          .map(([id, v]) => ({
+            productId: id,
+            productName: v.name,
+            quantity: v.qty,
+            totalAmount: v.amt,
+          }))
+          .sort((a, b) => b.totalAmount - a.totalAmount)
+          .slice(0, 5);
+      }
+
+      // Top casts: avoid calling missing RPC; aggregate from cast_engagements
+      let topCastsList: Array<{
+        castId: string;
+        castName: string;
+        orderCount: number;
+        totalAmount: number;
+      }> = [];
+      try {
+        const start = `${date}T00:00:00.000Z`;
+        const end = `${date}T23:59:59.999Z`;
+        const { data: rows } = await this.supabase
+          .from("cast_engagements")
+          .select(
+            `cast_id, fee_amount, visit:visits(check_in_at, status), cast:casts_profile(stage_name)`
+          )
+          .gte("visit.check_in_at", start)
+          .lte("visit.check_in_at", end)
+          .eq("visit.status", "completed");
+        const byCast = new Map<
+          string,
+          { name: string; count: number; amt: number }
+        >();
+        (rows || []).forEach((r: any) => {
+          const id = r.cast_id as string;
+          const name = r.cast?.stage_name || id;
+          const cur = byCast.get(id) || { name, count: 0, amt: 0 };
+          cur.count += 1;
+          cur.amt += Number(r.fee_amount || 0);
+          byCast.set(id, cur);
+        });
+        topCastsList = Array.from(byCast.entries())
+          .map(([id, v]) => ({
+            castId: id,
+            castName: v.name,
+            orderCount: v.count,
+            totalAmount: v.amt,
+          }))
+          .sort((a, b) => b.totalAmount - a.totalAmount)
+          .slice(0, 5);
+      } catch (e) {
+        topCastsList = [];
+      }
+
       return {
         date,
         totalVisits: Number(reportData.total_visits) || 0,
         totalSales: Number(reportData.total_sales) || 0,
         totalCash: Number(reportData.cash_sales) || 0,
         totalCard: Number(reportData.card_sales) || 0,
-        topProducts: (topProducts.data || []).map(
-          (p: {
-            product_id: string;
-            product_name: string;
-            quantity_sold: number;
-            revenue: number;
-          }) => ({
-            productId: p.product_id,
-            productName: p.product_name,
-            quantity: Number(p.quantity_sold),
-            totalAmount: Number(p.revenue),
-          })
-        ),
-        topCasts: (topCasts.data || []).map(
-          (c: {
-            cast_id: string;
-            staff_name: string;
-            total_sales: number;
-            visits_attended?: number;
-          }) => ({
-            castId: c.cast_id,
-            castName: c.staff_name,
-            orderCount: Number(c.visits_attended || 0),
-            totalAmount: Number(c.total_sales),
-          })
-        ),
+        topProducts: topProductsList,
+        topCasts: topCastsList,
       };
     } catch (error) {
       logger.error("Failed to generate daily report", error, "BillingService");
