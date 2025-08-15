@@ -2,17 +2,20 @@ import {
   getDashboardStats,
   getRecentActivities,
   getHourlySales,
+  getKpiTrends,
 } from "./actions";
 import { DashboardClient } from "./_components/DashboardClient";
 import { DashboardFilterProvider } from "./_components/DashboardFilterProvider";
 
 export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
-  const [statsResult, activitiesResult, salesResult] = await Promise.all([
-    getDashboardStats(),
-    getRecentActivities(),
-    getHourlySales(),
-  ]);
+  const [statsResult, activitiesResult, salesResult, kpiTrends] =
+    await Promise.all([
+      getDashboardStats(),
+      getRecentActivities(),
+      getHourlySales(),
+      getKpiTrends(),
+    ]);
 
   const error = [
     !statsResult.success && statsResult.error,
@@ -31,6 +34,7 @@ export default async function DashboardPage() {
         recentActivities={activitiesResult.success ? activitiesResult.data : []}
         hourlySales={salesResult.success ? salesResult.data : []}
         error={error || null}
+        // kpiTrends は当面未使用（次段でUIに反映）
       />
     </DashboardFilterProvider>
   );

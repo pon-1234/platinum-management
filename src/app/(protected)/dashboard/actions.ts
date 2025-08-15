@@ -196,3 +196,88 @@ export async function getHourlySales() {
     };
   }
 }
+
+// KPI trends: today vs yesterday and same weekday last week
+export async function getKpiTrends() {
+  try {
+    const supabase = await createClient();
+
+    const startOfDayIso = (d: Date) => {
+      const copy = new Date(d);
+      copy.setUTCHours(0, 0, 0, 0);
+      return copy.toISOString();
+    };
+    const endOfDayIso = (d: Date) => {
+      const copy = new Date(d);
+      copy.setUTCHours(23, 59, 59, 999);
+      return copy.toISOString();
+    };
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(today.getDate() - 7);
+
+    const ranges = {
+      today: { from: startOfDayIso(today), to: endOfDayIso(today) },
+      d1: { from: startOfDayIso(yesterday), to: endOfDayIso(yesterday) },
+      dow: { from: startOfDayIso(lastWeek), to: endOfDayIso(lastWeek) },
+    } as const;
+
+    const fetchSalesSum = async (from: string, to: string) => {
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("total_price, created_at")
+        .gte("created_at", from)
+        .lte("created_at", to);
+      if (error) return 0;
+      return (data || []).reduce(
+        (sum, r: any) => sum + Number(r.total_price || 0),
+        0
+      );
+    };
+
+    const fetchReservationCount = async (from: string, to: string) => {
+      const { count, error } = await supabase
+        .from("reservations")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", from)
+        .lte("created_at", to);
+      if (error) return 0;
+      return Number(count || 0);
+    };
+
+    const [salesToday, salesD1, salesDow, resToday, resD1, resDow] =
+      await Promise.all([
+        fetchSalesSum(ranges.today.from, ranges.today.to),
+        fetchSalesSum(ranges.d1.from, ranges.d1.to),
+        fetchSalesSum(ranges.dow.from, ranges.dow.to),
+        fetchReservationCount(ranges.today.from, ranges.today.to),
+        fetchReservationCount(ranges.d1.from, ranges.d1.to),
+        fetchReservationCount(ranges.dow.from, ranges.dow.to),
+      ]);
+
+    const delta = (current: number, base: number) =>
+      base > 0 ? (current / base - 1) * 100 : null;
+
+    return {
+      success: true,
+      data: {
+        sales: {
+          today: salesToday,
+          d1: delta(salesToday, salesD1),
+          dow: delta(salesToday, salesDow),
+        },
+        reservations: {
+          today: resToday,
+          d1: delta(resToday, resD1),
+          dow: delta(resToday, resDow),
+        },
+      },
+    };
+  } catch (error) {
+    console.error("KPI trends error:", error);
+    return { success: false, error: "KPIトレンドの取得に失敗しました" };
+  }
+}
