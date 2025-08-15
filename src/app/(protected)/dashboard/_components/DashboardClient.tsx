@@ -44,11 +44,23 @@ interface HourlySale {
   total_sales: number;
 }
 
+interface KpiDeltas {
+  today: number;
+  d1: number | null;
+  dow: number | null;
+}
+
+interface KpiTrendsData {
+  sales?: KpiDeltas;
+  reservations?: KpiDeltas;
+}
+
 interface DashboardClientProps {
   initialStats: DashboardStats | null;
   recentActivities: Activity[];
   hourlySales: HourlySale[];
   error: string | null;
+  kpiTrends?: KpiTrendsData;
 }
 
 export function DashboardClient({
@@ -56,6 +68,7 @@ export function DashboardClient({
   recentActivities,
   hourlySales,
   error,
+  kpiTrends,
 }: DashboardClientProps) {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
@@ -63,6 +76,17 @@ export function DashboardClient({
 
   const formatCurrency = (amount: number) => {
     return `¥${amount.toLocaleString()}`;
+  };
+
+  const renderDelta = (delta?: number | null, label?: string) => {
+    if (delta == null) return null;
+    const sign = delta >= 0 ? "▲" : "▼";
+    const color = delta >= 0 ? "text-emerald-600" : "text-rose-600";
+    return (
+      <span
+        className={`text-xs ${color}`}
+      >{`${sign} ${Math.abs(delta).toFixed(1)}%${label ? `（${label}）` : ""}`}</span>
+    );
   };
 
   const stats = initialStats || {
@@ -145,6 +169,10 @@ export function DashboardClient({
             >
               {formatNumber(stats.todayReservations)}件
             </div>
+            <div className="mt-1 flex items-center gap-2">
+              {renderDelta(kpiTrends?.reservations?.d1, "前日")}
+              {renderDelta(kpiTrends?.reservations?.dow, "同曜")}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -158,6 +186,10 @@ export function DashboardClient({
               aria-live="polite"
             >
               {formatCurrency(stats.todaySales)}
+            </div>
+            <div className="mt-1 flex items-center gap-2">
+              {renderDelta(kpiTrends?.sales?.d1, "前日")}
+              {renderDelta(kpiTrends?.sales?.dow, "同曜")}
             </div>
           </CardContent>
         </Card>

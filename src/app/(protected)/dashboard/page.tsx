@@ -34,7 +34,7 @@ export default async function DashboardPage() {
         recentActivities={activitiesResult.success ? activitiesResult.data : []}
         hourlySales={salesResult.success ? salesResult.data : []}
         error={error || null}
-        // kpiTrends は当面未使用（次段でUIに反映）
+        kpiTrends={kpiTrends.success ? (kpiTrends.data as any) : undefined}
       />
     </DashboardFilterProvider>
   );
