@@ -16,6 +16,7 @@ import type { Table } from "@/types/reservation.types";
 import type { Product, PaymentMethod } from "@/types/billing.types";
 import { toast } from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
+import { inventoryService } from "@/services/inventory.service";
 
 export default function ManualEntryPage() {
   const [visitDate, setVisitDate] = useState(
@@ -441,6 +442,8 @@ export default function ManualEntryPage() {
       nominationTypeId?: string;
     }>
   >([]);
+  const [autoAttribution, setAutoAttribution] = useState<boolean>(true);
+  const [autoInventoryLink, setAutoInventoryLink] = useState<boolean>(true);
 
   useEffect(() => {
     void (async () => {
@@ -618,15 +621,25 @@ export default function ManualEntryPage() {
       if (customerId) payload.customerId = customerId;
       const visit = await billingService.createVisit(payload);
 
-      // 2) 注文追加
+      // 2) 注文追加（作成した明細を保持）
+      const createdItems: Array<{
+        id: number;
+        productId: number;
+        quantity: number;
+      }> = [];
       for (const row of items) {
         const pid = Number(row.productId);
         if (!pid) continue;
-        await billingService.addOrderItem({
+        const created = await billingService.addOrderItem({
           visitId: visit.id,
           productId: pid,
           quantity: row.quantity,
           unitPrice: row.unitPrice,
+        });
+        createdItems.push({
+          id: created.id,
+          productId: created.productId,
+          quantity: row.quantity,
         });
       }
 
@@ -672,7 +685,44 @@ export default function ManualEntryPage() {
         }
       }
 
-      // 5)（任意）即時精算（チェックアウト）
+      // 5) オプション: 売上帰属自動計算 / 在庫連動
+      if (createdItems.length > 0) {
+        if (autoAttribution) {
+          try {
+            await Promise.all(
+              createdItems.map((oi) =>
+                VisitSessionService.calculateAutoAttribution(
+                  String(oi.id),
+                  visit.id
+                )
+              )
+            );
+          } catch (e) {
+            if (process.env.NODE_ENV === "development")
+              console.warn("Auto attribution failed", e);
+          }
+        }
+        if (autoInventoryLink) {
+          try {
+            await Promise.all(
+              createdItems.map((oi) =>
+                inventoryService.createInventoryMovement({
+                  productId: oi.productId,
+                  movementType: "out",
+                  quantity: oi.quantity,
+                  reason: "sale",
+                  referenceId: String(oi.id),
+                })
+              )
+            );
+          } catch (e) {
+            if (process.env.NODE_ENV === "development")
+              console.warn("Inventory linkage failed", e);
+          }
+        }
+      }
+
+      // 6)（任意）即時精算（チェックアウト）
       if (markCompleted) {
         if (paymentMethod === "mixed") {
           if (mixedCash + mixedCard !== estimatedTotal) {
@@ -725,6 +775,8 @@ export default function ManualEntryPage() {
       setMixedCash(0);
       setMixedCard(0);
       setQueuedBottleServes([]);
+      setAutoAttribution(true);
+      setAutoInventoryLink(true);
     } catch (e) {
       if (process.env.NODE_ENV === "development") console.error(e);
       toast.error("登録に失敗しました");
@@ -1587,6 +1639,25 @@ export default function ManualEntryPage() {
                     領収書/レシートを発行する
                   </label>
                 </div>
+              </div>
+              {/* 自動アトリビューション/在庫連動のON/OFF */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={autoAttribution}
+                    onChange={(e) => setAutoAttribution(e.target.checked)}
+                  />
+                  売上帰属（アトリビューション）を自動計算
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={autoInventoryLink}
+                    onChange={(e) => setAutoInventoryLink(e.target.checked)}
+                  />
+                  在庫を自動で出庫連動
+                </label>
               </div>
               {receiptRequested && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">

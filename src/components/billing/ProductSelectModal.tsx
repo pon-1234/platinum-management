@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { billingService } from "@/services/billing.service";
+import { inventoryService } from "@/services/inventory.service";
+import { VisitSessionService } from "@/services/visit-session.service";
 
 import type { Product, CreateOrderItemData } from "@/types/billing.types";
 import {
@@ -46,6 +48,8 @@ export default function ProductSelectModal({
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autoAttribution, setAutoAttribution] = useState<boolean>(true);
+  const [autoInventoryLink, setAutoInventoryLink] = useState<boolean>(true);
 
   useEffect(() => {
     if (isOpen) {
@@ -146,18 +150,61 @@ export default function ProductSelectModal({
     try {
       setIsSubmitting(true);
 
-      const orderItems: CreateOrderItemData[] = cart.map((item) => ({
-        visitId,
-        productId: item.product.id,
-        quantity: item.quantity,
-        unitPrice: item.product.price,
-        totalPrice: item.product.price * item.quantity,
-        notes: item.notes,
-      }));
+      // 1) まとめて注文明細を作成
+      const created = [] as Array<
+        Awaited<ReturnType<typeof billingService.addOrderItem>>
+      >;
+      for (const item of cart) {
+        const createdItem = await billingService.addOrderItem({
+          visitId,
+          productId: item.product.id,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+          notes: item.notes,
+        } as CreateOrderItemData);
+        created.push(createdItem);
+      }
 
-      await Promise.all(
-        orderItems.map((item) => billingService.addOrderItem(item))
-      );
+      // 2) オプション: 自動アトリビューション
+      if (autoAttribution) {
+        try {
+          await Promise.all(
+            created.map((oi) =>
+              VisitSessionService.calculateAutoAttribution(
+                String(oi.id),
+                visitId
+              )
+            )
+          );
+        } catch (e) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("Auto attribution failed", e);
+          }
+        }
+      }
+
+      // 3) オプション: 在庫出庫の自動連動
+      if (autoInventoryLink) {
+        try {
+          await Promise.all(
+            created.map((oi) =>
+              inventoryService.createInventoryMovement({
+                productId: oi.productId,
+                movementType: "out",
+                quantity:
+                  cart.find((c) => c.product.id === oi.productId)?.quantity ||
+                  0,
+                reason: "sale",
+                referenceId: String(oi.id),
+              })
+            )
+          );
+        } catch (e) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("Inventory linkage failed", e);
+          }
+        }
+      }
 
       toast.success(`${cart.length}点の商品を追加しました`);
       setCart([]);
@@ -350,6 +397,25 @@ export default function ProductSelectModal({
                   <span className="text-xl font-bold">
                     ¥{getTotalAmount().toLocaleString()}
                   </span>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={autoAttribution}
+                      onChange={(e) => setAutoAttribution(e.target.checked)}
+                    />
+                    売上帰属（アトリビューション）を自動計算する
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={autoInventoryLink}
+                      onChange={(e) => setAutoInventoryLink(e.target.checked)}
+                    />
+                    在庫を自動で出庫連動する
+                  </label>
                 </div>
               </div>
             </>

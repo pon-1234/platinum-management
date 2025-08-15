@@ -14,6 +14,7 @@ import {
 import { toast } from "react-hot-toast";
 import { StatCard } from "@/components/ui/StatCard";
 import OrderTicketManagement from "@/components/billing/OrderTicketManagement";
+import ProductSelectModal from "@/components/billing/ProductSelectModal";
 import { useState as useReactState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Access } from "@/components/auth/Access";
@@ -36,6 +37,7 @@ export default function BillingPage() {
   const [dayVisitsLoading, setDayVisitsLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailVisit, setDetailVisit] = useState<VisitWithDetails | null>(null);
+  const [productModalOpen, setProductModalOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTableId, setEditTableId] = useState<number | "">("");
   const [editNumGuests, setEditNumGuests] = useState<number>(1);
@@ -831,7 +833,32 @@ export default function BillingPage() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <div className="text-gray-500">顧客</div>
-                <div>{detailVisit.customer?.name ?? "-"}</div>
+                <div className="flex items-center gap-2">
+                  <span>{detailVisit.customer?.name ?? "未登録"}</span>
+                  <button
+                    className="text-xs px-2 py-0.5 border rounded"
+                    onClick={async () => {
+                      const customerId =
+                        prompt("割当てる顧客IDを入力してください");
+                      if (!customerId) return;
+                      try {
+                        await billingService.updateVisit(detailVisit.id, {
+                          customerId,
+                        });
+                        const refreshed =
+                          await billingService.getVisitWithDetails(
+                            detailVisit.id
+                          );
+                        setDetailVisit(refreshed);
+                        toast.success("顧客を割当てました");
+                      } catch {
+                        toast.error("割当てに失敗しました");
+                      }
+                    }}
+                  >
+                    顧客割当
+                  </button>
+                </div>
               </div>
               <div>
                 <div className="text-gray-500">テーブル</div>
@@ -973,7 +1000,15 @@ export default function BillingPage() {
               </div>
             )}
             <div>
-              <div className="text-gray-500 mb-1">注文明細</div>
+              <div className="text-gray-500 mb-1 flex items-center justify-between">
+                <span>注文明細</span>
+                <button
+                  className="text-xs px-2 py-1 border rounded"
+                  onClick={() => setProductModalOpen(true)}
+                >
+                  明細を追加
+                </button>
+              </div>
               <div className="space-y-2">
                 {(detailVisit.orderItems || []).map((oi) => (
                   <div
@@ -1242,6 +1277,24 @@ export default function BillingPage() {
           </div>
         )}
       </Modal>
+
+      {/* Product select modal for adding order items */}
+      <ProductSelectModal
+        isOpen={productModalOpen}
+        onClose={() => setProductModalOpen(false)}
+        visitId={detailVisit?.id || ""}
+        onItemsAdded={async () => {
+          if (!detailVisit) return;
+          try {
+            const refreshed = await billingService.getVisitWithDetails(
+              detailVisit.id
+            );
+            setDetailVisit(refreshed);
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
     </div>
   );
 }

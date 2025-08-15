@@ -95,6 +95,7 @@ export interface UpdateVisitData {
   paymentStatus?: PaymentStatus;
   status?: VisitStatus;
   notes?: string;
+  customerId?: string;
 }
 
 export interface VisitSearchParams {
