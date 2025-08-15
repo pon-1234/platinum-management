@@ -23,13 +23,29 @@ const shadowConfig = {
   lg: "shadow-lg",
 };
 
-export const CardContent = ({
+export function Card({
   children,
   className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`p-6 ${className}`}>{children}</div>;
+  padding = "md",
+  shadow = "md",
+  hover = false,
+  onClick,
+}: CardProps) {
+  const paddingClass = paddingConfig[padding];
+  const shadowClass = shadowConfig[shadow];
+  const hoverClass = hover
+    ? "hover:shadow-md transition-shadow cursor-pointer"
+    : "";
+
+  return (
+    <div
+      className={`bg-white rounded-lg border ${shadowClass} ${paddingClass} ${hoverClass} ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </div>
+  );
+}
 
 export const CardHeader = ({
   children,
@@ -55,29 +71,13 @@ export const CardDescription = ({
   className?: string;
 }) => <p className={`text-sm text-gray-600 mt-1 ${className}`}>{children}</p>;
 
-export function Card({
+export const CardContent = ({
   children,
   className = "",
-  padding = "md",
-  shadow = "md",
-  hover = false,
-  onClick,
-}: CardProps) {
-  const paddingClass = paddingConfig[padding];
-  const shadowClass = shadowConfig[shadow];
-  const hoverClass = hover
-    ? "hover:shadow-md transition-shadow cursor-pointer"
-    : "";
-
-  return (
-    <div
-      className={`bg-white rounded-lg ${shadowClass} ${paddingClass} ${hoverClass} ${className}`}
-      onClick={onClick}
-    >
-      {children}
-    </div>
-  );
-}
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <div className={`p-6 ${className}`}>{children}</div>;
 
 interface CardFooterProps {
   children: ReactNode;
