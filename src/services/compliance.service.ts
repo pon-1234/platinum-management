@@ -303,61 +303,79 @@ export class ComplianceService extends BaseService {
 
   // 統計情報
   async getComplianceStats() {
-    const [verificationStats, reportStats] = await Promise.all([
-      this.getVerificationStats(),
-      this.getReportStats(),
-    ]);
+    try {
+      const [verificationStats, reportStats] = await Promise.all([
+        this.getVerificationStats(),
+        this.getReportStats(),
+      ]);
 
-    return {
-      verifications: verificationStats,
-      reports: reportStats,
-    };
+      return {
+        verifications: verificationStats,
+        reports: reportStats,
+      };
+    } catch (e) {
+      // Fallback to zero-safe stats
+      return {
+        verifications: {
+          total: 0,
+          verified: 0,
+          pending: 0,
+          byType: {},
+        },
+        reports: {
+          total: 0,
+          byType: {},
+          byStatus: {},
+        },
+      };
+    }
   }
 
   private async getVerificationStats() {
-    const { data, error } = await this.supabase
-      .from("id_verifications")
-      .select("id_type, is_verified")
-      .throwOnError();
+    try {
+      const { data, error } = await this.supabase
+        .from("id_verifications")
+        .select("id_type, is_verified");
+      if (error) throw error;
 
-    if (error) this.handleError(error);
-
-    const stats = {
-      total: data?.length || 0,
-      verified: data?.filter((v) => v.is_verified).length || 0,
-      pending: data?.filter((v) => !v.is_verified).length || 0,
-      byType: {} as Record<string, number>,
-    };
-
-    data?.forEach((verification) => {
-      stats.byType[verification.id_type] =
-        (stats.byType[verification.id_type] || 0) + 1;
-    });
-
-    return stats;
+      const stats = {
+        total: data?.length || 0,
+        verified: data?.filter((v) => v.is_verified).length || 0,
+        pending: data?.filter((v) => !v.is_verified).length || 0,
+        byType: {} as Record<string, number>,
+      };
+      (data || []).forEach((verification: any) => {
+        const t = verification.id_type || "unknown";
+        stats.byType[t] = (stats.byType[t] || 0) + 1;
+      });
+      return stats;
+    } catch {
+      return { total: 0, verified: 0, pending: 0, byType: {} };
+    }
   }
 
   private async getReportStats() {
-    const { data, error } = await this.supabase
-      .from("compliance_reports")
-      .select("report_type, status")
-      .throwOnError();
+    try {
+      const { data, error } = await this.supabase
+        .from("compliance_reports")
+        .select("report_type, status");
+      if (error) throw error;
 
-    if (error) this.handleError(error);
-
-    const stats = {
-      total: data?.length || 0,
-      byType: {} as Record<string, number>,
-      byStatus: {} as Record<string, number>,
-    };
-
-    data?.forEach((report) => {
-      stats.byType[report.report_type] =
-        (stats.byType[report.report_type] || 0) + 1;
-      stats.byStatus[report.status] = (stats.byStatus[report.status] || 0) + 1;
-    });
-
-    return stats;
+      const stats = {
+        total: data?.length || 0,
+        byType: {} as Record<string, number>,
+        byStatus: {} as Record<string, number>,
+      };
+      (data || []).forEach((report: any) => {
+        const t = report.report_type || "unknown";
+        const s = report.status || "generated";
+        stats.byType[t] = (stats.byType[t] || 0) + 1;
+        stats.byStatus[s] = (stats.byStatus[s] || 0) + 1;
+      });
+      return stats;
+    } catch {
+      return { total: 0, byType: {}, byStatus: {} };
+    }
   }
 }
 
