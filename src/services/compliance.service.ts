@@ -114,7 +114,7 @@ export class ComplianceService extends BaseService {
         `
         )
         .eq("customer_id", customerId)
-        .order("verification_date", { ascending: false });
+        .order("verified_at", { ascending: false });
 
       if (error) throw error;
       return this.toCamelCase(data || []) as IdVerificationWithCustomer[];
@@ -125,7 +125,7 @@ export class ComplianceService extends BaseService {
           .from("id_verifications")
           .select("*")
           .eq("customer_id", customerId)
-          .order("verification_date", { ascending: false });
+          .order("created_at", { ascending: false });
         return (data || []) as unknown as IdVerificationWithCustomer[];
       } catch {
         return [];
@@ -160,13 +160,13 @@ export class ComplianceService extends BaseService {
         query = query.eq("is_verified", params.isVerified);
       }
       if (params.startDate) {
-        query = query.gte("verification_date", params.startDate.toISOString());
+        query = query.gte("verified_at", params.startDate.toISOString());
       }
       if (params.endDate) {
-        query = query.lte("verification_date", params.endDate.toISOString());
+        query = query.lte("verified_at", params.endDate.toISOString());
       }
 
-      const { data, error } = await query.order("verification_date", {
+      const { data, error } = await query.order("verified_at", {
         ascending: false,
       });
       if (error) throw error;
@@ -179,10 +179,10 @@ export class ComplianceService extends BaseService {
         if (params.isVerified !== undefined)
           q = q.eq("is_verified", params.isVerified);
         if (params.startDate)
-          q = q.gte("verification_date", params.startDate.toISOString());
+          q = q.gte("verified_at", params.startDate.toISOString());
         if (params.endDate)
-          q = q.lte("verification_date", params.endDate.toISOString());
-        const { data } = await q.order("verification_date", {
+          q = q.lte("verified_at", params.endDate.toISOString());
+        const { data } = await q.order("created_at", {
           ascending: false,
         });
         return (data || []) as unknown as IdVerificationWithCustomer[];
