@@ -285,11 +285,23 @@ export default function ManualEntryPage() {
         try {
           const supabase = createClient();
           const today = new Date().toISOString().slice(0, 10);
-          const { data: attendance } = await supabase
+          // Try new schema columns first, then fallback
+          let attendance: Array<{ staff_id: string }> | null = null;
+          const res1 = await supabase
             .from("attendance_records")
             .select("staff_id")
-            .eq("date", today)
-            .is("clock_out", null);
+            .eq("attendance_date", today)
+            .is("clock_out_time", null);
+          if (!res1.error) {
+            attendance = (res1.data || []) as Array<{ staff_id: string }>;
+          } else {
+            const res2 = await supabase
+              .from("attendance_records")
+              .select("staff_id")
+              .eq("date", today)
+              .is("clock_out", null);
+            attendance = (res2.data || []) as Array<{ staff_id: string }>;
+          }
           const present = new Set(
             (attendance || []).map((r: { staff_id: string }) => r.staff_id)
           );

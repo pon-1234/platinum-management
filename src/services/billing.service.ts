@@ -728,27 +728,44 @@ export class BillingService extends BaseService {
   // ============= BILLING CALCULATIONS =============
 
   async calculateBill(visitId: string): Promise<BillCalculation> {
-    // 商品の合計を計算
-    const { data, error } = await this.supabase.rpc("calculate_visit_totals", {
+    // 商品の合計を計算（RPCが無い場合はフォールバック）
+    let data: Array<{ subtotal: number; serviceCharge?: number }> | null = null;
+    const rpc = await this.supabase.rpc("calculate_visit_totals", {
       visit_id_param: visitId,
     });
-
-    if (error) {
-      this.handleError(error, "料金計算に失敗しました");
+    if (rpc.error) {
+      // Fallback: order_items から小計を集計
+      try {
+        const { data: items } = await this.supabase
+          .from("order_items")
+          .select("total_price")
+          .eq("visit_id", visitId);
+        const sum = (items || []).reduce(
+          (acc, cur) => acc + Number(cur.total_price || 0),
+          0
+        );
+        data = [{ subtotal: sum, serviceCharge: 0 }];
+      } catch (e) {
+        this.handleError(rpc.error, "料金計算に失敗しました");
+      }
+    } else {
+      data = rpc.data as typeof data;
     }
 
     // 指名料を計算
-    const { data: nominationData, error: nominationError } =
-      await this.supabase.rpc("calculate_nomination_fees", {
-        p_visit_id: visitId,
-      });
-
-    if (nominationError) {
+    let nominationData: any[] | null = null;
+    const nom = await this.supabase.rpc("calculate_nomination_fees", {
+      p_visit_id: visitId,
+    });
+    if (nom.error) {
       logger.logDatabaseError(
-        nominationError,
+        nom.error,
         "rpc calculate_nomination_fees",
         "calculate_nomination_fees"
       );
+      nominationData = [{ total_nomination_fee: 0 }];
+    } else {
+      nominationData = nom.data as any[];
     }
 
     const nominationFee = nominationData?.[0]?.total_nomination_fee || 0;

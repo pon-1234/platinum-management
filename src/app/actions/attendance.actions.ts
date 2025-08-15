@@ -80,25 +80,41 @@ export async function getAttendanceDashboardAction(): Promise<
           .from("shift_requests")
           .select("*", { count: "exact", head: true })
           .eq("status", "pending"),
-        supabase
-          .from("attendance_records")
-          .select("*", { count: "exact", head: true })
-          .eq("needs_correction", true),
-        supabase
-          .from("attendance_records")
-          .select("*")
-          .gte("date", weekStartStr)
-          .lte("date", today),
+        // needs_correction 列がない環境では0件扱い
+        (async () => {
+          const res = await supabase
+            .from("attendance_records")
+            .select("*", { count: "exact", head: true })
+            .eq("needs_correction", true);
+          return res.error ? { count: 0 } : res;
+        })(),
+        // 週次データは新旧カラム両対応
+        (async () => {
+          const res1 = await supabase
+            .from("attendance_records")
+            .select("attendance_date, clock_in_time, clock_out_time")
+            .gte("attendance_date", weekStartStr)
+            .lte("attendance_date", today);
+          if (!res1.error) return res1;
+          const res2 = await supabase
+            .from("attendance_records")
+            .select("date, clock_in, clock_out")
+            .gte("date", weekStartStr)
+            .lte("date", today);
+          return res2;
+        })(),
       ]);
 
     // 週間の勤務時間を計算
     let totalWorkHours = 0;
     let totalOvertimeHours = 0;
     if (weekDataResult.data) {
-      for (const record of weekDataResult.data) {
-        if (record.clock_in && record.clock_out) {
-          const clockIn = new Date(record.clock_in);
-          const clockOut = new Date(record.clock_out);
+      for (const record of weekDataResult.data as any[]) {
+        const ci = record.clock_in_time || record.clock_in;
+        const co = record.clock_out_time || record.clock_out;
+        if (ci && co) {
+          const clockIn = new Date(ci);
+          const clockOut = new Date(co);
           const workMinutes =
             (clockOut.getTime() - clockIn.getTime()) / (1000 * 60);
           const workHours = workMinutes / 60;
@@ -175,12 +191,27 @@ export async function getTodayAttendanceAction(): Promise<
 
     const today = new Date().toISOString().split("T")[0];
 
-    const { data, error } = await supabase
+    // 新旧カラム両対応で取得
+    let data: any | null = null;
+    let error: any | null = null;
+    const r1 = await supabase
       .from("attendance_records")
       .select("*")
       .eq("staff_id", staff.id)
-      .eq("date", today)
-      .single();
+      .eq("attendance_date", today)
+      .maybeSingle();
+    if (!r1.error && r1.data) {
+      data = r1.data;
+    } else {
+      const r2 = await supabase
+        .from("attendance_records")
+        .select("*")
+        .eq("staff_id", staff.id)
+        .eq("date", today)
+        .maybeSingle();
+      data = r2.data;
+      error = r2.error;
+    }
 
     if (error && error.code !== "PGRST116") {
       throw error;
@@ -228,29 +259,60 @@ export async function clockInAction(
     const today = now.toISOString().split("T")[0];
     const clockInTime = now.toISOString();
 
-    // Check if already clocked in today
-    const { data: existing } = await supabase
+    // Check if already clocked in today（新旧カラム対応）
+    let existing: any | null = null;
+    const e1 = await supabase
       .from("attendance_records")
-      .select("id, clock_in")
+      .select("id, clock_in_time")
       .eq("staff_id", staff.id)
-      .eq("date", today)
-      .single();
+      .eq("attendance_date", today)
+      .maybeSingle();
+    if (!e1.error && e1.data) existing = e1.data;
+    if (!existing) {
+      const e2 = await supabase
+        .from("attendance_records")
+        .select("id, clock_in")
+        .eq("staff_id", staff.id)
+        .eq("date", today)
+        .maybeSingle();
+      if (!e2.error && e2.data) existing = e2.data;
+    }
 
     if (existing && existing.clock_in) {
       return { success: false, error: "既に出勤打刻済みです" };
     }
 
-    const { data, error } = await supabase
+    // 新旧カラムへ upsert 試行
+    let data: any | null = null;
+    let error: any | null = null;
+    const u1 = await supabase
       .from("attendance_records")
       .upsert({
         staff_id: staff.id,
-        date: today,
-        clock_in: clockInTime,
+        attendance_date: today,
+        clock_in_time: clockInTime,
         status: "present",
         notes: notes || null,
       })
       .select()
-      .single();
+      .maybeSingle();
+    if (!u1.error && u1.data) {
+      data = u1.data;
+    } else {
+      const u2 = await supabase
+        .from("attendance_records")
+        .upsert({
+          staff_id: staff.id,
+          date: today,
+          clock_in: clockInTime,
+          status: "present",
+          notes: notes || null,
+        })
+        .select()
+        .maybeSingle();
+      data = u2.data;
+      error = u2.error;
+    }
 
     if (error) throw error;
 
@@ -296,34 +358,65 @@ export async function clockOutAction(
     const clockOutTime = now.toISOString();
 
     // Get today's record
-    const { data: existing, error: fetchError } = await supabase
+    // 新旧カラムで本日の記録取得
+    let existing: any | null = null;
+    let fetchError: any | null = null;
+    const f1 = await supabase
       .from("attendance_records")
       .select("*")
       .eq("staff_id", staff.id)
-      .eq("date", today)
-      .single();
+      .eq("attendance_date", today)
+      .maybeSingle();
+    if (!f1.error && f1.data) existing = f1.data;
+    else {
+      const f2 = await supabase
+        .from("attendance_records")
+        .select("*")
+        .eq("staff_id", staff.id)
+        .eq("date", today)
+        .maybeSingle();
+      existing = f2.data;
+      fetchError = f2.error;
+    }
 
     if (fetchError || !existing) {
       return { success: false, error: "本日の出勤記録が見つかりません" };
     }
 
-    if (!existing.clock_in) {
+    if (!(existing.clock_in_time || existing.clock_in)) {
       return { success: false, error: "出勤打刻がされていません" };
     }
 
-    if (existing.clock_out) {
+    if (existing.clock_out_time || existing.clock_out) {
       return { success: false, error: "既に退勤打刻済みです" };
     }
 
-    const { data, error } = await supabase
+    // 新旧カラムで更新
+    let data: any | null = null;
+    let error: any | null = null;
+    const uo1 = await supabase
       .from("attendance_records")
       .update({
-        clock_out: clockOutTime,
+        clock_out_time: clockOutTime,
         notes: existing.notes ? `${existing.notes}\n${notes || ""}` : notes,
       })
       .eq("id", existing.id)
       .select()
-      .single();
+      .maybeSingle();
+    if (!uo1.error && uo1.data) data = uo1.data;
+    else {
+      const uo2 = await supabase
+        .from("attendance_records")
+        .update({
+          clock_out: clockOutTime,
+          notes: existing.notes ? `${existing.notes}\n${notes || ""}` : notes,
+        })
+        .eq("id", existing.id)
+        .select()
+        .maybeSingle();
+      data = uo2.data;
+      error = uo2.error;
+    }
 
     if (error) throw error;
 
@@ -368,12 +461,26 @@ export async function startBreakAction(
     const today = now.toISOString().split("T")[0];
     const breakStartTime = now.toISOString();
 
-    const { data: existing, error: fetchError } = await supabase
+    // 新旧カラムで取得
+    let existing: any | null = null;
+    let fetchError: any | null = null;
+    const sb1 = await supabase
       .from("attendance_records")
       .select("*")
       .eq("staff_id", staff.id)
-      .eq("date", today)
-      .single();
+      .eq("attendance_date", today)
+      .maybeSingle();
+    if (!sb1.error && sb1.data) existing = sb1.data;
+    else {
+      const sb2 = await supabase
+        .from("attendance_records")
+        .select("*")
+        .eq("staff_id", staff.id)
+        .eq("date", today)
+        .maybeSingle();
+      existing = sb2.data;
+      fetchError = sb2.error;
+    }
 
     if (fetchError || !existing) {
       return { success: false, error: "本日の出勤記録が見つかりません" };
@@ -387,20 +494,41 @@ export async function startBreakAction(
       return { success: false, error: "既に退勤済みです" };
     }
 
-    if (existing.break_start && !existing.break_end) {
+    if (
+      (existing.break_start_time || existing.break_start) &&
+      !(existing.break_end_time || existing.break_end)
+    ) {
       return { success: false, error: "既に休憩中です" };
     }
 
-    const { data, error } = await supabase
+    // 新旧カラムで更新
+    let data: any | null = null;
+    let error: any | null = null;
+    const bs1 = await supabase
       .from("attendance_records")
       .update({
-        break_start: breakStartTime,
-        break_end: null,
+        break_start_time: breakStartTime,
+        break_end_time: null,
         notes: existing.notes ? `${existing.notes}\n${notes || ""}` : notes,
       })
       .eq("id", existing.id)
       .select()
-      .single();
+      .maybeSingle();
+    if (!bs1.error && bs1.data) data = bs1.data;
+    else {
+      const bs2 = await supabase
+        .from("attendance_records")
+        .update({
+          break_start: breakStartTime,
+          break_end: null,
+          notes: existing.notes ? `${existing.notes}\n${notes || ""}` : notes,
+        })
+        .eq("id", existing.id)
+        .select()
+        .maybeSingle();
+      data = bs2.data;
+      error = bs2.error;
+    }
 
     if (error) throw error;
 
@@ -445,34 +573,65 @@ export async function endBreakAction(
     const today = now.toISOString().split("T")[0];
     const breakEndTime = now.toISOString();
 
-    const { data: existing, error: fetchError } = await supabase
+    // 新旧カラムで取得
+    let existing: any | null = null;
+    let fetchError: any | null = null;
+    const be1 = await supabase
       .from("attendance_records")
       .select("*")
       .eq("staff_id", staff.id)
-      .eq("date", today)
-      .single();
+      .eq("attendance_date", today)
+      .maybeSingle();
+    if (!be1.error && be1.data) existing = be1.data;
+    else {
+      const be2 = await supabase
+        .from("attendance_records")
+        .select("*")
+        .eq("staff_id", staff.id)
+        .eq("date", today)
+        .maybeSingle();
+      existing = be2.data;
+      fetchError = be2.error;
+    }
 
     if (fetchError || !existing) {
       return { success: false, error: "本日の出勤記録が見つかりません" };
     }
 
-    if (!existing.break_start) {
+    if (!(existing.break_start_time || existing.break_start)) {
       return { success: false, error: "休憩開始打刻がされていません" };
     }
 
-    if (existing.break_end) {
+    if (existing.break_end_time || existing.break_end) {
       return { success: false, error: "既に休憩終了済みです" };
     }
 
-    const { data, error } = await supabase
+    // 新旧カラムで更新
+    let data: any | null = null;
+    let error: any | null = null;
+    const beu1 = await supabase
       .from("attendance_records")
       .update({
-        break_end: breakEndTime,
+        break_end_time: breakEndTime,
         notes: existing.notes ? `${existing.notes}\n${notes || ""}` : notes,
       })
       .eq("id", existing.id)
       .select()
-      .single();
+      .maybeSingle();
+    if (!beu1.error && beu1.data) data = beu1.data;
+    else {
+      const beu2 = await supabase
+        .from("attendance_records")
+        .update({
+          break_end: breakEndTime,
+          notes: existing.notes ? `${existing.notes}\n${notes || ""}` : notes,
+        })
+        .eq("id", existing.id)
+        .select()
+        .maybeSingle();
+      data = beu2.data;
+      error = beu2.error;
+    }
 
     if (error) throw error;
 

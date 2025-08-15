@@ -69,7 +69,8 @@
       "mcp__serena__replace_regex",
       "Bash(pnpm supabase db reset:*)",
       "Bash(mv:*)",
-      "Bash(supabase migration repair:*)"
+      "Bash(supabase migration repair:*)",
+      "Bash(supabase migration:*)"
     ],
     "deny": []
   }
