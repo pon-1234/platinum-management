@@ -290,10 +290,12 @@ export default function RecentActivities({
           <div className="mt-4 space-y-6">
             {grouped.map(({ date, list }) => {
               const dateObj = new Date(date);
-              const dateLabel = dateObj.toLocaleDateString("ja-JP", {
-                dateStyle: "medium",
+              const dateLabel = new Intl.DateTimeFormat("ja-JP", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
                 weekday: "short",
-              });
+              }).format(dateObj);
               return (
                 <div key={date}>
                   <h4 className="mb-2 text-xs font-medium text-gray-500">
