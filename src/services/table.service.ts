@@ -54,6 +54,8 @@ export class TableService extends BaseService {
   }
 
   async getTableById(id: string): Promise<Table | null> {
+    // tables.id は UUID、visit_table_segments.table_id は数値（テーブル番号）
+    // ここではUUIDによる主キー検索を維持
     const { data, error } = await this.supabase
       .from("tables")
       .select("*")

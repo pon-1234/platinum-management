@@ -63,37 +63,64 @@ export function ActiveVisitsWithBottleKeep() {
       const visitIds = Array.from(
         new Set((segments || []).map((s) => s.visit_id as string))
       );
-      const tableIds = Array.from(
+      // visit_table_segments.table_id は数値（テーブル番号）を保持しているため、
+      // tables.id(UUID) ではなく tables.table_number で参照する
+      const tableNumbers = Array.from(
         new Set((segments || []).map((s) => String(s.table_id)))
       );
 
       // visit 情報をまとめて取得
-      const { data: visitsRows, error: visitsError } = await supabase
-        .from("visits")
-        .select("id, customer_id, check_in_at, status")
-        .in("id", visitIds);
-      if (visitsError) throw visitsError;
+      let visitsRows: Array<{
+        id: string;
+        customer_id: string | null;
+        check_in_at: string;
+        status: string;
+      }> = [];
+      if (visitIds.length > 0) {
+        const { data, error: visitsError } = await supabase
+          .from("visits")
+          .select("id, customer_id, check_in_at, status")
+          .in("id", visitIds);
+        if (visitsError) throw visitsError;
+        visitsRows = data || [];
+      }
 
       // 顧客名を表示するために customers を取得
-      const customerIds = Array.from(
-        new Set((visitsRows || []).map((v) => v.customer_id as string))
-      );
-      const { data: customers } = await supabase
-        .from("customers")
-        .select("id, name")
-        .in("id", customerIds);
-      const customerMap = new Map<string, string>(
-        (customers || []).map((c) => [c.id as string, c.name as string])
-      );
+      const customerMap = new Map<string, string>();
+      if (visitsRows.length > 0) {
+        const customerIds = Array.from(
+          new Set(
+            (visitsRows || [])
+              .map((v) => v.customer_id as string)
+              .filter(Boolean)
+          )
+        );
+        if (customerIds.length > 0) {
+          const { data: customers } = await supabase
+            .from("customers")
+            .select("id, name")
+            .in("id", customerIds as string[]);
+          (customers || []).forEach((c) => {
+            customerMap.set(c.id as string, c.name as string);
+          });
+        }
+      }
 
       // テーブル名を取得
-      const { data: tablesRows } = await supabase
-        .from("tables")
-        .select("id, name")
-        .in("id", tableIds);
-      const tableMap = new Map(
-        (tablesRows || []).map((t) => [String(t.id), t.name as string])
-      );
+      const tableMap = new Map<string, string>();
+      if (tableNumbers.length > 0) {
+        const { data: tablesRows } = await supabase
+          .from("tables")
+          .select("id, table_number")
+          .in("table_number", tableNumbers);
+        (tablesRows || []).forEach((t) => {
+          // キーはテーブル番号（文字列化）として保持
+          tableMap.set(
+            String((t as any).table_number),
+            (t as any).table_number as string
+          );
+        });
+      }
 
       // 最新セグメントのみを採用する（visit ごとに一つ）
       const latestByVisit = new Map<
