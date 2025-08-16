@@ -2,8 +2,11 @@
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleBasedNavigation } from "@/components/navigation/RoleBasedNavigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CommandPalette } from "@/components/ui/Command";
+import Link from "next/link";
+import { quickActions } from "@/config/navigation";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function ProtectedLayout({
   children,
@@ -94,15 +97,7 @@ export default function ProtectedLayout({
         <div className="flex-1 flex flex-col lg:pl-0">
           <main className="flex-1 overflow-y-auto bg-gray-50">
             <CommandPalette />
-            {/* Sticky header with quick actions placeholder */}
-            <div className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur supports-[backdrop-filter]:bg-gray-50/60 border-b border-gray-200">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
-                {/* Reserved for global quick actions (Cmd/Ctrl+K coming soon) */}
-                <div className="text-xs text-gray-500">
-                  ショートカット: ⌘/Ctrl + K
-                </div>
-              </div>
-            </div>
+            <HeaderQuickActions />
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
               {children}
             </div>
@@ -110,5 +105,36 @@ export default function ProtectedLayout({
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+function HeaderQuickActions() {
+  const { user } = useAuthStore();
+  const items = useMemo(() => {
+    if (!user) return quickActions;
+    return quickActions.filter(
+      (q) => !q.roles || q.roles.includes(user.role as any)
+    );
+  }, [user]);
+
+  return (
+    <div className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur supports-[backdrop-filter]:bg-gray-50/60 border-b border-gray-200">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
+        <div className="flex flex-wrap gap-2">
+          {items.slice(0, 6).map((a) => (
+            <Link
+              key={a.id}
+              href={a.href}
+              className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs bg-white hover:bg-gray-50 text-gray-700"
+            >
+              <span>{a.label}</span>
+            </Link>
+          ))}
+        </div>
+        <div className="text-[11px] text-gray-500">
+          ショートカット: ⌘/Ctrl + K
+        </div>
+      </div>
+    </div>
   );
 }
