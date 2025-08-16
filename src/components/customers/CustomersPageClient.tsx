@@ -46,6 +46,7 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -262,9 +263,41 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
           <CustomerList
             customers={customers ?? initialData.customers}
             onEdit={can("customers", "edit") ? handleEdit : undefined}
+            onSelectionChange={setSelectedIds}
           />
         )}
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 right-6 bg-white shadow-xl border rounded-lg p-3 flex items-center gap-2">
+          <span className="text-sm text-gray-700">
+            選択: {selectedIds.length} 件
+          </span>
+          <button
+            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
+            onClick={() => {
+              // ここで一括操作（例：エクスポート）
+              const all = (customers || initialData.customers).filter((c) =>
+                selectedIds.includes(c.id)
+              );
+              const rows = all.map((c) => ({
+                id: c.id,
+                name: c.name,
+                phone: c.phoneNumber,
+                status: c.status,
+              }));
+              const csv = convertToCSV(rows);
+              const ts = new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/[:T]/g, "-");
+              downloadCSV(csv, `customers_selected_${ts}.csv`);
+            }}
+          >
+            選択をエクスポート
+          </button>
+        </div>
+      )}
     </div>
   );
 }

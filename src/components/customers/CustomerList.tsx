@@ -11,6 +11,7 @@ import { formatDate, formatPhoneNumber } from "@/lib/utils/formatting";
 interface CustomerListProps {
   customers: Customer[];
   onEdit?: (customer: Customer) => void;
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 const Row = memo(
@@ -90,7 +91,11 @@ const Row = memo(
 );
 Row.displayName = "Row";
 
-export function CustomerList({ customers, onEdit }: CustomerListProps) {
+export function CustomerList({
+  customers,
+  onEdit,
+  onSelectionChange,
+}: CustomerListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const handleSelectAll = () => {
@@ -108,6 +113,12 @@ export function CustomerList({ customers, onEdit }: CustomerListProps) {
       setSelectedIds([...selectedIds, id]);
     }
   };
+
+  // Notify parent on selection change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => {
+    onSelectionChange?.(selectedIds);
+  }, [selectedIds]);
 
   return (
     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
