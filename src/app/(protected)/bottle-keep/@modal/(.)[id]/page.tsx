@@ -51,7 +51,8 @@ export default function BottleKeepDrawer() {
       <div className="p-4 overflow-y-auto h-[calc(100%-56px)]">
         <BottleKeepForm
           bottleKeep={bottleKeep as any}
-          onSubmit={async () => handleClose()}
+          onSubmit={async (_data) => handleClose()}
+          onCancel={handleClose}
         />
       </div>
     </Drawer>

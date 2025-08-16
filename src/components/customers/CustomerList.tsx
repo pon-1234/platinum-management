@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo } from "react";
+import { useState, memo, useEffect } from "react";
 import Link from "next/link";
 import { FixedSizeList } from "react-window";
 import { Customer } from "@/types/customer.types";
@@ -116,7 +116,7 @@ export function CustomerList({
 
   // Notify parent on selection change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => {
+  useEffect(() => {
     onSelectionChange?.(selectedIds);
   }, [selectedIds]);
 
