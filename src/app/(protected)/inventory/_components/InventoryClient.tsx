@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks";
+import { useSavedFilters } from "@/hooks/useSavedFilters";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { EmptyState, Pagination } from "@/components/common";
@@ -36,8 +37,13 @@ interface InventoryClientProps {
 
 export function InventoryClient({ initialData, error }: InventoryClientProps) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const { values: invFilter, setPartial: setInvFilter } = useSavedFilters(
+    "inventory",
+    { q: "", category: "all" },
+    { q: "string", category: "string" }
+  );
+  const [searchTerm, setSearchTerm] = useState(invFilter.q);
+  const [selectedCategory, setSelectedCategory] = useState(invFilter.category);
   const [products, setProducts] = useState<Product[]>(initialData.products);
   const [stats, setStats] = useState<InventoryStats | null>(initialData.stats);
   const [alerts, setAlerts] = useState<InventoryAlert[]>(initialData.alerts);
@@ -139,6 +145,8 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
 
   // デバウンスされた値が変更されたときにデータを更新
   useEffect(() => {
+    // 保存フィルタへ反映
+    setInvFilter({ q: searchTerm, category: selectedCategory });
     refreshData();
   }, [refreshData]);
 

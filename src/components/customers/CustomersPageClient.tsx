@@ -17,6 +17,7 @@ import type {
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { usePermission } from "@/hooks/usePermission";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useSavedFilters } from "@/hooks/useSavedFilters";
 import { useCustomers } from "@/hooks/useCustomers";
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 import { Access } from "@/components/auth/Access";
@@ -32,8 +33,13 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
   const { can } = usePermission();
   const queryClient = useQueryClient();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<CustomerStatus | "">("");
+  const { values: filter, setPartial: setFilter } = useSavedFilters(
+    "customers",
+    { q: "", status: "" as CustomerStatus | "" },
+    { q: "string", status: "string" }
+  );
+  const searchQuery = filter.q;
+  const statusFilter = filter.status;
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -178,7 +184,7 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
           <div className="space-y-1">
             <SearchInput
               value={searchQuery}
-              onChange={setSearchQuery}
+              onChange={(v) => setFilter({ q: v })}
               placeholder="名前、フリガナ、電話番号、LINE IDで検索"
             />
             {searchFeedback && (
@@ -189,7 +195,7 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
             <select
               value={statusFilter}
               onChange={(e) =>
-                setStatusFilter(e.target.value as CustomerStatus | "")
+                setFilter({ status: e.target.value as CustomerStatus | "" })
               }
               className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             >
