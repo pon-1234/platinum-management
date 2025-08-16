@@ -3,6 +3,7 @@
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleBasedNavigation } from "@/components/navigation/RoleBasedNavigation";
 import { useState } from "react";
+import { CommandPalette } from "@/components/ui/Command";
 
 export default function ProtectedLayout({
   children,
@@ -92,7 +93,17 @@ export default function ProtectedLayout({
         {/* Main content */}
         <div className="flex-1 flex flex-col lg:pl-0">
           <main className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pt-20 lg:pt-8">
+            <CommandPalette />
+            {/* Sticky header with quick actions placeholder */}
+            <div className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur supports-[backdrop-filter]:bg-gray-50/60 border-b border-gray-200">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
+                {/* Reserved for global quick actions (Cmd/Ctrl+K coming soon) */}
+                <div className="text-xs text-gray-500">
+                  ショートカット: ⌘/Ctrl + K
+                </div>
+              </div>
+            </div>
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
               {children}
             </div>
           </main>
