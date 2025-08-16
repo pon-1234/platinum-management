@@ -296,6 +296,17 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
           >
             選択をエクスポート
           </button>
+          <button
+            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
+            onClick={() => {
+              const qs = new URLSearchParams({
+                ids: selectedIds.join(","),
+              }).toString();
+              window.location.assign(`/customers/bulk/status?${qs}`);
+            }}
+          >
+            選択のステータス変更
+          </button>
         </div>
       )}
     </div>
