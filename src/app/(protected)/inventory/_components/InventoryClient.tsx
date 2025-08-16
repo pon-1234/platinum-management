@@ -514,6 +514,17 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
           >
             選択を在庫調整
           </button>
+          <button
+            className="px-3 py-1.5 text-sm rounded-md border text-red-600 hover:bg-red-50"
+            onClick={() => {
+              const qs = new URLSearchParams({
+                ids: selectedIds.join(","),
+              }).toString();
+              router.push(`/inventory/bulk/delete?${qs}`);
+            }}
+          >
+            選択を削除
+          </button>
         </div>
       )}
 
