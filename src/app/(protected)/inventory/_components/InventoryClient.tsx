@@ -503,6 +503,17 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
           >
             選択をエクスポート
           </button>
+          <button
+            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
+            onClick={() => {
+              const qs = new URLSearchParams({
+                ids: selectedIds.join(","),
+              }).toString();
+              router.push(`/inventory/bulk/movement?${qs}`);
+            }}
+          >
+            選択を在庫調整
+          </button>
         </div>
       )}
 
