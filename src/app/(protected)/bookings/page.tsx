@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarIcon,
   ListBulletIcon,
@@ -19,6 +20,7 @@ import type { ReservationWithDetails } from "@/types/reservation.types";
 type ViewMode = "list" | "calendar";
 
 export default function BookingsPage() {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedDate, setSelectedDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
@@ -58,7 +60,12 @@ export default function BookingsPage() {
               require="all"
             >
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  const qs = new URLSearchParams({
+                    date: selectedDate,
+                  }).toString();
+                  router.push(`/bookings/new?${qs}`);
+                }}
                 className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <PlusIcon className="w-5 h-5 mr-2" />
@@ -136,13 +143,15 @@ export default function BookingsPage() {
           )}
         </div>
 
-        {/* Create Reservation Modal */}
-        <CreateReservationModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={handleCreateSuccess}
-          initialDate={selectedDate}
-        />
+        {/* Create Reservation Modal moved to URL-driven drawer */}
+        {false && (
+          <CreateReservationModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+            initialDate={selectedDate}
+          />
+        )}
 
         {/* Reservation Detail Modal (kept for fallback; URL drawer preferred) */}
         {false && (
