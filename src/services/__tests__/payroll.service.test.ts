@@ -44,6 +44,7 @@ describe("PayrollService", () => {
       single: vi.fn(() => mockSupabase),
       insert: vi.fn(() => mockSupabase),
       rpc: vi.fn(),
+      or: vi.fn(() => mockSupabase),
     };
     (createClient as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
   });
@@ -55,11 +56,11 @@ describe("PayrollService", () => {
         { id: "2", name: "Regular", back_percentage: 30, is_active: true },
       ];
 
-      mockSupabase.select.mockReturnValue({
-        ...mockSupabase,
+      // Chain ends at order(), which should return the final result object
+      mockSupabase.order.mockReturnValueOnce({
         data: mockData,
         error: null,
-      });
+      } as unknown as typeof mockSupabase);
 
       const result = await PayrollService.getNominationTypes();
 
@@ -73,11 +74,11 @@ describe("PayrollService", () => {
 
     it("エラー時に例外をスローする", async () => {
       const mockError = new Error("Database error");
-
-      mockSupabase.select.mockReturnValue({
+      // Make the chain resolve with an error at the end
+      mockSupabase.order.mockReturnValueOnce({
         data: null,
         error: mockError,
-      });
+      } as unknown as typeof mockSupabase);
 
       await expect(PayrollService.getNominationTypes()).rejects.toThrow(
         "Database error"
@@ -100,14 +101,15 @@ describe("PayrollService", () => {
         },
       };
 
-      const mockOrders = [
+      const mockRevenueFacts = [
         {
-          id: "1",
-          price: 10000,
-          quantity: 1,
-          nomination_type_id: "type-1",
-          nomination_fee: 1000,
-          nomination_types: { back_percentage: 50 },
+          work_date: "2024-01-01",
+          cast_id: castId,
+          attributed_revenue: 10000,
+          attribution_type: "order",
+          attribution_amount: 10000,
+          effective_back_rate: 40,
+          nomination_type: null,
         },
       ];
 
@@ -118,15 +120,27 @@ describe("PayrollService", () => {
         },
       ];
 
-      // getActivePayrollRuleのモック
+      // getActivePayrollRuleのモック（hostess_payroll_rulesチェーン）
+      // Ensure lte() returns a builder that has .or() and .single()
+      mockSupabase.lte.mockReturnValueOnce(
+        mockSupabase as unknown as ReturnType<typeof createClient>
+      );
+      mockSupabase.or.mockReturnValueOnce({
+        single: vi.fn().mockResolvedValue({
+          data: mockRuleAssignment,
+          error: null,
+        }),
+      } as unknown as typeof mockSupabase);
+
+      // フォールバックとして single も解決（念のため）
       mockSupabase.single.mockResolvedValueOnce({
         data: mockRuleAssignment,
         error: null,
       });
 
-      // getSalesDataのモック（orders）
+      // getSalesDataのモック（payroll_revenue_facts のチェーン終端）
       mockSupabase.lte.mockReturnValueOnce({
-        data: mockOrders,
+        data: mockRevenueFacts,
         error: null,
       });
 
