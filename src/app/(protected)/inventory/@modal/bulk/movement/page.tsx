@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Drawer } from "@/components/ui/Drawer";
 import { createClient } from "@/lib/supabase/client";
+import { Access } from "@/components/auth/Access";
 import { toast } from "react-hot-toast";
 
 export default function BulkMovementModal() {
@@ -67,57 +68,72 @@ export default function BulkMovementModal() {
           ×
         </button>
       </div>
-      <div className="p-4 space-y-3">
-        <div className="text-sm text-gray-600">対象: {ids.length} 商品</div>
-        <div>
-          <label className="block text-sm font-medium mb-1">区分</label>
-          <div className="flex gap-2">
+      <Access
+        roles={["admin", "manager"]}
+        resource="inventory"
+        action="manage"
+        require="any"
+        fallback={
+          <div className="p-4 text-sm text-gray-600">権限がありません。</div>
+        }
+      >
+        <div className="p-4 space-y-3">
+          <div className="text-sm text-gray-600">対象: {ids.length} 商品</div>
+          <div>
+            <label className="block text-sm font-medium mb-1">区分</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMovementType("in")}
+                className={`px-3 py-1.5 rounded border ${movementType === "in" ? "bg-green-50 border-green-400" : "bg-white"}`}
+              >
+                入庫
+              </button>
+              <button
+                onClick={() => setMovementType("out")}
+                className={`px-3 py-1.5 rounded border ${movementType === "out" ? "bg-red-50 border-red-400" : "bg-white"}`}
+              >
+                出庫
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">数量</label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              className="w-full border rounded px-2 py-1"
+              min={1}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              理由（任意）
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full border rounded px-2 py-1"
+              rows={2}
+            />
+          </div>
+          <div className="pt-2 flex justify-end gap-2">
             <button
-              onClick={() => setMovementType("in")}
-              className={`px-3 py-1.5 rounded border ${movementType === "in" ? "bg-green-50 border-green-400" : "bg-white"}`}
+              className="px-3 py-1.5 rounded border"
+              onClick={handleClose}
             >
-              入庫
+              キャンセル
             </button>
             <button
-              onClick={() => setMovementType("out")}
-              className={`px-3 py-1.5 rounded border ${movementType === "out" ? "bg-red-50 border-red-400" : "bg-white"}`}
+              className="px-3 py-1.5 rounded text-white bg-indigo-600"
+              onClick={handleApply}
+              disabled={quantity <= 0}
             >
-              出庫
+              適用
             </button>
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">数量</label>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            className="w-full border rounded px-2 py-1"
-            min={1}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">理由（任意）</label>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="w-full border rounded px-2 py-1"
-            rows={2}
-          />
-        </div>
-        <div className="pt-2 flex justify-end gap-2">
-          <button className="px-3 py-1.5 rounded border" onClick={handleClose}>
-            キャンセル
-          </button>
-          <button
-            className="px-3 py-1.5 rounded text-white bg-indigo-600"
-            onClick={handleApply}
-            disabled={quantity <= 0}
-          >
-            適用
-          </button>
-        </div>
-      </div>
+      </Access>
     </Drawer>
   );
 }
