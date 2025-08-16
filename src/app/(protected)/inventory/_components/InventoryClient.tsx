@@ -103,13 +103,11 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   };
 
   const handleEditProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setShowProductForm(true);
+    router.push(`/inventory/product/${product.id}/edit`);
   };
 
   const handleAddMovement = (product: Product) => {
-    setSelectedProduct(product);
-    setShowMovementForm(true);
+    router.push(`/inventory/product/${product.id}/movement`);
   };
 
   const handleOpenHistory = async (product: Product) => {
