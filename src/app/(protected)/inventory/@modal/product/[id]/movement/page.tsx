@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Drawer } from "@/components/ui/Drawer";
-import { InventoryMovementModal } from "../../components/InventoryMovementModal";
+import { InventoryMovementModal } from "@/app/(protected)/inventory/components/InventoryMovementModal";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ProductMovementModal() {

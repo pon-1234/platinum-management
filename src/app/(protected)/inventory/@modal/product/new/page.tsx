@@ -3,7 +3,7 @@
 import { Drawer } from "@/components/ui/Drawer";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ProductFormModal } from "../../components/ProductFormModal";
+import { ProductFormModal } from "@/app/(protected)/inventory/components/ProductFormModal";
 
 export default function NewProductModal() {
   const router = useRouter();
