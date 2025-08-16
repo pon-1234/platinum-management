@@ -10,6 +10,7 @@ import { ReservationList } from "@/components/reservation/ReservationList";
 import { ReservationCalendar } from "@/components/reservation/ReservationCalendar";
 import { CreateReservationModal } from "@/components/reservation/CreateReservationModal";
 import { ReservationDetailModal } from "@/components/reservation/ReservationDetailModal";
+import Link from "next/link";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { Access } from "@/components/auth/Access";
 import { format } from "date-fns";
@@ -35,7 +36,8 @@ export default function BookingsPage() {
   };
 
   const handleReservationSelect = (reservation: ReservationWithDetails) => {
-    setSelectedReservation(reservation);
+    // Use URL-driven drawer instead of local state modal
+    window.location.assign(`/bookings/${reservation.id}`);
   };
 
   const handleCreateSuccess = () => {
@@ -142,13 +144,15 @@ export default function BookingsPage() {
           initialDate={selectedDate}
         />
 
-        {/* Reservation Detail Modal */}
-        <ReservationDetailModal
-          reservation={selectedReservation}
-          isOpen={!!selectedReservation}
-          onClose={() => setSelectedReservation(null)}
-          onSuccess={handleCreateSuccess}
-        />
+        {/* Reservation Detail Modal (kept for fallback; URL drawer preferred) */}
+        {false && (
+          <ReservationDetailModal
+            reservation={selectedReservation}
+            isOpen={!!selectedReservation}
+            onClose={() => setSelectedReservation(null)}
+            onSuccess={handleCreateSuccess}
+          />
+        )}
       </div>
     </RoleGate>
   );
