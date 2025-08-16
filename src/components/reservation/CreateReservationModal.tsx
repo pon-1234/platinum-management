@@ -21,6 +21,7 @@ interface CreateReservationModalProps {
   onClose: () => void;
   onSuccess: () => void;
   initialDate?: string;
+  initialCustomerId?: string;
 }
 
 export function CreateReservationModal({
@@ -28,6 +29,7 @@ export function CreateReservationModal({
   onClose,
   onSuccess,
   initialDate,
+  initialCustomerId,
 }: CreateReservationModalProps) {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -59,6 +61,9 @@ export function CreateReservationModal({
       loadInitialData();
       if (initialDate) {
         setValue("reservationDate", initialDate);
+      }
+      if (initialCustomerId) {
+        setValue("customerId", initialCustomerId);
       }
     }
   }, [isOpen, initialDate, setValue]);

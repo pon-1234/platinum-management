@@ -4,12 +4,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { CreateReservationModal } from "@/components/reservation/CreateReservationModal";
+import { Access } from "@/components/auth/Access";
 
 export default function NewReservationDrawer() {
   const router = useRouter();
   const sp = useSearchParams();
   const [open, setOpen] = useState(true);
   const date = sp.get("date") || undefined;
+  const customerId = sp.get("customerId") || undefined;
 
   const handleClose = () => {
     setOpen(false);
@@ -35,12 +37,21 @@ export default function NewReservationDrawer() {
         </button>
       </div>
       <div className="p-4 overflow-y-auto h-[calc(100%-56px)]">
-        <CreateReservationModal
-          isOpen={true}
-          onClose={handleClose}
-          onSuccess={handleClose}
-          initialDate={date}
-        />
+        <Access
+          roles={["admin", "manager", "hall"]}
+          resource="bookings"
+          action="manage"
+          require="any"
+          fallback={<div className="p-4">権限がありません。</div>}
+        >
+          <CreateReservationModal
+            isOpen={true}
+            onClose={handleClose}
+            onSuccess={handleClose}
+            initialDate={date}
+            initialCustomerId={customerId}
+          />
+        </Access>
       </div>
     </Drawer>
   );

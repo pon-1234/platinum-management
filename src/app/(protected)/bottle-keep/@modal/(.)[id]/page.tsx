@@ -6,6 +6,9 @@ import { Drawer } from "@/components/ui/Drawer";
 import { BottleKeepForm } from "@/components/bottle-keep/BottleKeepForm";
 import { BottleKeepService } from "@/services/bottle-keep.service";
 import type { BottleKeep } from "@/services/bottle-keep.service";
+import { Access } from "@/components/auth/Access";
+import { toast } from "react-hot-toast";
+import { updateBottleKeep } from "@/app/actions/bottle-keep.actions";
 
 export default function BottleKeepDrawer() {
   const router = useRouter();
@@ -49,11 +52,39 @@ export default function BottleKeepDrawer() {
         </button>
       </div>
       <div className="p-4 overflow-y-auto h-[calc(100%-56px)]">
-        <BottleKeepForm
-          bottleKeep={bottleKeep as any}
-          onSubmit={async (_data) => handleClose()}
-          onCancel={handleClose}
-        />
+        <Access
+          roles={["admin", "manager", "hall", "cashier"]}
+          resource="bottle_keep"
+          action="manage"
+          require="any"
+          fallback={<div className="p-4">権限がありません。</div>}
+        >
+          <BottleKeepForm
+            bottleKeep={bottleKeep as any}
+            onSubmit={async (_form) => {
+              if (!bottleKeep) return;
+              try {
+                const res = await updateBottleKeep({
+                  id: bottleKeep.id,
+                  status: undefined,
+                  storageLocation: _form.storageLocation,
+                  expiryDate: _form.expiryDate,
+                  remainingAmount: undefined,
+                  notes: _form.notes,
+                });
+                if (res.success) {
+                  toast.success("ボトルキープを更新しました");
+                  handleClose();
+                } else {
+                  toast.error(res.error || "更新に失敗しました");
+                }
+              } catch (e) {
+                toast.error("更新に失敗しました");
+              }
+            }}
+            onCancel={handleClose}
+          />
+        </Access>
       </div>
     </Drawer>
   );

@@ -6,6 +6,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { ReservationDetailModal } from "@/components/reservation/ReservationDetailModal";
 import { reservationService } from "@/services/reservation.service";
 import type { ReservationWithDetails } from "@/types/reservation.types";
+import { Access } from "@/components/auth/Access";
 
 export default function ReservationDrawer() {
   const router = useRouter();
@@ -51,12 +52,20 @@ export default function ReservationDrawer() {
         </button>
       </div>
       <div className="p-4 overflow-y-auto h-[calc(100%-56px)]">
-        <ReservationDetailModal
-          reservation={reservation}
-          isOpen={true}
-          onClose={handleClose}
-          onSuccess={handleClose}
-        />
+        <Access
+          roles={["admin", "manager", "hall"]}
+          resource="bookings"
+          action="manage"
+          require="any"
+          fallback={<div className="p-4">権限がありません。</div>}
+        >
+          <ReservationDetailModal
+            reservation={reservation}
+            isOpen={true}
+            onClose={handleClose}
+            onSuccess={handleClose}
+          />
+        </Access>
       </div>
     </Drawer>
   );
