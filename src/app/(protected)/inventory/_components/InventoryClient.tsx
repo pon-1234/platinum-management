@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -34,6 +35,7 @@ interface InventoryClientProps {
 }
 
 export function InventoryClient({ initialData, error }: InventoryClientProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>(initialData.products);
@@ -97,8 +99,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   }, [debouncedSearchTerm, debouncedCategory, page, pageSize]);
 
   const handleAddProduct = () => {
-    setSelectedProduct(null);
-    setShowProductForm(true);
+    router.push("/inventory/product/new");
   };
 
   const handleEditProduct = (product: Product) => {
