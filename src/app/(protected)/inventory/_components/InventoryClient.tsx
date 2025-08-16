@@ -73,6 +73,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
   );
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(20);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   // デバウンス処理
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -335,6 +336,21 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedIds.length === filteredProducts.length &&
+                        filteredProducts.length > 0
+                      }
+                      onChange={() => {
+                        if (selectedIds.length === filteredProducts.length)
+                          setSelectedIds([]);
+                        else setSelectedIds(filteredProducts.map((p) => p.id));
+                      }}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     商品名
                   </th>
@@ -364,6 +380,22 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredProducts.map((product) => (
                   <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(product.id)}
+                        onChange={() => {
+                          if (selectedIds.includes(product.id)) {
+                            setSelectedIds(
+                              selectedIds.filter((i) => i !== product.id)
+                            );
+                          } else {
+                            setSelectedIds([...selectedIds, product.id]);
+                          }
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">
                         {product.name}
@@ -443,6 +475,36 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
           </div>
         )}
       </Card>
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 right-6 bg-white shadow-xl border rounded-lg p-3 flex items-center gap-2">
+          <span className="text-sm text-gray-700">
+            選択: {selectedIds.length} 件
+          </span>
+          <button
+            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
+            onClick={() => {
+              const all = filteredProducts.filter((p) =>
+                selectedIds.includes(p.id)
+              );
+              const rows = all.map((p) => ({
+                id: p.id,
+                name: p.name,
+                stock: p.stock_quantity,
+                category: p.category,
+              }));
+              const csv = convertToCSV(rows);
+              const ts = new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/[:T]/g, "-");
+              downloadCSV(csv, `inventory_selected_${ts}.csv`);
+            }}
+          >
+            選択をエクスポート
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       {showProductForm && (
