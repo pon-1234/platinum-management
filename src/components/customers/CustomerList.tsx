@@ -66,7 +66,8 @@ const Row = memo(
         <div className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
           <div className="flex items-center justify-end gap-2">
             <Link
-              href={`/customers/${customer.id}`}
+              href={`/customers?modal=1`}
+              as={`/customers/${customer.id}`}
               className="text-gray-400 hover:text-gray-500"
             >
               <EyeIcon className="h-5 w-5" />
