@@ -22,6 +22,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import { Access } from "@/components/auth/Access";
+import { QRCodeScanner } from "@/components/qr-code/QRCodeScanner";
 
 type ViewMode = "dashboard" | "generate" | "scan" | "history";
 
@@ -194,6 +195,23 @@ export default function QRAttendancePage() {
               ))}
             </div>
           )}
+        </div>
+      </Card>
+
+      {/* スキャナー（簡易デモ版） */}
+      <Card>
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">QRスキャン</h3>
+        </div>
+        <div className="px-6 py-4">
+          <QRCodeScanner
+            action="clock_in"
+            onScanSuccess={() => {
+              toast.success("出勤を記録しました");
+              loadDashboardData();
+            }}
+            onScanError={(msg) => toast.error(msg)}
+          />
         </div>
       </Card>
     </div>

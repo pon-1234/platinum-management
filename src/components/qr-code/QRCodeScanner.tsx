@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { qrCodeService } from "@/services/qr-code.service";
 import { CameraIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import type { QRAttendanceAction } from "@/types/qr-code.types";
+import { recordAttendance } from "@/app/actions/qr-code.actions";
 
 interface QRCodeScannerProps {
+  action: QRAttendanceAction;
   onScanSuccess?: (result: { actionType: string }) => void;
   onScanError?: (error: string) => void;
 }
 
 export function QRCodeScanner({
+  action,
   onScanSuccess,
   onScanError,
 }: QRCodeScannerProps) {
@@ -82,35 +85,33 @@ export function QRCodeScanner({
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     try {
-      // ここで実際のQRコード読み取りライブラリを使用
-      // デモ用に模擬的な実装
-      // const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-      // 実際の実装では qr-scanner ライブラリなどを使用
-      // const result = await QrScanner.scanImage(imageData);
-
-      // デモ用: ランダムにQRコードを検出したことにする
+      // 実装メモ: 実際は qr-scanner 等で imageData → 文字列化
       if (Math.random() > 0.98 && !processing) {
         setProcessing(true);
 
-        // 模擬的なQRデータ
-        const mockQRData = {
+        const mockQRDataObj = {
           staffId: "mock-staff-id",
           timestamp: Date.now(),
           signature: "mock-signature",
-        };
+        } as { staffId: string; timestamp: number; signature?: string };
+        const qrData = JSON.stringify(mockQRDataObj);
 
         try {
-          const result = await qrCodeService.recordAttendance({
-            qrData: JSON.stringify(mockQRData),
-            action: "clock_in",
-            locationData: {
-              latitude: 35.6762,
-              longitude: 139.6503,
-            },
+          const signature = mockQRDataObj.signature || "";
+          const res = await recordAttendance({
+            qrData,
+            signature,
+            action,
+            deviceInfo: { userAgent: navigator.userAgent },
           });
 
-          onScanSuccess?.({ actionType: result.action });
+          if (!res.success) {
+            const msg = res.error || "打刻に失敗しました";
+            setError(msg);
+            onScanError?.(msg);
+          } else {
+            onScanSuccess?.({ actionType: res.data.action });
+          }
           stopCamera();
         } catch (err) {
           const errorMessage =
