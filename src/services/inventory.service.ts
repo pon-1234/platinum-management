@@ -31,14 +31,27 @@ export class InventoryService extends BaseService {
       let query = this.supabase
         .from("products")
         .select("*")
-        .eq("is_active", true);
+        // 古いデータで is_active が NULL のものも表示対象に含める
+        .or("is_active.is.null,is_active.eq.true");
 
       if (filter?.category) {
         query = query.eq("category", filter.category);
       }
 
       if (filter?.searchTerm) {
-        query = query.ilike("name", `%${filter.searchTerm}%`);
+        // name / name_kana / short_name / alias / sku / code を横断
+        const q = filter.searchTerm;
+        query = query.or(
+          [
+            `name.ilike.%${q}%`,
+            `name_kana.ilike.%${q}%`,
+            `short_name.ilike.%${q}%`,
+            `alias.ilike.%${q}%`,
+            `sku.ilike.%${q}%`,
+            `code.ilike.%${q}%`,
+            `id.eq.${Number(q) || 0}`,
+          ].join(",")
+        );
       }
 
       if (filter?.isLowStock) {
@@ -75,7 +88,8 @@ export class InventoryService extends BaseService {
       }
 
       if (filter?.isOutOfStock) {
-        query = query.eq("stock_quantity", 0);
+        // 欠損データ(0もしくはNULL)を在庫切れ扱い
+        query = query.or("stock_quantity.eq.0,stock_quantity.is.null");
       }
 
       if (filter?.sortBy) {
