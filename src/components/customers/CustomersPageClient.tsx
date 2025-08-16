@@ -21,6 +21,7 @@ import { useSavedFilters } from "@/hooks/useSavedFilters";
 import { useCustomers } from "@/hooks/useCustomers";
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 import { Access } from "@/components/auth/Access";
+import { convertToCSV, downloadCSV } from "@/lib/utils/export";
 
 interface CustomersPageClientProps {
   initialData: {
@@ -72,6 +73,22 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
     setEditingCustomer(null);
     setShowForm(true);
     setFormError(null);
+  };
+
+  const handleExport = () => {
+    const rows = (customers || initialData.customers).map((c) => ({
+      id: c.id,
+      name: c.name,
+      name_kana: c.nameKana,
+      phone: c.phoneNumber,
+      line_id: c.lineId,
+      status: c.status,
+      created_at: c.createdAt,
+      updated_at: c.updatedAt,
+    }));
+    const csv = convertToCSV(rows);
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    downloadCSV(csv, `customers_${ts}.csv`);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -160,7 +177,13 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
             顧客情報の一覧表示と管理を行います
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="border px-3 py-2 rounded-md text-sm hover:bg-gray-50"
+          >
+            CSVエクスポート
+          </button>
           <Access
             roles={["admin", "manager", "hall"]}
             resource="customers"

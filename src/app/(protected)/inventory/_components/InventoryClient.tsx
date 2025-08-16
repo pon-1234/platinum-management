@@ -12,6 +12,7 @@ import {
   PlusIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { convertToCSV, downloadCSV } from "@/lib/utils/export";
 import type {
   Product,
   InventoryStats,
@@ -108,6 +109,21 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     router.push("/inventory/product/new");
   };
 
+  const handleExport = () => {
+    const rows = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      stock_quantity: p.stock_quantity,
+      price: p.price,
+      cost: p.cost,
+      updated_at: p.updated_at,
+    }));
+    const csv = convertToCSV(rows);
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    downloadCSV(csv, `inventory_${ts}.csv`);
+  };
+
   const handleEditProduct = (product: Product) => {
     router.push(`/inventory/product/${product.id}/edit`);
   };
@@ -174,13 +190,21 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
           <h1 className="text-2xl font-bold text-gray-900">在庫管理</h1>
           <p className="text-gray-600">店舗の在庫状況を管理します</p>
         </div>
-        <button
-          onClick={handleAddProduct}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
-        >
-          <PlusIcon className="h-5 w-5" />
-          商品追加
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="border px-3 py-2 rounded-md text-sm hover:bg-gray-50"
+          >
+            CSVエクスポート
+          </button>
+          <button
+            onClick={handleAddProduct}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+          >
+            <PlusIcon className="h-5 w-5" />
+            商品追加
+          </button>
+        </div>
       </div>
 
       {/* Low Stock Alert */}
