@@ -6,6 +6,7 @@ import { BottleKeepDashboard } from "@/components/bottle-keep/BottleKeepDashboar
 import { BottleKeepList } from "@/components/bottle-keep/BottleKeepList";
 import { BottleKeepForm } from "@/components/bottle-keep/BottleKeepForm";
 import { BottleKeepUsageForm } from "@/components/bottle-keep/BottleKeepUsageForm";
+import Link from "next/link";
 import {
   getBottleKeeps,
   getStorageLocations,
@@ -160,8 +161,8 @@ export default function BottleKeepPage() {
   };
 
   const handleEditBottleKeep = (bottleKeep: BottleKeepDetail) => {
-    setSelectedBottleKeep(bottleKeep);
-    setShowCreateForm(true);
+    // URL駆動ドロワーへ移行
+    window.location.assign(`/bottle-keep/${bottleKeep.id}`);
   };
 
   const handleUseBottleKeepClick = (bottleKeep: BottleKeepDetail) => {
@@ -209,7 +210,7 @@ export default function BottleKeepPage() {
                   require="any"
                 >
                   <button
-                    onClick={() => setShowCreateForm(true)}
+                    onClick={() => (window.location.href = "/bottle-keep/new")}
                     className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
                   >
                     <PlusIcon className="h-5 w-5" />
