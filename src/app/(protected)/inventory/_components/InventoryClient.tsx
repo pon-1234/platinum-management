@@ -476,57 +476,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
         )}
       </Card>
 
-      {selectedIds.length > 0 && (
-        <div className="fixed bottom-6 right-6 bg-white shadow-xl border rounded-lg p-3 flex items-center gap-2">
-          <span className="text-sm text-gray-700">
-            選択: {selectedIds.length} 件
-          </span>
-          <button
-            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
-            onClick={() => {
-              const all = filteredProducts.filter((p) =>
-                selectedIds.includes(p.id)
-              );
-              const rows = all.map((p) => ({
-                id: p.id,
-                name: p.name,
-                stock: p.stock_quantity,
-                category: p.category,
-              }));
-              const csv = convertToCSV(rows);
-              const ts = new Date()
-                .toISOString()
-                .slice(0, 19)
-                .replace(/[:T]/g, "-");
-              downloadCSV(csv, `inventory_selected_${ts}.csv`);
-            }}
-          >
-            選択をエクスポート
-          </button>
-          <button
-            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
-            onClick={() => {
-              const qs = new URLSearchParams({
-                ids: selectedIds.join(","),
-              }).toString();
-              router.push(`/inventory/bulk/movement?${qs}`);
-            }}
-          >
-            選択を在庫調整
-          </button>
-          <button
-            className="px-3 py-1.5 text-sm rounded-md border text-red-600 hover:bg-red-50"
-            onClick={() => {
-              const qs = new URLSearchParams({
-                ids: selectedIds.join(","),
-              }).toString();
-              router.push(`/inventory/bulk/delete?${qs}`);
-            }}
-          >
-            選択を削除
-          </button>
-        </div>
-      )}
+      {/* SelectionPanel は ProductList 側で統一適用 */}
 
       {/* Modals */}
       {showProductForm && (
