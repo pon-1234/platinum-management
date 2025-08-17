@@ -2,6 +2,9 @@
 
 import { useMemo, useState, memo, forwardRef } from "react";
 import { Product, InventorySearchFilter } from "@/types/inventory.types";
+import { SelectionPanel } from "@/components/table/SelectionPanel";
+import { convertToCSV, downloadCSV } from "@/lib/utils/export";
+import { useRouter } from "next/navigation";
 import {
   PencilIcon,
   EyeIcon,
@@ -29,6 +32,7 @@ export function ProductList({
   categories = [],
   loading = false,
 }: ProductListProps) {
+  const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filter, setFilter] = useState<InventorySearchFilter>({
     searchTerm: "",
@@ -361,14 +365,52 @@ export function ProductList({
         </div>
       </div>
 
-      {/* 選択されたアイテム数 */}
-      {selectedIds.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-          <p className="text-sm text-blue-800">
-            {selectedIds.length} 個の商品が選択されています
-          </p>
-        </div>
-      )}
+      <SelectionPanel
+        selectedCount={selectedIds.length}
+        actions={[
+          {
+            label: "選択をエクスポート",
+            onClick: () => {
+              const all = products.filter((p) => selectedIds.includes(p.id));
+              const rows = all.map((p) => ({
+                id: p.id,
+                name: p.name,
+                category: p.category,
+                price: p.price,
+                cost: p.cost,
+                stock_quantity: p.stock_quantity,
+                low_stock_threshold: p.low_stock_threshold,
+                reorder_point: p.reorder_point,
+                max_stock: p.max_stock,
+                is_active: p.is_active,
+                updated_at: p.updated_at,
+              }));
+              const csv = convertToCSV(rows);
+              const ts = new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/[:T]/g, "-");
+              downloadCSV(csv, `products_selected_${ts}.csv`);
+            },
+          },
+          {
+            label: "在庫調整 (選択)",
+            onClick: () => {
+              const ids = selectedIds.join(",");
+              router.push(`/inventory/bulk/movement?ids=${ids}`);
+            },
+            variant: "default",
+          },
+          {
+            label: "選択を削除",
+            onClick: () => {
+              const ids = selectedIds.join(",");
+              router.push(`/inventory/bulk/delete?ids=${ids}`);
+            },
+            variant: "default",
+          },
+        ]}
+      />
     </div>
   );
 }
