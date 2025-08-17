@@ -23,6 +23,11 @@ export default function NewBottleKeepDrawer() {
     Array<{ id: number; name: string; category: string; price: number }>
   >([]);
   const [storageLocations, setStorageLocations] = useState<string[]>([]);
+  const initialCustomerId = sp.get("customerId") || undefined;
+  const initialProductId = sp.get("productId")
+    ? Number(sp.get("productId"))
+    : undefined;
+  const initialStorageLocation = sp.get("storageLocation") || undefined;
 
   useEffect(() => {
     (async () => {
@@ -78,6 +83,23 @@ export default function NewBottleKeepDrawer() {
             products={products}
             storageLocations={storageLocations}
             loading={loading}
+            /* 初期プリセット（存在すればフォーム側で上書き） */
+            bottleKeep={
+              initialCustomerId || initialProductId || initialStorageLocation
+                ? ({
+                    customer_id: (initialCustomerId as string) || "",
+                    product_id: (initialProductId as unknown as number) || 0,
+                    opened_date: "",
+                    expiry_date: undefined,
+                    bottle_number: "",
+                    remaining_percentage: 100,
+                    storage_location: initialStorageLocation,
+                    status: "active",
+                    created_at: "",
+                    updated_at: "",
+                  } as any)
+                : undefined
+            }
             onSubmit={async (form) => {
               setLoading(true);
               try {
