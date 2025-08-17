@@ -50,10 +50,14 @@ export async function GET(
     );
 
     let data;
+    const supabase = await createClient();
 
     switch (type) {
       case "metrics":
-        data = await CustomerAnalyticsService.getCustomerMetric(customerId);
+        data = await CustomerAnalyticsService.getCustomerMetric(
+          customerId,
+          supabase
+        );
         if (!data) {
           return NextResponse.json(
             { error: "Customer not found" },
@@ -63,13 +67,17 @@ export async function GET(
         break;
 
       case "lifetime-value":
-        data =
-          await CustomerAnalyticsService.calculateLifetimeValue(customerId);
+        data = await CustomerAnalyticsService.calculateLifetimeValue(
+          customerId,
+          supabase
+        );
         break;
 
       case "churn-score":
-        const score =
-          await CustomerAnalyticsService.calculateChurnScore(customerId);
+        const score = await CustomerAnalyticsService.calculateChurnScore(
+          customerId,
+          supabase
+        );
         data = {
           customer_id: customerId,
           churn_score: score,
@@ -80,12 +88,12 @@ export async function GET(
       case "trends":
         data = await CustomerAnalyticsService.getCustomerTrends(
           customerId,
-          months
+          months,
+          supabase
         );
         break;
 
       case "engagement":
-        const supabase = await createClient();
         const { data: engagementScore } = await supabase.rpc(
           "calculate_engagement_score",
           { p_customer_id: customerId }
@@ -97,8 +105,7 @@ export async function GET(
         break;
 
       case "recommendations":
-        const supabaseRec = await createClient();
-        const { data: recommendations } = await supabaseRec.rpc(
+        const { data: recommendations } = await supabase.rpc(
           "get_customer_recommendations",
           { p_customer_id: customerId }
         );
@@ -106,7 +113,10 @@ export async function GET(
         break;
 
       default:
-        data = await CustomerAnalyticsService.getCustomerMetric(customerId);
+        data = await CustomerAnalyticsService.getCustomerMetric(
+          customerId,
+          supabase
+        );
     }
 
     return NextResponse.json(data);
