@@ -232,6 +232,10 @@ export interface PricingRequest {
   drinkTotal?: number;
   /** サービス料＋税率（既定 0.2 = 20%） */
   serviceTaxRate?: number;
+  /** サービス料率（例: 0.1 = 10%） */
+  serviceRate?: number;
+  /** 消費税率（例: 0.1 = 10%） */
+  taxRate?: number;
 }
 
 export interface PriceLine {
@@ -250,7 +254,12 @@ export interface PriceQuote {
   stayMinutes: number;
   lines: PriceLine[];
   subtotal: number;
+  /** 後方互換用: サービス料＋税の合算 */
   serviceTax: number;
+  /** サービス料の内訳 */
+  serviceAmount: number;
+  /** 税額の内訳 */
+  taxAmount: number;
   total: number;
   notes?: string[];
 }

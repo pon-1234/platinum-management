@@ -30,6 +30,8 @@ export default function QuotePreviewModal({
   const [applyHouseFee, setApplyHouseFee] = useState<boolean>(false);
   const [applySingleCharge, setApplySingleCharge] = useState<boolean>(false);
   const [drinkTotal, setDrinkTotal] = useState<number>(0);
+  const [serviceRate, setServiceRate] = useState<number>(0.1);
+  const [taxRate, setTaxRate] = useState<number>(0.1);
 
   const startAt = visit.checkInAt;
   const endAt = visit.checkOutAt || new Date().toISOString();
@@ -46,7 +48,9 @@ export default function QuotePreviewModal({
         applyHouseFee,
         applySingleCharge,
         drinkTotal,
-        serviceTaxRate: 0.2,
+        // Prefer split rates
+        serviceRate,
+        taxRate,
       });
     } catch {
       return null;
@@ -148,6 +152,36 @@ export default function QuotePreviewModal({
             />
           </div>
           <div>
+            <Label>サービス料率</Label>
+            <Input
+              type="number"
+              min={0}
+              max={1}
+              step="0.01"
+              value={serviceRate}
+              onChange={(e) =>
+                setServiceRate(
+                  Math.max(0, Math.min(1, Number(e.target.value || 0)))
+                )
+              }
+            />
+          </div>
+          <div>
+            <Label>税率</Label>
+            <Input
+              type="number"
+              min={0}
+              max={1}
+              step="0.01"
+              value={taxRate}
+              onChange={(e) =>
+                setTaxRate(
+                  Math.max(0, Math.min(1, Number(e.target.value || 0)))
+                )
+              }
+            />
+          </div>
+          <div>
             <Label>滞在分数</Label>
             <div className="px-2 py-1 border rounded bg-gray-50">
               {quote?.stayMinutes ?? "-"} 分
@@ -192,6 +226,14 @@ export default function QuotePreviewModal({
               <span>¥{(quote?.subtotal ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
+              <span>サービス料</span>
+              <span>¥{(quote?.serviceAmount ?? 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>税額</span>
+              <span>¥{(quote?.taxAmount ?? 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-500">
               <span>サービス料＋税</span>
               <span>¥{(quote?.serviceTax ?? 0).toLocaleString()}</span>
             </div>

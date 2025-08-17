@@ -1660,9 +1660,21 @@ export function quoteSession(req: PricingRequest): PriceQuote {
   }
 
   const subtotal = lines.reduce((s, l) => s + l.amount, 0);
-  const rate = req.serviceTaxRate ?? 0.2;
-  const serviceTax = Math.round(subtotal * rate);
-  const total = subtotal + serviceTax;
+  // New split rates (fallback to combined serviceTaxRate if provided)
+  const serviceRate = req.serviceRate ?? 0;
+  const taxRate = req.taxRate ?? 0;
+  let serviceAmount = 0;
+  let taxAmount = 0;
+  if (serviceRate > 0 || taxRate > 0) {
+    serviceAmount = Math.round(subtotal * serviceRate);
+    taxAmount = Math.round((subtotal + serviceAmount) * taxRate);
+  } else {
+    const rate = req.serviceTaxRate ?? 0.2;
+    serviceAmount = Math.round(subtotal * rate);
+    taxAmount = 0;
+  }
+  const serviceTax = serviceAmount + taxAmount;
+  const total = subtotal + serviceAmount + taxAmount;
 
   return {
     plan: req.plan,
@@ -1672,6 +1684,8 @@ export function quoteSession(req: PricingRequest): PriceQuote {
     lines,
     subtotal,
     serviceTax,
+    serviceAmount,
+    taxAmount,
     total,
   };
 }
