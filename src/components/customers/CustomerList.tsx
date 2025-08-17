@@ -3,6 +3,7 @@
 import { useState, memo, useEffect } from "react";
 import Link from "next/link";
 import { FixedSizeList } from "react-window";
+import { DataTable, DataTableColumn } from "@/components/table/DataTable";
 import { Customer } from "@/types/customer.types";
 import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
 import { PencilIcon, EyeIcon } from "@heroicons/react/24/outline";
@@ -120,55 +121,91 @@ export function CustomerList({
     onSelectionChange?.(selectedIds);
   }, [selectedIds]);
 
+  const columns: DataTableColumn<Customer>[] = [
+    {
+      key: "name",
+      header: "名前",
+      cell: (c) => (
+        <div>
+          <div className="font-medium text-gray-900">{c.name}</div>
+          {c.nameKana && <div className="text-gray-500">{c.nameKana}</div>}
+        </div>
+      ),
+    },
+    {
+      key: "phone",
+      header: "電話番号",
+      cell: (c) => (
+        <span className="text-gray-500">
+          {formatPhoneNumber(c.phoneNumber)}
+        </span>
+      ),
+    },
+    {
+      key: "line",
+      header: "LINE ID",
+      cell: (c) => <span className="text-gray-500">{c.lineId || "-"}</span>,
+    },
+    {
+      key: "birthday",
+      header: "誕生日",
+      cell: (c) => (
+        <span className="text-gray-500">{formatDate(c.birthday)}</span>
+      ),
+    },
+    {
+      key: "status",
+      header: "ステータス",
+      cell: (c) => <CustomerStatusBadge status={c.status} />,
+    },
+    {
+      key: "created",
+      header: "登録日",
+      cell: (c) => (
+        <span className="text-gray-500">{formatDate(c.createdAt)}</span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "操作",
+      cell: (c) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/customers?modal=1`}
+            as={`/customers/${c.id}`}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <EyeIcon className="h-5 w-5" />
+            <span className="sr-only">詳細</span>
+          </Link>
+          {onEdit && (
+            <button
+              onClick={() => onEdit?.(c)}
+              className="text-indigo-600 hover:text-indigo-900"
+            >
+              <PencilIcon className="h-5 w-5" />
+              <span className="sr-only">編集</span>
+            </button>
+          )}
+        </div>
+      ),
+      className: "text-right",
+    },
+  ];
+
   return (
-    <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-      <div className="bg-gray-50 flex items-center border-b border-gray-300">
-        <div className="relative px-6 sm:w-12 sm:px-6">
-          <input
-            type="checkbox"
-            className="absolute left-6 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            checked={
-              selectedIds.length > 0 && selectedIds.length === customers.length
-            }
-            onChange={handleSelectAll}
-          />
-        </div>
-        <div className="flex-1 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-          名前
-        </div>
-        <div className="flex-1 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-          電話番号
-        </div>
-        <div className="flex-1 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-          LINE ID
-        </div>
-        <div className="flex-1 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-          誕生日
-        </div>
-        <div className="flex-1 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-          ステータス
-        </div>
-        <div className="flex-1 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-          登録日
-        </div>
-        <div className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-          <span className="sr-only">Actions</span>
-        </div>
-      </div>
-      <FixedSizeList
-        height={600} // Adjust height as needed
-        itemCount={customers.length}
-        itemSize={65} // Adjust itemSize to match your row height
-        width="100%"
-        itemData={{
-          customers,
-          selectedIds,
-          handleSelectOne,
-          onEdit,
-        }}
-      >
-        {Row}
-      </FixedSizeList>
-    </div>
+    <DataTable
+      columns={columns}
+      rows={customers}
+      getRowKey={(c) => c.id}
+      rowHeight={65}
+      selection={{
+        isAllSelected:
+          selectedIds.length > 0 && selectedIds.length === customers.length,
+        isSelected: (c) => selectedIds.includes(c.id),
+        onToggleAll: handleSelectAll,
+        onToggleOne: (c) => handleSelectOne(c.id),
+      }}
+    />
   );
 }
