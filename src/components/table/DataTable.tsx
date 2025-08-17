@@ -1,7 +1,6 @@
 "use client";
 
-import React, { memo, forwardRef, useMemo } from "react";
-import { FixedSizeList, ListChildComponentProps } from "react-window";
+import React from "react";
 
 export interface DataTableColumn<T = any> {
   key: string;
@@ -30,55 +29,10 @@ export function DataTable<T = any>({
   columns,
   rows,
   getRowKey,
-  rowHeight = 64,
+  rowHeight = 64, // reserved for future virtualization
   selection,
   tableClassName,
 }: DataTableProps<T>) {
-  const Row = memo(({ index, style }: ListChildComponentProps) => {
-    const row = rows[index] as T;
-    const selected = selection?.isSelected ? selection.isSelected(row) : false;
-
-    return (
-      <tr style={style as React.CSSProperties} className="hover:bg-gray-50">
-        {selection && (
-          <td className="px-6 py-4">
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={() => selection.onToggleOne(row)}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            />
-          </td>
-        )}
-        {columns.map((col) => (
-          <td
-            key={col.key}
-            className={`px-6 py-4 whitespace-nowrap ${col.className || ""}`}
-          >
-            {col.cell(row)}
-          </td>
-        ))}
-      </tr>
-    );
-  });
-  Row.displayName = "DataTableRow";
-
-  const TBodyOuter = useMemo(
-    () =>
-      forwardRef<HTMLTableSectionElement, any>(function TBodyOuter(props, ref) {
-        return <tbody ref={ref} {...props} />;
-      }),
-    []
-  );
-
-  const TBodyInner = useMemo(
-    () =>
-      forwardRef<HTMLTableSectionElement, any>(function TBodyInner(props, ref) {
-        return <tbody ref={ref} {...props} />;
-      }),
-    []
-  );
-
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       <div className="w-full overflow-x-auto">
@@ -113,8 +67,8 @@ export function DataTable<T = any>({
               ))}
             </tr>
           </thead>
-          {rows.length === 0 ? (
-            <tbody>
+          <tbody>
+            {rows.length === 0 ? (
               <tr>
                 <td
                   className="px-6 py-12 text-center text-gray-500"
@@ -123,20 +77,38 @@ export function DataTable<T = any>({
                   データが見つかりません
                 </td>
               </tr>
-            </tbody>
-          ) : (
-            <FixedSizeList
-              height={600}
-              itemCount={rows.length}
-              itemSize={rowHeight}
-              width={"100%"}
-              outerElementType={TBodyOuter as any}
-              innerElementType={TBodyInner as any}
-              itemKey={(index) => String(getRowKey(rows[index] as T))}
-            >
-              {Row as any}
-            </FixedSizeList>
-          )}
+            ) : (
+              rows.map((row) => {
+                const selected = selection?.isSelected
+                  ? selection.isSelected(row)
+                  : false;
+                return (
+                  <tr key={String(getRowKey(row))} className="hover:bg-gray-50">
+                    {selection && (
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => selection.onToggleOne(row)}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                      </td>
+                    )}
+                    {columns.map((col) => (
+                      <td
+                        key={col.key}
+                        className={`px-6 py-4 whitespace-nowrap ${
+                          col.className || ""
+                        }`}
+                      >
+                        {col.cell(row)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
         </table>
       </div>
     </div>
