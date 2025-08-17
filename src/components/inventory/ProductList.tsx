@@ -12,6 +12,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
+import { DataTable, DataTableColumn } from "@/components/table/DataTable";
 
 interface ProductListProps {
   products: Product[];
@@ -287,83 +288,90 @@ export function ProductList({
         </div>
       </div>
 
-      {/* 商品一覧テーブル（仮想化） */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="min-w-full overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedIds.length === products.length &&
-                      products.length > 0
-                    }
-                    onChange={handleSelectAll}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  商品名
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  カテゴリー
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  在庫状況
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  販売価格
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  原価
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  更新日
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            {loading ? (
-              <tbody>
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                      <span className="ml-2 text-gray-500">読み込み中...</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            ) : products.length === 0 ? (
-              <tbody>
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-6 py-12 text-center text-gray-500"
+      {/* 商品一覧テーブル（共通 DataTable） */}
+      <DataTable
+        columns={
+          [
+            {
+              key: "name",
+              header: "商品名",
+              cell: (p: Product) => (
+                <div className="font-medium text-gray-900">{p.name}</div>
+              ),
+            },
+            {
+              key: "category",
+              header: "カテゴリー",
+              cell: (p: Product) => (
+                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                  {p.category}
+                </span>
+              ),
+            },
+            {
+              key: "stock",
+              header: "在庫数",
+              cell: (p: Product) => <span>{p.stock_quantity}</span>,
+            },
+            {
+              key: "cost",
+              header: "原価",
+              cell: (p: Product) => <span>¥{p.cost.toLocaleString()}</span>,
+            },
+            {
+              key: "price",
+              header: "販売価格",
+              cell: (p: Product) => <span>¥{p.price.toLocaleString()}</span>,
+            },
+            {
+              key: "updated",
+              header: "更新日",
+              cell: (p: Product) => (
+                <span>
+                  {new Date(p.updated_at).toLocaleDateString("ja-JP")}
+                </span>
+              ),
+            },
+            {
+              key: "actions",
+              header: "操作",
+              cell: (p: Product) => (
+                <div className="flex space-x-2 justify-end">
+                  <button
+                    onClick={() => onEdit?.(p)}
+                    className="text-indigo-600 hover:text-indigo-900"
                   >
-                    商品が見つかりません
-                  </td>
-                </tr>
-              </tbody>
-            ) : (
-              <FixedSizeList
-                height={600}
-                itemCount={rows.length}
-                itemSize={68}
-                width={"100%"}
-                outerElementType={TBodyOuter as any}
-                innerElementType={TBodyInner as any}
-              >
-                {Row as any}
-              </FixedSizeList>
-            )}
-          </table>
-        </div>
-      </div>
+                    編集
+                  </button>
+                  <button
+                    onClick={() => onView?.(p)}
+                    className="text-blue-600 hover:text-blue-900"
+                  >
+                    詳細
+                  </button>
+                  <button
+                    onClick={() => onDelete?.(p)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    削除
+                  </button>
+                </div>
+              ),
+              className: "text-right",
+            },
+          ] as DataTableColumn<Product>[]
+        }
+        rows={products}
+        getRowKey={(p) => p.id}
+        rowHeight={68}
+        selection={{
+          isAllSelected:
+            selectedIds.length === products.length && products.length > 0,
+          isSelected: (p) => selectedIds.includes(p.id),
+          onToggleAll: handleSelectAll,
+          onToggleOne: (p) => handleSelectOne(p.id),
+        }}
+      />
 
       <SelectionPanel
         selectedCount={selectedIds.length}
