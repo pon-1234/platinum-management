@@ -81,14 +81,18 @@ export function DataTable<T = any>({
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="min-w-full overflow-x-auto">
-        <table
-          className={`min-w-full divide-y divide-gray-200 ${tableClassName || ""}`}
-        >
+      <div className="w-full overflow-x-auto">
+        <table className={`w-full table-fixed ${tableClassName || ""}`}>
+          <colgroup>
+            {selection && <col style={{ width: 56 }} />}
+            {columns.map((c) => (
+              <col key={c.key} />
+            ))}
+          </colgroup>
           <thead className="bg-gray-50">
-            <tr>
+            <tr className="divide-x divide-gray-200">
               {selection && (
-                <th className="px-6 py-3 text-left">
+                <th className="px-6 py-3 text-left align-middle">
                   <input
                     type="checkbox"
                     checked={selection.isAllSelected}
