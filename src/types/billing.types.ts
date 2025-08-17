@@ -215,3 +215,42 @@ export const PRODUCT_CATEGORIES = [
 ] as const;
 
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
+// --- Pricing Engine Types (Appended on 2025-08-17) ---
+export type SeatPlan = "BAR" | "COUNTER" | "VIP_A" | "VIP_B";
+
+export interface PricingRequest {
+  plan: SeatPlan;
+  startAt: Date | string;
+  endAt: Date | string;
+  useRoom?: boolean;
+  nominationCount?: number;
+  inhouseCount?: number;
+  applyHouseFee?: boolean;
+  applySingleCharge?: boolean;
+  /** ドリンク合計（自由入力。最低1,000円〜のため、実際の合計を渡す） */
+  drinkTotal?: number;
+  /** サービス料＋税率（既定 0.2 = 20%） */
+  serviceTaxRate?: number;
+}
+
+export interface PriceLine {
+  code: string; // e.g., SET_BAR, EXT_VIP_A, DRINKS
+  label: string; // 人間可読
+  unitPrice: number; // 円
+  quantity: number;
+  amount: number; // unitPrice * quantity
+  meta?: Record<string, unknown>;
+}
+
+export interface PriceQuote {
+  plan: SeatPlan;
+  startAt: string; // ISO
+  endAt: string; // ISO
+  stayMinutes: number;
+  lines: PriceLine[];
+  subtotal: number;
+  serviceTax: number;
+  total: number;
+  notes?: string[];
+}

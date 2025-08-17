@@ -1369,3 +1369,200 @@ export class BillingService extends BaseService {
 
 // Export singleton instance
 export const billingService = new BillingService();
+
+// --- Pricing Engine (Appended on 2025-08-17) ---
+import type {
+  SeatPlan,
+  PricingRequest,
+  PriceLine,
+  PriceQuote,
+} from "@/types/billing.types";
+
+const PRICING_TABLE = {
+  BAR: {
+    baseMinutes: 90,
+    basePrice: 3000,
+    ext: { stepMinutes: 30, pricePerStep: 1000 },
+  },
+  COUNTER: {
+    baseMinutes: 60,
+    basePrice: 8000,
+    ext: { stepMinutes: 10, pricePerStep: 1000 },
+  },
+  VIP_A: {
+    baseMinutes: 80,
+    basePrice: 12000,
+    ext: { stepMinutes: 60, pricePerStep: 10000 },
+    room: {
+      baseMinutes: 80,
+      basePrice: 10000,
+      ext: { stepMinutes: 60, pricePerStep: 10000 },
+    },
+  },
+  VIP_B: {
+    baseMinutes: 80,
+    basePrice: 12000,
+    ext: { stepMinutes: 60, pricePerStep: 10000 },
+    room: {
+      baseMinutes: 80,
+      basePrice: 20000,
+      ext: { stepMinutes: 60, pricePerStep: 20000 },
+    },
+  },
+} as const;
+
+const PLAN_LABEL: Record<SeatPlan, string> = {
+  BAR: "BAR",
+  COUNTER: "COUNTER",
+  VIP_A: "VIP A",
+  VIP_B: "VIP B",
+};
+
+function ceilDiv(n: number, d: number) {
+  return Math.ceil(n / d);
+}
+
+export function quoteSession(req: PricingRequest): PriceQuote {
+  const start = new Date(req.startAt);
+  const end = new Date(req.endAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    throw new Error("Invalid date(s) in PricingRequest");
+  }
+
+  const stayMinutes = Math.max(
+    0,
+    Math.ceil((end.getTime() - start.getTime()) / 60000)
+  );
+  const cfg = PRICING_TABLE[req.plan as SeatPlan];
+  const lines: PriceLine[] = [];
+
+  // Base set
+  lines.push({
+    code: `SET_${req.plan}`,
+    label: `1セット【${PLAN_LABEL[req.plan as SeatPlan]}】（${cfg.baseMinutes}分）`,
+    unitPrice: cfg.basePrice,
+    quantity: 1,
+    amount: cfg.basePrice,
+  });
+
+  // Set extension
+  const overtime = Math.max(0, stayMinutes - cfg.baseMinutes);
+  if (overtime > 0) {
+    const units = ceilDiv(overtime, cfg.ext.stepMinutes);
+    lines.push({
+      code: `EXT_${req.plan}`,
+      label:
+        cfg.ext.stepMinutes === 10
+          ? "延長（10分）"
+          : cfg.ext.stepMinutes === 30
+            ? "延長（30分）"
+            : `延長セット（${cfg.ext.stepMinutes}分）`,
+      unitPrice: cfg.ext.pricePerStep,
+      quantity: units,
+      amount: units * cfg.ext.pricePerStep,
+      meta: { overtimeMinutes: overtime },
+    });
+  }
+
+  // Room (VIP only)
+  if ((req.useRoom ?? false) && (cfg as any).room) {
+    const roomCfg = (cfg as any).room as {
+      baseMinutes: number;
+      basePrice: number;
+      ext: { stepMinutes: number; pricePerStep: number };
+    };
+
+    lines.push({
+      code: `ROOM_${req.plan}`,
+      label: `ROOM（${roomCfg.baseMinutes}分）`,
+      unitPrice: roomCfg.basePrice,
+      quantity: 1,
+      amount: roomCfg.basePrice,
+    });
+
+    const roomOvertime = Math.max(0, stayMinutes - roomCfg.baseMinutes);
+    if (roomOvertime > 0) {
+      const roomUnits = ceilDiv(roomOvertime, roomCfg.ext.stepMinutes);
+      lines.push({
+        code: `ROOM_EXT_${req.plan}`,
+        label: `延長ROOM（${roomCfg.ext.stepMinutes}分）`,
+        unitPrice: roomCfg.ext.pricePerStep,
+        quantity: roomUnits,
+        amount: roomUnits * roomCfg.ext.pricePerStep,
+        meta: { overtimeMinutes: roomOvertime },
+      });
+    }
+  }
+
+  // Other fees
+  const nominationCount = req.nominationCount ?? 0;
+  if (nominationCount > 0) {
+    lines.push({
+      code: "NOMINATION",
+      label: "指名料",
+      unitPrice: 1000,
+      quantity: nominationCount,
+      amount: 1000 * nominationCount,
+    });
+  }
+
+  const inhouseCount = req.inhouseCount ?? 0;
+  if (inhouseCount > 0) {
+    lines.push({
+      code: "INHOUSE",
+      label: "場内料",
+      unitPrice: 1000,
+      quantity: inhouseCount,
+      amount: 1000 * inhouseCount,
+    });
+  }
+
+  if (req.applyHouseFee) {
+    lines.push({
+      code: "HOUSE_FEE",
+      label: "ハウス料",
+      unitPrice: 2000,
+      quantity: 1,
+      amount: 2000,
+    });
+  }
+
+  if (req.applySingleCharge) {
+    lines.push({
+      code: "SINGLE_CHARGE",
+      label: "シングルチャージ",
+      unitPrice: 2000,
+      quantity: 1,
+      amount: 2000,
+    });
+  }
+
+  const drinks = req.drinkTotal ?? 0;
+  if (drinks > 0) {
+    lines.push({
+      code: "DRINKS",
+      label: "ドリンク",
+      unitPrice: drinks,
+      quantity: 1,
+      amount: drinks,
+    });
+  }
+
+  const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+  const rate = req.serviceTaxRate ?? 0.2;
+  const serviceTax = Math.round(subtotal * rate);
+  const total = subtotal + serviceTax;
+
+  return {
+    plan: req.plan,
+    startAt: start.toISOString(),
+    endAt: end.toISOString(),
+    stayMinutes,
+    lines,
+    subtotal,
+    serviceTax,
+    total,
+  };
+}
+
+export { PRICING_TABLE };
