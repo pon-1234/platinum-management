@@ -1419,6 +1419,20 @@ export class BillingService extends BaseService {
     visitId: string,
     quote: import("@/types/billing.types").PriceQuote
   ): Promise<void> {
+    // Remove existing system lines for same codes to avoid duplication
+    try {
+      const codes = quote.lines.map((l) => l.code);
+      if (codes.length > 0) {
+        await this.supabase
+          .from("order_items")
+          .delete()
+          .eq("visit_id", visitId)
+          .in("notes", codes);
+      }
+    } catch {
+      // ignore cleanup failures
+    }
+
     for (const line of quote.lines) {
       const productId = await this.ensureSystemProduct(
         line.code,
@@ -1433,6 +1447,34 @@ export class BillingService extends BaseService {
         notes: line.code,
       });
     }
+  }
+
+  async finalizeVisitWithQuote(
+    visitId: string,
+    quote: import("@/types/billing.types").PriceQuote
+  ): Promise<void> {
+    // Set checkout and status
+    await this.supabase
+      .from("visits")
+      .update({
+        check_out_at: new Date().toISOString(),
+        status: "completed",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", visitId);
+
+    // Apply quote items
+    await this.applyQuoteToVisit(visitId, quote);
+
+    // Calculate totals and persist
+    const calc = await this.calculateBill(visitId);
+    await this.updateVisit(visitId, {
+      subtotal: calc.subtotal,
+      serviceCharge: calc.serviceCharge,
+      taxAmount: calc.taxAmount,
+      totalAmount: calc.totalAmount,
+      status: "completed",
+    });
   }
 }
 
