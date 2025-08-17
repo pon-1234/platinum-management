@@ -16,7 +16,7 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isLoading, fetchUser } = useAuthStore();
+  const { user, isLoading, hasFetched, fetchUser } = useAuthStore();
 
   useEffect(() => {
     if (!user && !isLoading) {
@@ -26,20 +26,28 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user) {
+      if (!user && hasFetched) {
         router.push("/auth/login");
-      } else if (!canAccessRoute(user, pathname)) {
+      } else if (user && !canAccessRoute(user, pathname)) {
         const redirectPath = getRedirectPath(user, pathname);
         router.push(redirectPath);
       }
     }
-  }, [user, isLoading, pathname, router]);
+  }, [user, isLoading, hasFetched, pathname, router]);
 
   if (isLoading) {
     return <>{fallback}</>;
   }
 
-  if (!user || !canAccessRoute(user, pathname)) {
+  if (!hasFetched || isLoading) {
+    return <>{fallback}</>;
+  }
+
+  if (!user) {
+    return <>{fallback}</>;
+  }
+
+  if (!canAccessRoute(user, pathname)) {
     return <>{fallback}</>;
   }
 
