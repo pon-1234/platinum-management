@@ -15,6 +15,7 @@ import {
 import { formatDate, formatCurrency } from "@/lib/utils/formatting";
 import { SelectionPanel } from "@/components/table/SelectionPanel";
 import { convertToCSV, downloadCSV } from "@/lib/utils/export";
+import { DataTable, DataTableColumn } from "@/components/table/DataTable";
 
 interface BottleKeepListProps {
   bottleKeeps: BottleKeepDetail[];
@@ -257,189 +258,170 @@ export function BottleKeepList({
         </div>
       </div>
 
-      {/* ボトルキープ一覧テーブル */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="min-w-full overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedIds.length === bottleKeeps.length &&
-                      bottleKeeps.length > 0
-                    }
-                    onChange={handleSelectAll}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ボトル番号
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  顧客
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  商品
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  残量
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  開封日
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  期限日
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  保管場所
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ステータス
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                      <span className="ml-2 text-gray-500">読み込み中...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : bottleKeeps.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="px-6 py-12 text-center text-gray-500"
+      {/* ボトルキープ一覧（共通 DataTable） */}
+      <DataTable
+        columns={
+          [
+            {
+              key: "bottle_number",
+              header: "ボトル番号",
+              cell: (b: BottleKeepDetail) => (
+                <div className="text-sm font-medium text-gray-900">
+                  {b.bottle_number}
+                </div>
+              ),
+            },
+            {
+              key: "customer",
+              header: "顧客",
+              cell: (b: BottleKeepDetail) => (
+                <div>
+                  <div className="text-sm text-gray-900">
+                    {b.customer?.name}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {b.customer?.phone_number}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "product",
+              header: "商品",
+              cell: (b: BottleKeepDetail) => (
+                <div>
+                  <div className="text-sm text-gray-900">{b.product?.name}</div>
+                  <div className="text-xs text-gray-500">
+                    {b.product?.category}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "remaining",
+              header: "残量",
+              cell: (b: BottleKeepDetail) => (
+                <div>
+                  <div
+                    className={`text-sm font-medium ${getRemainingAmountColor((b as any).remaining_amount)}`}
                   >
-                    ボトルキープが見つかりません
-                  </td>
-                </tr>
-              ) : (
-                bottleKeeps.map((bottle) => {
-                  const statusBadge = getStatusBadge(bottle.status);
-                  const expiryStatus = getExpiryStatus(bottle.expiry_date);
-                  const remainingValue =
-                    (bottle.product?.price || 0) * bottle.remaining_amount;
-
-                  return (
-                    <tr key={bottle.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(bottle.id)}
-                          onChange={() => handleSelectOne(bottle.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {bottle.bottle_number}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {bottle.customer?.name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {bottle.customer?.phone_number}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {bottle.product?.name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {bottle.product?.category}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div
-                          className={`text-sm font-medium ${getRemainingAmountColor(bottle.remaining_amount)}`}
-                        >
-                          {Math.round(bottle.remaining_amount * 100)}%
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatCurrency(remainingValue)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(bottle.opened_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {formatDate(bottle.expiry_date)}
-                        </div>
-                        {expiryStatus && (
-                          <div
-                            className={`text-xs ${expiryStatus.color} flex items-center`}
-                          >
-                            {expiryStatus.type === "expired" && (
-                              <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-                            )}
-                            {expiryStatus.type === "expiring" && (
-                              <ClockIcon className="h-3 w-3 mr-1" />
-                            )}
-                            {expiryStatus.label}
-                          </div>
+                    {Math.round((b as any).remaining_amount * 100)}%
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatCurrency(
+                      ((b.product?.price || 0) *
+                        (b as any).remaining_amount) as number
+                    )}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "opened",
+              header: "開封日",
+              cell: (b: BottleKeepDetail) => (
+                <span>{formatDate(b.opened_date)}</span>
+              ),
+            },
+            {
+              key: "expiry",
+              header: "期限日",
+              cell: (b: BottleKeepDetail) => {
+                const expiryStatus = getExpiryStatus(b.expiry_date as any);
+                return (
+                  <div>
+                    <div className="text-sm text-gray-900">
+                      {formatDate(b.expiry_date as any)}
+                    </div>
+                    {expiryStatus && (
+                      <div
+                        className={`text-xs ${expiryStatus.color} flex items-center`}
+                      >
+                        {expiryStatus.type === "expired" && (
+                          <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
                         )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {bottle.storage_location || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.color}`}
-                        >
-                          {statusBadge.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
-                          {onView && (
-                            <button
-                              onClick={() => onView(bottle)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="詳細表示"
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                          {onUse && bottle.status === "active" && (
-                            <button
-                              onClick={() => onUse(bottle)}
-                              className="text-green-600 hover:text-green-900"
-                              title="使用記録"
-                            >
-                              <BeakerIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                          {onEdit && (
-                            <button
-                              onClick={() => onEdit(bottle)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="編集"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                        {expiryStatus.type === "expiring" && (
+                          <ClockIcon className="h-3 w-3 mr-1" />
+                        )}
+                        {expiryStatus.label}
+                      </div>
+                    )}
+                  </div>
+                );
+              },
+            },
+            {
+              key: "storage",
+              header: "保管場所",
+              cell: (b: BottleKeepDetail) => (
+                <span className="text-gray-500">
+                  {b.storage_location || "-"}
+                </span>
+              ),
+            },
+            {
+              key: "status",
+              header: "ステータス",
+              cell: (b: BottleKeepDetail) => {
+                const s = getStatusBadge(b.status);
+                return (
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${s.color}`}
+                  >
+                    {s.label}
+                  </span>
+                );
+              },
+            },
+            {
+              key: "actions",
+              header: "操作",
+              className: "text-right",
+              cell: (b: BottleKeepDetail) => (
+                <div className="flex space-x-2 justify-end">
+                  {onView && (
+                    <button
+                      onClick={() => onView(b as BottleKeepDetail)}
+                      className="text-blue-600 hover:text-blue-900"
+                      title="詳細表示"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                  {onUse && b.status === "active" && (
+                    <button
+                      onClick={() => onUse(b as BottleKeepDetail)}
+                      className="text-green-600 hover:text-green-900"
+                      title="使用記録"
+                    >
+                      <BeakerIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(b as BottleKeepDetail)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                      title="編集"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ),
+            },
+          ] as DataTableColumn<BottleKeepDetail>[]
+        }
+        rows={bottleKeeps}
+        getRowKey={(b) => b.id}
+        rowHeight={68}
+        selection={{
+          isAllSelected:
+            selectedIds.length === bottleKeeps.length && bottleKeeps.length > 0,
+          isSelected: (b) => selectedIds.includes((b as BottleKeepDetail).id),
+          onToggleAll: handleSelectAll,
+          onToggleOne: (b) => handleSelectOne((b as BottleKeepDetail).id),
+        }}
+      />
 
       <SelectionPanel
         selectedCount={selectedIds.length}
