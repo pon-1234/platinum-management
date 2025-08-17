@@ -67,13 +67,16 @@ const Row = memo(
         </div>
         <div className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
           <div className="flex items-center justify-end gap-2">
-            <Link
-              href={`/customers/${customer.id}`}
+            <button
+              type="button"
+              onClick={() =>
+                (window.location.href = `/customers/${customer.id}`)
+              }
               className="text-gray-400 hover:text-gray-500"
             >
               <EyeIcon className="h-5 w-5" />
               <span className="sr-only">詳細</span>
-            </Link>
+            </button>
             {data.onEdit && (
               <button
                 onClick={() => data.onEdit?.(customer)}
@@ -169,13 +172,14 @@ export function CustomerList({
       header: "操作",
       cell: (c) => (
         <div className="flex items-center justify-end gap-2">
-          <Link
-            href={`/customers/${c.id}`}
+          <button
+            type="button"
+            onClick={() => (window.location.href = `/customers/${c.id}`)}
             className="text-gray-400 hover:text-gray-500"
           >
             <EyeIcon className="h-5 w-5" />
             <span className="sr-only">詳細</span>
-          </Link>
+          </button>
           {onEdit && (
             <button
               onClick={() => onEdit?.(c)}
