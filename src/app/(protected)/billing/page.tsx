@@ -14,6 +14,7 @@ import {
 import { toast } from "react-hot-toast";
 import { StatCard } from "@/components/ui/StatCard";
 import OrderTicketManagement from "@/components/billing/OrderTicketManagement";
+import QuotePreviewModal from "@/components/billing/QuotePreviewModal";
 import ProductSelectModal from "@/components/billing/ProductSelectModal";
 import { useState as useReactState } from "react";
 import { Modal } from "@/components/ui/Modal";
@@ -38,6 +39,7 @@ export default function BillingPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailVisit, setDetailVisit] = useState<VisitWithDetails | null>(null);
   const [productModalOpen, setProductModalOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTableId, setEditTableId] = useState<number | "">("");
   const [editNumGuests, setEditNumGuests] = useState<number>(1);
@@ -415,6 +417,27 @@ export default function BillingPage() {
                               }}
                             >
                               詳細
+                            </button>
+                            <button
+                              className="text-green-700 hover:text-green-900"
+                              onClick={async () => {
+                                try {
+                                  const detail =
+                                    await billingService.getVisitWithDetails(
+                                      v.id
+                                    );
+                                  if (!detail) {
+                                    toast.error("対象の来店が見つかりません");
+                                    return;
+                                  }
+                                  setDetailVisit(detail);
+                                  setQuoteOpen(true);
+                                } catch {
+                                  toast.error("見積りの取得に失敗しました");
+                                }
+                              }}
+                            >
+                              見積り
                             </button>
                             <button
                               className="text-yellow-700 hover:text-yellow-900"
@@ -1295,6 +1318,15 @@ export default function BillingPage() {
           }
         }}
       />
+
+      {/* Quote preview modal */}
+      {detailVisit && (
+        <QuotePreviewModal
+          isOpen={quoteOpen}
+          onClose={() => setQuoteOpen(false)}
+          visit={detailVisit}
+        />
+      )}
     </div>
   );
 }
