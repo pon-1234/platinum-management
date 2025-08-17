@@ -13,6 +13,8 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { formatDate, formatCurrency } from "@/lib/utils/formatting";
+import { SelectionPanel } from "@/components/table/SelectionPanel";
+import { convertToCSV, downloadCSV } from "@/lib/utils/export";
 
 interface BottleKeepListProps {
   bottleKeeps: BottleKeepDetail[];
@@ -439,14 +441,34 @@ export function BottleKeepList({
         </div>
       </div>
 
-      {/* 選択されたアイテム数 */}
-      {selectedIds.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-          <p className="text-sm text-blue-800">
-            {selectedIds.length} 個のボトルが選択されています
-          </p>
-        </div>
-      )}
+      <SelectionPanel
+        selectedCount={selectedIds.length}
+        actions={[
+          {
+            label: "選択をエクスポート",
+            onClick: () => {
+              const all = bottleKeeps.filter((b) => selectedIds.includes(b.id));
+              const rows = all.map((b) => ({
+                id: b.id,
+                bottle_number: b.bottle_number,
+                customer: b.customer?.name,
+                product: b.product?.name,
+                remaining: Math.round((b as any).remaining_amount * 100),
+                opened_date: b.opened_date,
+                expiry_date: b.expiry_date || "",
+                storage_location: b.storage_location || "",
+                status: b.status,
+              }));
+              const csv = convertToCSV(rows);
+              const ts = new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/[:T]/g, "-");
+              downloadCSV(csv, `bottles_selected_${ts}.csv`);
+            },
+          },
+        ]}
+      />
     </div>
   );
 }
