@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { format } from "date-fns";
 
 export interface BottleKeep {
@@ -84,13 +85,19 @@ export interface ServeBottleInput {
 }
 
 export class BottleKeepService {
+  private static resolveClient(
+    supabaseClient?: SupabaseClient
+  ): SupabaseClient {
+    return (supabaseClient as SupabaseClient) || createClient();
+  }
   private static readonly EXPIRY_SOON_DAYS = 30;
   // ボトルキープ一覧取得
   static async getBottleKeeps(
     status?: "active" | "consumed" | "expired" | "removed",
-    customer_id?: string
+    customer_id?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<BottleKeep[]> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     let query = supabase
       .from("bottle_keeps")
       .select(
@@ -123,8 +130,11 @@ export class BottleKeepService {
   }
 
   // ボトルキープ詳細取得
-  static async getBottleKeep(id: string): Promise<BottleKeep | null> {
-    const supabase = createClient();
+  static async getBottleKeep(
+    id: string,
+    supabaseClient?: SupabaseClient
+  ): Promise<BottleKeep | null> {
+    const supabase = this.resolveClient(supabaseClient);
     const { data, error } = await supabase
       .from("bottle_keeps")
       .select(
@@ -144,9 +154,10 @@ export class BottleKeepService {
 
   // ボトル番号で検索
   static async getBottleKeepByNumber(
-    bottle_number: string
+    bottle_number: string,
+    supabaseClient?: SupabaseClient
   ): Promise<BottleKeep | null> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     const { data, error } = await supabase
       .from("bottle_keeps")
       .select(
@@ -166,9 +177,10 @@ export class BottleKeepService {
 
   // ボトルキープ作成
   static async createBottleKeep(
-    input: CreateBottleKeepInput
+    input: CreateBottleKeepInput,
+    supabaseClient?: SupabaseClient
   ): Promise<BottleKeep> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     // ボトル番号を生成
     const { data: bottleNumber, error: numberError } = await supabase.rpc(
@@ -208,12 +220,15 @@ export class BottleKeepService {
     if (error) throw error;
 
     // 履歴を記録
-    await this.addHistory({
-      bottle_keep_id: data.id,
-      action_type: "status_change",
-      notes: "ボトルキープ登録",
-      staff_id: staff?.id,
-    });
+    await this.addHistory(
+      {
+        bottle_keep_id: data.id,
+        action_type: "status_change",
+        notes: "ボトルキープ登録",
+        staff_id: staff?.id,
+      },
+      supabase
+    );
 
     return data;
   }
@@ -221,9 +236,10 @@ export class BottleKeepService {
   // ボトルキープ更新
   static async updateBottleKeep(
     id: string,
-    input: UpdateBottleKeepInput
+    input: UpdateBottleKeepInput,
+    supabaseClient?: SupabaseClient
   ): Promise<BottleKeep> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     // 更新前の状態を取得
     const { data: oldData } = await supabase
@@ -263,20 +279,26 @@ export class BottleKeepService {
 
     // ステータス変更の履歴を記録
     if (oldData?.status !== input.status && input.status) {
-      await this.addHistory({
-        bottle_keep_id: id,
-        action_type: "status_change",
-        notes: `ステータス変更: ${oldData?.status} → ${input.status}`,
-        staff_id: staff?.id,
-      });
+      await this.addHistory(
+        {
+          bottle_keep_id: id,
+          action_type: "status_change",
+          notes: `ステータス変更: ${oldData?.status} → ${input.status}`,
+          staff_id: staff?.id,
+        },
+        supabase
+      );
     }
 
     return data;
   }
 
   // ボトル提供（残量更新）
-  static async serveBottle(input: ServeBottleInput): Promise<BottleKeep> {
-    const supabase = createClient();
+  static async serveBottle(
+    input: ServeBottleInput,
+    supabaseClient?: SupabaseClient
+  ): Promise<BottleKeep> {
+    const supabase = this.resolveClient(supabaseClient);
 
     // 現在の状態を取得
     const { data: currentBottle } = await supabase
@@ -325,16 +347,19 @@ export class BottleKeepService {
       .single();
 
     // 提供履歴を記録
-    await this.addHistory({
-      bottle_keep_id: input.bottle_keep_id,
-      visit_id: input.visit_id,
-      action_type: "serve",
-      served_amount: input.served_amount,
-      remaining_before,
-      remaining_after,
-      notes: input.notes,
-      staff_id: staff?.id,
-    });
+    await this.addHistory(
+      {
+        bottle_keep_id: input.bottle_keep_id,
+        visit_id: input.visit_id,
+        action_type: "serve",
+        served_amount: input.served_amount,
+        remaining_before,
+        remaining_after,
+        notes: input.notes,
+        staff_id: staff?.id,
+      },
+      supabase
+    );
 
     return data;
   }
@@ -343,9 +368,10 @@ export class BottleKeepService {
   static async moveBottle(
     bottle_keep_id: string,
     to_location: string,
-    reason?: string
+    reason?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<BottleKeep> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     // 現在の位置を取得
     const { data: currentBottle } = await supabase
@@ -395,21 +421,25 @@ export class BottleKeepService {
       reason,
     });
 
-    await this.addHistory({
-      bottle_keep_id,
-      action_type: "move",
-      notes: `移動: ${from_location || "未設定"} → ${to_location}`,
-      staff_id: staff?.id,
-    });
+    await this.addHistory(
+      {
+        bottle_keep_id,
+        action_type: "move",
+        notes: `移動: ${from_location || "未設定"} → ${to_location}`,
+        staff_id: staff?.id,
+      },
+      supabase
+    );
 
     return data;
   }
 
   // 履歴取得
   static async getHistories(
-    bottle_keep_id: string
+    bottle_keep_id: string,
+    supabaseClient?: SupabaseClient
   ): Promise<BottleKeepHistory[]> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     const { data, error } = await supabase
       .from("bottle_keep_histories")
       .select(
@@ -426,17 +456,20 @@ export class BottleKeepService {
   }
 
   // 履歴追加（内部用）
-  private static async addHistory(history: {
-    bottle_keep_id: string;
-    visit_id?: string;
-    action_type: "serve" | "refill" | "move" | "status_change" | "note";
-    served_amount?: number;
-    remaining_before?: number;
-    remaining_after?: number;
-    notes?: string;
-    staff_id?: string;
-  }): Promise<void> {
-    const supabase = createClient();
+  private static async addHistory(
+    history: {
+      bottle_keep_id: string;
+      visit_id?: string;
+      action_type: "serve" | "refill" | "move" | "status_change" | "note";
+      served_amount?: number;
+      remaining_before?: number;
+      remaining_after?: number;
+      notes?: string;
+      staff_id?: string;
+    },
+    supabaseClient?: SupabaseClient
+  ): Promise<void> {
+    const supabase = this.resolveClient(supabaseClient);
 
     const { error } = await supabase
       .from("bottle_keep_histories")
@@ -446,14 +479,16 @@ export class BottleKeepService {
   }
 
   // 期限切れボトルの更新
-  static async updateExpiredBottles(): Promise<void> {
-    const supabase = createClient();
+  static async updateExpiredBottles(
+    supabaseClient?: SupabaseClient
+  ): Promise<void> {
+    const supabase = this.resolveClient(supabaseClient);
     const { error } = await supabase.rpc("update_expired_bottles");
     if (error) throw error;
   }
 
   // 統計情報取得（RPC関数使用）
-  static async getStatistics(): Promise<{
+  static async getStatistics(supabaseClient?: SupabaseClient): Promise<{
     total_active: number;
     total_expired: number;
     total_consumed: number;
@@ -480,7 +515,7 @@ export class BottleKeepService {
       remaining: number;
     }>;
   }> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     try {
       const { data, error } = await supabase.rpc("get_bottle_keep_statistics");
@@ -579,7 +614,10 @@ export class BottleKeepService {
   }
 
   // 顧客別統計情報取得
-  static async getCustomerStatistics(customerId: string): Promise<{
+  static async getCustomerStatistics(
+    customerId: string,
+    supabaseClient?: SupabaseClient
+  ): Promise<{
     total_bottles: number;
     active_bottles: number;
     consumed_bottles: number;
@@ -596,7 +634,7 @@ export class BottleKeepService {
       last_served_date?: string;
     }>;
   }> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase.rpc(
       "get_customer_bottle_statistics",
@@ -619,7 +657,8 @@ export class BottleKeepService {
   // 月別統計情報取得
   static async getMonthlyStatistics(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<
     Array<{
       month: string;
@@ -630,7 +669,7 @@ export class BottleKeepService {
       total_served_amount: number;
     }>
   > {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const params: Record<string, string> = {};
     if (startDate) params.p_start_date = startDate;

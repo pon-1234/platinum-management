@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CustomerAnalyticsService } from "@/services/customer-analytics.service";
 import { z } from "zod";
 import { parseQueryOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 
 // クエリパラメータのバリデーションスキーマ
 const querySchema = z.object({
@@ -41,6 +42,7 @@ const querySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
     const params = parseQueryOrThrow(querySchema, request);
     const type = params.type || "metrics";
 
@@ -48,43 +50,51 @@ export async function GET(request: NextRequest) {
 
     switch (type) {
       case "metrics":
-        data = await CustomerAnalyticsService.getCustomerMetrics({
-          retention_status: params.retention_status,
-          min_visits: params.min_visits,
-          min_revenue: params.min_revenue,
-        });
+        data = await CustomerAnalyticsService.getCustomerMetrics(
+          {
+            retention_status: params.retention_status,
+            min_visits: params.min_visits,
+            min_revenue: params.min_revenue,
+          },
+          supabase
+        );
         break;
 
       case "segments":
-        data = await CustomerAnalyticsService.getCustomerSegments({
-          segment: params.segment,
-          risk_level: params.risk_level,
-        });
+        data = await CustomerAnalyticsService.getCustomerSegments(
+          {
+            segment: params.segment,
+            risk_level: params.risk_level,
+          },
+          supabase
+        );
         break;
 
       case "rfm":
         data = await CustomerAnalyticsService.calculateRFMScores(
           params.start_date,
-          params.end_date
+          params.end_date,
+          supabase
         );
         break;
 
       case "summary":
-        data = await CustomerAnalyticsService.getAnalyticsSummary();
+        data = await CustomerAnalyticsService.getAnalyticsSummary(supabase);
         break;
 
       case "at-risk":
-        data = await CustomerAnalyticsService.getAtRiskCustomers();
+        data = await CustomerAnalyticsService.getAtRiskCustomers(supabase);
         break;
 
       case "vip":
-        data = await CustomerAnalyticsService.getVIPCustomers();
+        data = await CustomerAnalyticsService.getVIPCustomers(supabase);
         break;
 
       case "cohort":
         data = await CustomerAnalyticsService.getCohortAnalysis(
           params.start_date,
-          params.end_date
+          params.end_date,
+          supabase
         );
         break;
 
@@ -96,7 +106,8 @@ export async function GET(request: NextRequest) {
       case "acquisition-channels":
         data = await CustomerAnalyticsService.getAcquisitionChannelAnalysis(
           params.start_date,
-          params.end_date
+          params.end_date,
+          supabase
         );
         break;
 
@@ -111,16 +122,20 @@ export async function GET(request: NextRequest) {
           params.channel1,
           params.channel2,
           params.start_date,
-          params.end_date
+          params.end_date,
+          supabase
         );
         break;
 
       case "referral-program":
-        data = await CustomerAnalyticsService.analyzeReferralProgram();
+        data = await CustomerAnalyticsService.analyzeReferralProgram(supabase);
         break;
 
       default:
-        data = await CustomerAnalyticsService.getCustomerMetrics();
+        data = await CustomerAnalyticsService.getCustomerMetrics(
+          undefined,
+          supabase
+        );
     }
 
     return NextResponse.json(data);

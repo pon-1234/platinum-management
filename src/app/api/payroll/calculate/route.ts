@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PayrollService } from "@/services/payroll.service";
 import { z } from "zod";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   parseJsonOrThrow,
   parseQueryOrThrow,
@@ -23,16 +24,22 @@ export async function POST(request: NextRequest) {
       save = false,
     } = await parseJsonOrThrow(postSchema, request);
 
+    const supabase = await createServerSupabaseClient();
     const calculation = await PayrollService.calculatePayroll(
       castId,
       new Date(periodStart),
-      new Date(periodEnd)
+      new Date(periodEnd),
+      supabase
     );
 
     let result: unknown = calculation;
 
     if (save) {
-      const saved = await PayrollService.saveCalculation(calculation);
+      const saved = await PayrollService.saveCalculation(
+        calculation,
+        "draft",
+        supabase
+      );
       result = { ...calculation, id: saved.id };
     }
 
@@ -65,10 +72,12 @@ export async function GET(request: NextRequest) {
       request
     );
 
+    const supabase = await createServerSupabaseClient();
     const calculations = await PayrollService.getCalculations(
       castId,
       periodStart ? new Date(periodStart) : undefined,
-      periodEnd ? new Date(periodEnd) : undefined
+      periodEnd ? new Date(periodEnd) : undefined,
+      supabase
     );
 
     return NextResponse.json(calculations);

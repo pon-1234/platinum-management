@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import { requireValidEnvironment } from "@/lib/utils/env-validation";
 
 // Admin client for server-side operations that need to bypass RLS
 export const supabaseAdmin = createClient(
@@ -42,6 +43,15 @@ export async function getUserRole(userId: string): Promise<string | null> {
     }
     return null;
   }
+}
+
+// Validate environment on server module load (no-op in tests if desired)
+try {
+  if (process.env.NODE_ENV !== "test") {
+    requireValidEnvironment();
+  }
+} catch (error) {
+  throw error;
 }
 
 // Helper function to check if user has specific role

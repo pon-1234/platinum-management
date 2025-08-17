@@ -20,6 +20,7 @@ interface MockSupabase {
   gte: ReturnType<typeof vi.fn>;
   lte: ReturnType<typeof vi.fn>;
   not: ReturnType<typeof vi.fn>;
+  or: ReturnType<typeof vi.fn>;
   order: ReturnType<typeof vi.fn>;
   single: ReturnType<typeof vi.fn>;
   insert: ReturnType<typeof vi.fn>;

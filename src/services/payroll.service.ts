@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { Database } from "@/types/database.types";
 import { startOfMonth, endOfMonth, format, differenceInHours } from "date-fns";
@@ -72,8 +73,16 @@ export interface PayrollDetailItem {
 }
 
 export class PayrollService {
-  static async getActivePayrollRule(castId: string, date: Date = new Date()) {
-    const supabase = createClient();
+  private static resolveClient(supabaseClient?: SupabaseClient) {
+    return (supabaseClient as SupabaseClient) || createClient();
+  }
+
+  static async getActivePayrollRule(
+    castId: string,
+    date: Date = new Date(),
+    supabaseClient?: SupabaseClient
+  ) {
+    const supabase = this.resolveClient(supabaseClient);
     const { data, error } = await supabase
       .from("hostess_payroll_rules")
       .select(
@@ -94,8 +103,8 @@ export class PayrollService {
     return data;
   }
 
-  static async getNominationTypes() {
-    const supabase = createClient();
+  static async getNominationTypes(supabaseClient?: SupabaseClient) {
+    const supabase = this.resolveClient(supabaseClient);
     const { data, error } = await supabase
       .from("nomination_types")
       .select("*")
@@ -109,10 +118,15 @@ export class PayrollService {
   static async calculatePayroll(
     castId: string,
     periodStart: Date,
-    periodEnd: Date
+    periodEnd: Date,
+    supabaseClient?: SupabaseClient
   ): Promise<PayrollCalculationDetails> {
     // 適用される給与ルールを取得
-    const ruleAssignment = await this.getActivePayrollRule(castId, periodEnd);
+    const ruleAssignment = await this.getActivePayrollRule(
+      castId,
+      periodEnd,
+      supabaseClient
+    );
     if (!ruleAssignment) {
       throw new Error("給与ルールが設定されていません");
     }
@@ -120,13 +134,19 @@ export class PayrollService {
     const rule = ruleAssignment.payroll_rules;
 
     // 期間中の売上データを取得
-    const salesData = await this.getSalesData(castId, periodStart, periodEnd);
+    const salesData = await this.getSalesData(
+      castId,
+      periodStart,
+      periodEnd,
+      supabaseClient
+    );
 
     // 期間中の勤務時間を取得
     const workingHours = await this.getWorkingHours(
       castId,
       periodStart,
-      periodEnd
+      periodEnd,
+      supabaseClient
     );
 
     // 基本給の計算
@@ -136,7 +156,8 @@ export class PayrollService {
     const backPay = await this.calculateBackPay(
       rule,
       salesData,
-      ruleAssignment.payroll_rule_id
+      ruleAssignment.payroll_rule_id,
+      supabaseClient
     );
 
     // 指名料の計算
@@ -192,9 +213,10 @@ export class PayrollService {
   private static async getSalesData(
     castId: string,
     periodStart: Date,
-    periodEnd: Date
+    periodEnd: Date,
+    supabaseClient?: SupabaseClient
   ): Promise<SalesData> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     // Use the new payroll_revenue_facts view
     const { data: revenueData, error } = await supabase
@@ -245,9 +267,10 @@ export class PayrollService {
   private static async getWorkingHours(
     castId: string,
     periodStart: Date,
-    periodEnd: Date
+    periodEnd: Date,
+    supabaseClient?: SupabaseClient
   ): Promise<number> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     const { data: attendance, error } = await supabase
       .from("cast_attendance")
       .select("check_in_time, check_out_time")
@@ -278,10 +301,11 @@ export class PayrollService {
   private static async calculateBackPay(
     rule: PayrollRule,
     salesData: SalesData,
-    ruleId: string
+    ruleId: string,
+    supabaseClient?: SupabaseClient
   ): Promise<number> {
     // 売上スライドルールを取得
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     const { data: slideRules, error } = await supabase
       .from("sales_tiers")
       .select("*")
@@ -329,9 +353,10 @@ export class PayrollService {
 
   static async saveCalculation(
     calculation: PayrollCalculationDetails,
-    status: "draft" | "confirmed" | "approved" = "draft"
+    status: "draft" | "confirmed" | "approved" = "draft",
+    supabaseClient?: SupabaseClient
   ) {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     // 詳細項目をJSON形式に変換
     const details = calculation.items.map((item) => ({
@@ -381,9 +406,10 @@ export class PayrollService {
   static async getCalculations(
     castId?: string,
     periodStart?: Date,
-    periodEnd?: Date
+    periodEnd?: Date,
+    supabaseClient?: SupabaseClient
   ) {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     let query = supabase.from("payroll_calculations").select(`
         *,
         casts_profile!inner(
@@ -414,8 +440,12 @@ export class PayrollService {
     return data;
   }
 
-  static async approveCalculation(calculationId: string, approvedBy: string) {
-    const supabase = createClient();
+  static async approveCalculation(
+    calculationId: string,
+    approvedBy: string,
+    supabaseClient?: SupabaseClient
+  ) {
+    const supabase = this.resolveClient(supabaseClient);
     const { data, error } = await supabase
       .from("payroll_calculations")
       .update({
@@ -431,12 +461,15 @@ export class PayrollService {
     return data;
   }
 
-  static async calculateMonthlyPayroll(targetMonth: Date) {
+  static async calculateMonthlyPayroll(
+    targetMonth: Date,
+    supabaseClient?: SupabaseClient
+  ) {
     const monthStart = startOfMonth(targetMonth);
     const monthEnd = endOfMonth(targetMonth);
 
     // 全キャストを取得
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
     const { data: casts, error: castsError } = await supabase
       .from("casts_profile")
       .select("*")

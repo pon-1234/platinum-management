@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { updateBottleKeepSchema } from "@/lib/validations/bottle-keep";
 import { z } from "zod";
 import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
@@ -29,8 +30,10 @@ export async function GET(
       );
     }
 
+    const supabase = await createServerSupabaseClient();
     const bottle = await BottleKeepService.getBottleKeep(
-      paramsValidation.data.id
+      paramsValidation.data.id,
+      supabase
     );
 
     if (!bottle) {
@@ -71,9 +74,11 @@ export async function PUT(
     }
 
     const parsed = await parseJsonOrThrow(updateBottleKeepSchema, request);
+    const supabase = await createServerSupabaseClient();
     const bottle = await BottleKeepService.updateBottleKeep(
       paramsValidation.data.id,
-      parsed
+      parsed,
+      supabase
     );
     return NextResponse.json(bottle);
   } catch (error) {

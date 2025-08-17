@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { serveBottleSchema } from "@/lib/validations/bottle-keep";
 import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
@@ -7,7 +8,8 @@ import { parseJsonOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 export async function POST(request: NextRequest) {
   try {
     const body = await parseJsonOrThrow(serveBottleSchema, request);
-    const bottle = await BottleKeepService.serveBottle(body);
+    const supabase = await createServerSupabaseClient();
+    const bottle = await BottleKeepService.serveBottle(body, supabase);
     return NextResponse.json(bottle);
   } catch (error) {
     if (error instanceof ZodRequestError) {

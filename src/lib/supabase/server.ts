@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requireValidEnvironment } from "@/lib/utils/env-validation";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -26,4 +27,14 @@ export async function createClient() {
       },
     }
   );
+}
+
+// Validate environment on server module load (no-op in tests if desired)
+try {
+  if (process.env.NODE_ENV !== "test") {
+    requireValidEnvironment();
+  }
+} catch (error) {
+  // Re-throw to fail fast during boot if misconfigured
+  throw error;
 }

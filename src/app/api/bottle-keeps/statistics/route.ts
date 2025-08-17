@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BottleKeepService } from "@/services/bottle-keep.service";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { parseQueryOrThrow, ZodRequestError } from "@/lib/utils/api-validate";
 
@@ -20,6 +21,7 @@ const statisticsQuerySchema = z.object({
 // GET: 統計情報取得
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
     const {
       type = "general",
       customer_id,
@@ -37,19 +39,23 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
-        data = await BottleKeepService.getCustomerStatistics(customer_id);
+        data = await BottleKeepService.getCustomerStatistics(
+          customer_id,
+          supabase
+        );
         break;
 
       case "monthly":
         data = await BottleKeepService.getMonthlyStatistics(
           start_date,
-          end_date
+          end_date,
+          supabase
         );
         break;
 
       case "general":
       default:
-        data = await BottleKeepService.getStatistics();
+        data = await BottleKeepService.getStatistics(supabase);
         break;
     }
 

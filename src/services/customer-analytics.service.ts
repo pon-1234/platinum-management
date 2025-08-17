@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   parseSupabaseError,
   CustomerNotFoundError,
@@ -153,13 +154,19 @@ export interface ReferralProgramAnalysis {
 }
 
 export class CustomerAnalyticsService {
+  private static resolveClient(supabaseClient?: SupabaseClient) {
+    return (supabaseClient as SupabaseClient) || createClient();
+  }
   // 顧客メトリクス一覧取得
-  static async getCustomerMetrics(filters?: {
-    retention_status?: string;
-    min_visits?: number;
-    min_revenue?: number;
-  }): Promise<CustomerMetrics[]> {
-    const supabase = createClient();
+  static async getCustomerMetrics(
+    filters?: {
+      retention_status?: string;
+      min_visits?: number;
+      min_revenue?: number;
+    },
+    supabaseClient?: SupabaseClient
+  ): Promise<CustomerMetrics[]> {
+    const supabase = this.resolveClient(supabaseClient);
 
     let query = supabase
       .from("customer_analytics_metrics")
@@ -183,9 +190,10 @@ export class CustomerAnalyticsService {
 
   // 個別顧客メトリクス取得
   static async getCustomerMetric(
-    customerId: string
+    customerId: string,
+    supabaseClient?: SupabaseClient
   ): Promise<CustomerMetrics | null> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase
       .from("customer_analytics_metrics")
@@ -203,11 +211,14 @@ export class CustomerAnalyticsService {
   }
 
   // 顧客セグメント一覧取得
-  static async getCustomerSegments(filters?: {
-    segment?: string;
-    risk_level?: string;
-  }): Promise<CustomerSegment[]> {
-    const supabase = createClient();
+  static async getCustomerSegments(
+    filters?: {
+      segment?: string;
+      risk_level?: string;
+    },
+    supabaseClient?: SupabaseClient
+  ): Promise<CustomerSegment[]> {
+    const supabase = this.resolveClient(supabaseClient);
 
     let query = supabase
       .from("customer_segments")
@@ -229,9 +240,10 @@ export class CustomerAnalyticsService {
   // RFM分析実行
   static async calculateRFMScores(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<RFMScore[]> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const params: { p_start_date?: string; p_end_date?: string } = {};
     if (startDate) params.p_start_date = startDate;
@@ -243,8 +255,11 @@ export class CustomerAnalyticsService {
   }
 
   // 離脱予測スコア計算
-  static async calculateChurnScore(customerId: string): Promise<number> {
-    const supabase = createClient();
+  static async calculateChurnScore(
+    customerId: string,
+    supabaseClient?: SupabaseClient
+  ): Promise<number> {
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase.rpc(
       "calculate_churn_prediction_score",
@@ -257,9 +272,10 @@ export class CustomerAnalyticsService {
 
   // ライフタイムバリュー計算
   static async calculateLifetimeValue(
-    customerId: string
+    customerId: string,
+    supabaseClient?: SupabaseClient
   ): Promise<CustomerLifetimeValue> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase.rpc(
       "calculate_customer_lifetime_value",
@@ -279,9 +295,10 @@ export class CustomerAnalyticsService {
   // コホート分析データ取得
   static async getCohortAnalysis(
     startMonth?: string,
-    endMonth?: string
+    endMonth?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<CohortData[]> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     // コホートの初期化
     await supabase.rpc("initialize_customer_cohorts");
@@ -303,8 +320,10 @@ export class CustomerAnalyticsService {
   }
 
   // 分析サマリー取得（RPC関数使用）
-  static async getAnalyticsSummary(): Promise<AnalyticsSummary> {
-    const supabase = createClient();
+  static async getAnalyticsSummary(
+    supabaseClient?: SupabaseClient
+  ): Promise<AnalyticsSummary> {
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase.rpc("get_analytics_summary");
 
@@ -340,8 +359,10 @@ export class CustomerAnalyticsService {
   }
 
   // リスク顧客取得
-  static async getAtRiskCustomers(): Promise<CustomerSegment[]> {
-    const supabase = createClient();
+  static async getAtRiskCustomers(
+    supabaseClient?: SupabaseClient
+  ): Promise<CustomerSegment[]> {
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase
       .from("customer_segments")
@@ -354,8 +375,10 @@ export class CustomerAnalyticsService {
   }
 
   // VIP顧客取得
-  static async getVIPCustomers(): Promise<CustomerSegment[]> {
-    const supabase = createClient();
+  static async getVIPCustomers(
+    supabaseClient?: SupabaseClient
+  ): Promise<CustomerSegment[]> {
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase
       .from("customer_segments")
@@ -370,12 +393,13 @@ export class CustomerAnalyticsService {
   // 顧客トレンド分析
   static async getCustomerTrends(
     customerId: string,
-    months: number = 6
+    months: number = 6,
+    supabaseClient?: SupabaseClient
   ): Promise<{
     visits: Array<{ month: string; count: number }>;
     spending: Array<{ month: string; amount: number }>;
   }> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
@@ -430,9 +454,10 @@ export class CustomerAnalyticsService {
   // 獲得チャネル分析取得
   static async getAcquisitionChannelAnalysis(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<AcquisitionChannelAnalysis> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const params: { p_start_date?: string; p_end_date?: string } = {};
     if (startDate) params.p_start_date = startDate;
@@ -460,9 +485,10 @@ export class CustomerAnalyticsService {
     channel1: string,
     channel2: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    supabaseClient?: SupabaseClient
   ): Promise<ChannelComparison[]> {
-    const supabase = createClient();
+    const supabase = this.resolveClient(supabaseClient);
 
     const params: {
       p_channel1: string;
@@ -486,8 +512,10 @@ export class CustomerAnalyticsService {
   }
 
   // 紹介プログラム分析
-  static async analyzeReferralProgram(): Promise<ReferralProgramAnalysis> {
-    const supabase = createClient();
+  static async analyzeReferralProgram(
+    supabaseClient?: SupabaseClient
+  ): Promise<ReferralProgramAnalysis> {
+    const supabase = this.resolveClient(supabaseClient);
 
     const { data, error } = await supabase.rpc("analyze_referral_program");
 
