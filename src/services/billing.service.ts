@@ -1365,6 +1365,75 @@ export class BillingService extends BaseService {
 
     return data?.length || 0;
   }
+
+  // ============= QUOTE APPLICATION (from pricing engine) =============
+  private async ensureSystemProduct(
+    code: string,
+    label: string,
+    unitPrice: number
+  ): Promise<number> {
+    const systemName = `[SYS:${code}] ${label}`;
+
+    // Try to find existing by name
+    const { data: existing } = await this.supabase
+      .from("products")
+      .select("id, price")
+      .eq("name", systemName)
+      .maybeSingle();
+
+    if (existing?.id) {
+      // Optionally sync price
+      if ((existing as any).price !== unitPrice) {
+        await this.supabase
+          .from("products")
+          .update({ price: unitPrice, updated_at: new Date().toISOString() })
+          .eq("id", (existing as any).id);
+      }
+      return (existing as any).id as number;
+    }
+
+    // Create a new system product (category: other)
+    const { data: created, error } = await this.supabase
+      .from("products")
+      .insert({
+        name: systemName,
+        category: "other",
+        price: unitPrice,
+        cost: 0,
+        stock_quantity: 0,
+        low_stock_threshold: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      this.handleError(error, "システム用商品作成に失敗しました");
+    }
+    return (created as any).id as number;
+  }
+
+  async applyQuoteToVisit(
+    visitId: string,
+    quote: import("@/types/billing.types").PriceQuote
+  ): Promise<void> {
+    for (const line of quote.lines) {
+      const productId = await this.ensureSystemProduct(
+        line.code,
+        line.label,
+        line.unitPrice
+      );
+      await this.addOrderItem({
+        visitId,
+        productId,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        notes: line.code,
+      });
+    }
+  }
 }
 
 // Export singleton instance

@@ -1323,7 +1323,9 @@ export default function BillingPage() {
       {detailVisit && (
         <QuotePreviewModal
           isOpen={quoteOpen}
-          onClose={() => setQuoteOpen(false)}
+          onClose={async () => {
+            setQuoteOpen(false);
+          }}
           visit={detailVisit}
         />
       )}

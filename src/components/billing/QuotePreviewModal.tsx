@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { VisitWithDetails } from "@/types/billing.types";
 import { PRICING_TABLE, quoteSession } from "@/services/billing.service";
+import { billingService } from "@/services/billing.service";
+import { toast } from "react-hot-toast";
 
 type SeatPlan = "BAR" | "COUNTER" | "VIP_A" | "VIP_B";
 
@@ -203,6 +205,20 @@ export default function QuotePreviewModal({
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
             閉じる
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!quote) return;
+              try {
+                await billingService.applyQuoteToVisit(visit.id, quote);
+                toast.success("見積りを明細へ反映しました");
+                onClose();
+              } catch (e) {
+                toast.error("反映に失敗しました");
+              }
+            }}
+          >
+            伝票に反映
           </Button>
         </div>
       </div>
