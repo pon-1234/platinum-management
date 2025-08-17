@@ -22,6 +22,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 import { Access } from "@/components/auth/Access";
 import { convertToCSV, downloadCSV } from "@/lib/utils/export";
+import { SelectionPanel } from "@/components/table/SelectionPanel";
 
 interface CustomersPageClientProps {
   initialData: {
@@ -268,15 +269,12 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
         )}
       </div>
 
-      {selectedIds.length > 0 && (
-        <div className="fixed bottom-6 right-6 bg-white shadow-xl border rounded-lg p-3 flex items-center gap-2">
-          <span className="text-sm text-gray-700">
-            選択: {selectedIds.length} 件
-          </span>
-          <button
-            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
-            onClick={() => {
-              // ここで一括操作（例：エクスポート）
+      <SelectionPanel
+        selectedCount={selectedIds.length}
+        actions={[
+          {
+            label: "選択をエクスポート",
+            onClick: () => {
               const all = (customers || initialData.customers).filter((c) =>
                 selectedIds.includes(c.id)
               );
@@ -292,23 +290,20 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
                 .slice(0, 19)
                 .replace(/[:T]/g, "-");
               downloadCSV(csv, `customers_selected_${ts}.csv`);
-            }}
-          >
-            選択をエクスポート
-          </button>
-          <button
-            className="px-3 py-1.5 text-sm rounded-md border hover:bg-gray-50"
-            onClick={() => {
+            },
+          },
+          {
+            label: "選択のステータス変更",
+            onClick: () => {
               const qs = new URLSearchParams({
                 ids: selectedIds.join(","),
               }).toString();
               window.location.assign(`/customers/bulk/status?${qs}`);
-            }}
-          >
-            選択のステータス変更
-          </button>
-        </div>
-      )}
+            },
+            variant: "default",
+          },
+        ]}
+      />
     </div>
   );
 }
