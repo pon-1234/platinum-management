@@ -2,7 +2,7 @@
 
 import { useState, memo, useEffect } from "react";
 import Link from "next/link";
-import { FixedSizeList } from "react-window";
+// import { FixedSizeList } from "react-window";
 import { DataTable, DataTableColumn } from "@/components/table/DataTable";
 import { Customer } from "@/types/customer.types";
 import { CustomerStatusBadge } from "@/components/ui/StatusBadge";
