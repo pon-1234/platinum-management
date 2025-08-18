@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({
   children,
-  fallback = <div>Loading...</div>,
+  fallback = null,
 }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();

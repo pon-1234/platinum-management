@@ -23,5 +23,9 @@ export const useCustomers = (
       return data;
     },
     enabled: options?.enabled ?? true,
+    staleTime: 30_000,
+    // do not show loading if we already have cached data
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
   });
 };
