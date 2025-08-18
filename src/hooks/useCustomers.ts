@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { keys } from "@/lib/cache-utils";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
@@ -8,8 +8,8 @@ import type { Customer } from "@/types/customer.types";
 export const useCustomers = (
   query: string,
   status: CustomerStatus | "",
-  options?: { enabled?: boolean }
-): UseQueryResult<Customer[], Error> => {
+  options?: { enabled?: boolean; initialData?: Customer[] }
+) => {
   const supabase = createClient();
 
   // Ensure the query's data type is Customer[] for safe consumers
@@ -26,8 +26,11 @@ export const useCustomers = (
     },
     enabled: options?.enabled ?? true,
     staleTime: 30_000,
-    // do not show loading if we already have cached data
-    refetchOnMount: "always",
+    // Avoid immediate refetch on mount to reduce flicker; data remains fresh for staleTime
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
+    // Seed with SSR data when provided (typically for empty filter case)
+    initialData: options?.initialData,
+    // Avoid placeholderData here to keep data type strictly Customer[]
   });
 };

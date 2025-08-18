@@ -55,6 +55,9 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
     debouncedSearchQuery.length === 0 || debouncedSearchQuery.length >= 2;
 
   const initial = initialData.customers;
+  const isEmptyFilter =
+    (debouncedSearchQuery?.length ?? 0) === 0 &&
+    (statusFilter?.length ?? 0) === 0;
   const {
     data: customers,
     isLoading,
@@ -62,6 +65,7 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
     refetch,
   } = useCustomers(debouncedSearchQuery, statusFilter, {
     enabled: isSearchEnabled,
+    initialData: isEmptyFilter ? initialData.customers : undefined,
   });
 
   // Normalize possibly undefined data for safe checks
@@ -84,7 +88,8 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
   };
 
   const handleExport = () => {
-    const rows = (customers || initialData.customers).map((c) => ({
+    const source = (customersData ?? initialData.customers) as Customer[];
+    const rows = source.map((c: Customer) => ({
       id: c.id,
       name: c.name,
       name_kana: c.nameKana,
@@ -281,10 +286,12 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
           {
             label: "選択をエクスポート",
             onClick: () => {
-              const all = (customers || initialData.customers).filter((c) =>
+              const source = (customersData ??
+                initialData.customers) as Customer[];
+              const all = source.filter((c: Customer) =>
                 selectedIds.includes(c.id)
               );
-              const rows = all.map((c) => ({
+              const rows = all.map((c: Customer) => ({
                 id: c.id,
                 name: c.name,
                 phone: c.phoneNumber,
