@@ -64,6 +64,11 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
     enabled: isSearchEnabled,
   });
 
+  // Normalize possibly undefined data for safe checks
+  const customersData = customers as Customer[] | undefined;
+  const hasCustomers = (customersData?.length ?? 0) > 0;
+  const initialHas = (initial?.length ?? 0) > 0;
+
   useEffect(() => {
     if (searchQuery.length === 1) {
       setSearchFeedback("2文字以上入力してください");
@@ -250,21 +255,20 @@ export function CustomersPageClient({ initialData }: CustomersPageClientProps) {
           </div>
         )}
 
-        {isLoading && (!customers || customers.length === 0) ? (
+        {isLoading && !hasCustomers ? (
           <div className="text-center py-12">
             <div className="inline-flex items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
               <span className="ml-2 text-gray-500">読み込み中...</span>
             </div>
           </div>
-        ) : !(customers && customers.length > 0) &&
-          !(initial && initial.length > 0) ? (
+        ) : !hasCustomers && !initialHas ? (
           <div className="text-center py-12">
             <p className="text-gray-500">顧客が見つかりません</p>
           </div>
         ) : (
           <CustomerList
-            customers={customers && customers.length > 0 ? customers : initial}
+            customers={hasCustomers ? (customersData as Customer[]) : initial}
             onEdit={can("customers", "edit") ? handleEdit : undefined}
             onSelectionChange={setSelectedIds}
           />

@@ -1,17 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { keys } from "@/lib/cache-utils";
 import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import { CustomerStatus } from "@/types/customer.types";
+import type { Customer } from "@/types/customer.types";
 
 export const useCustomers = (
   query: string,
   status: CustomerStatus | "",
   options?: { enabled?: boolean }
-) => {
+): UseQueryResult<Customer[], Error> => {
   const supabase = createClient();
 
-  return useQuery({
+  // Ensure the query's data type is Customer[] for safe consumers
+  return useQuery<Customer[], Error>({
     queryKey: keys.customers(query, status),
     queryFn: async () => {
       const data = await customerService.searchCustomers(supabase, {
