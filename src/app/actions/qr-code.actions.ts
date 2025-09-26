@@ -1,12 +1,9 @@
 "use server";
 
-import { QRCodeService } from "@/services/qr-code.service";
+import { createQRCodeService } from "@/services/qr-code.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-
-// Create singleton instance
-const qrCodeService = new QRCodeService();
 
 // ========== QR Code Generation Actions ==========
 
@@ -18,8 +15,9 @@ const generateQRCodeSchema = z.object({
 
 export const generateQRCode = createSafeAction(
   generateQRCodeSchema,
-  async (data) => {
-    const qrCode = await qrCodeService.generateQRCode(data);
+  async (data, { supabase }) => {
+    const service = createQRCodeService(supabase);
+    const qrCode = await service.generateQRCode(data);
     revalidatePath("/qr-attendance");
     return qrCode;
   }
@@ -33,8 +31,9 @@ const validateQRCodeSchema = z.object({
 
 export const validateQRCode = createSafeAction(
   validateQRCodeSchema,
-  async (data) => {
-    const result = await qrCodeService.validateQRCode(data.qrData);
+  async (data, { supabase }) => {
+    const service = createQRCodeService(supabase);
+    const result = await service.validateQRCode(data.qrData);
     return result;
   }
 );
@@ -56,8 +55,9 @@ const recordAttendanceSchema = z.object({
 
 export const recordAttendance = createSafeAction(
   recordAttendanceSchema,
-  async (data) => {
-    const response = await qrCodeService.recordAttendance(data);
+  async (data, { supabase }) => {
+    const service = createQRCodeService(supabase);
+    const response = await service.recordAttendance(data);
     // Update relevant dashboards/pages
     revalidatePath("/qr-attendance");
     revalidatePath("/attendance");
@@ -74,8 +74,9 @@ const getAttendanceHistorySchema = z.object({
 
 export const getAttendanceHistory = createSafeAction(
   getAttendanceHistorySchema,
-  async ({ staffId, startDate, endDate, limit }) => {
-    const history = await qrCodeService.getQRAttendanceHistory(
+  async ({ staffId, startDate, endDate, limit }, { supabase }) => {
+    const service = createQRCodeService(supabase);
+    const history = await service.getQRAttendanceHistory(
       staffId,
       startDate,
       endDate,
@@ -100,10 +101,14 @@ export const getAttendanceHistory = createSafeAction(
 
 // ========== Statistics and Management Actions ==========
 
-export const getQRCodeStats = createSafeAction(z.object({}), async () => {
-  const stats = await qrCodeService.getQRCodeStats();
-  return stats;
-});
+export const getQRCodeStats = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    const service = createQRCodeService(supabase);
+    const stats = await service.getQRCodeStats();
+    return stats;
+  }
+);
 
 const getStaffQRInfoSchema = z.object({
   staffId: z.string(),
@@ -111,8 +116,9 @@ const getStaffQRInfoSchema = z.object({
 
 export const getStaffQRInfo = createSafeAction(
   getStaffQRInfoSchema,
-  async ({ staffId }) => {
-    const info = await qrCodeService.getStaffQRInfo(staffId);
+  async ({ staffId }, { supabase }) => {
+    const service = createQRCodeService(supabase);
+    const info = await service.getStaffQRInfo(staffId);
     return info;
   }
 );

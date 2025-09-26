@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { customerService } from "@/services/customer.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
@@ -14,8 +13,7 @@ const searchCustomersSchema = z.object({
 
 export const searchCustomers = createSafeAction(
   searchCustomersSchema,
-  async (params) => {
-    const supabase = await createClient();
+  async (params, { supabase }) => {
     const customers = await customerService.searchCustomers(supabase, params);
     return customers;
   }
@@ -31,8 +29,7 @@ const listCustomerVisitsSchema = z.object({
 
 export const listCustomerVisits = createSafeAction(
   listCustomerVisitsSchema,
-  async ({ customerId, page, pageSize, startDate, endDate }) => {
-    const supabase = await createClient();
+  async ({ customerId, page, pageSize, startDate, endDate }, { supabase }) => {
     const offset = (page - 1) * pageSize;
     const result = await customerService.listCustomerVisits(
       supabase,

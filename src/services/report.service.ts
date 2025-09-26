@@ -19,18 +19,43 @@ import type {
 } from "@/types/report.types";
 import { billingService } from "./billing.service";
 
-export class ReportService extends BaseService {
-  private supabase: SupabaseClient<Database>;
+type SupabaseResolver = () => SupabaseClient<Database>;
 
-  constructor() {
-    super();
-    this.supabase = createClient();
+let browserSupabase: SupabaseClient<Database> | null = null;
+
+function resolveBrowserSupabase(): SupabaseClient<Database> {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "ReportService requires an explicit Supabase client when used on the server"
+    );
+  }
+
+  if (!browserSupabase) {
+    browserSupabase = createClient();
+  }
+
+  return browserSupabase;
+}
+
+export class ReportService extends BaseService {
+  private readonly resolveClient: SupabaseResolver;
+
+  constructor(
+    resolveClient: SupabaseResolver = resolveBrowserSupabase,
+    options?: { registerInstance?: boolean }
+  ) {
+    super(options);
+    this.resolveClient = resolveClient;
+  }
+
+  private get client(): SupabaseClient<Database> {
+    return this.resolveClient();
   }
 
   async createReport(data: CreateReportData): Promise<Report> {
-    const staffId = await this.getCurrentStaffId(this.supabase);
+    const staffId = await this.getCurrentStaffId(this.client);
 
-    const { data: report, error } = await this.supabase
+    const { data: report, error } = await this.client
       .from("reports")
       .insert({
         type: data.type,
@@ -51,7 +76,7 @@ export class ReportService extends BaseService {
   }
 
   async getReportById(id: string): Promise<Report | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("reports")
       .select("*")
       .eq("id", id)
@@ -68,7 +93,7 @@ export class ReportService extends BaseService {
   }
 
   async searchReports(params: ReportSearchParams = {}): Promise<Report[]> {
-    let query = this.supabase
+    let query = this.client
       .from("reports")
       .select("*")
       .order("created_at", { ascending: false });
@@ -122,7 +147,7 @@ export class ReportService extends BaseService {
     if (data.data !== undefined) updateData.data = data.data;
     if (data.status !== undefined) updateData.status = data.status;
 
-    const { data: report, error } = await this.supabase
+    const { data: report, error } = await this.client
       .from("reports")
       .update(updateData)
       .eq("id", id)
@@ -137,7 +162,7 @@ export class ReportService extends BaseService {
   }
 
   async deleteReport(id: string): Promise<void> {
-    const { error } = await this.supabase.from("reports").delete().eq("id", id);
+    const { error } = await this.client.from("reports").delete().eq("id", id);
 
     if (error) {
       this.handleError(error, "レポートの削除に失敗しました");
@@ -179,7 +204,7 @@ export class ReportService extends BaseService {
     year: number,
     month: number
   ): Promise<MonthlySalesReport> {
-    const { data, error } = await this.supabase.rpc("get_monthly_sales", {
+    const { data, error } = await this.client.rpc("get_monthly_sales", {
       report_year: year,
       report_month: month,
     });
@@ -199,7 +224,7 @@ export class ReportService extends BaseService {
     let data: unknown = [];
     let error: unknown = null;
     try {
-      const res = await this.supabase.rpc("get_cast_performance", {
+      const res = await this.client.rpc("get_cast_performance", {
         start_date: startDate,
         end_date: endDate,
       });
@@ -261,7 +286,7 @@ export class ReportService extends BaseService {
 
   async generateCustomerReport(customerId: string): Promise<CustomerReport> {
     // Get customer basic info
-    const { data: customer, error: customerError } = await this.supabase
+    const { data: customer, error: customerError } = await this.client
       .from("customers")
       .select("*")
       .eq("id", customerId)
@@ -272,7 +297,7 @@ export class ReportService extends BaseService {
     }
 
     // Get customer visits with orders, cast engagements, and basic bill attributions
-    const { data: visits, error: visitsError } = await this.supabase
+    const { data: visits, error: visitsError } = await this.client
       .from("visits")
       .select(
         `
@@ -429,7 +454,7 @@ export class ReportService extends BaseService {
     try {
       const castIds = favoriteCasts.map((c) => c.castId).filter(Boolean);
       if (castIds.length > 0) {
-        const { data: castRows } = await this.supabase
+        const { data: castRows } = await this.client
           .from("casts_profile")
           .select("id, staffs(full_name)")
           .in("id", castIds);
@@ -507,7 +532,7 @@ export class ReportService extends BaseService {
 
   async generateInventoryReport(date: string): Promise<InventoryReport> {
     // Get all products with their current stock
-    const { data: products, error: productsError } = await this.supabase
+    const { data: products, error: productsError } = await this.client
       .from("products")
       .select("*")
       .order("name");
@@ -520,7 +545,7 @@ export class ReportService extends BaseService {
     const startOfDay = `${date}T00:00:00.000Z`;
     const endOfDay = `${date}T23:59:59.999Z`;
 
-    const { data: movements, error: movementsError } = await this.supabase
+    const { data: movements, error: movementsError } = await this.client
       .from("inventory_movements")
       .select(
         `
@@ -643,3 +668,9 @@ export class ReportService extends BaseService {
 }
 
 export const reportService = new ReportService();
+
+export function createReportService(
+  supabase: SupabaseClient<Database>
+): ReportService {
+  return new ReportService(() => supabase, { registerInstance: false });
+}

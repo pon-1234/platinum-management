@@ -1,6 +1,6 @@
 "use server";
 
-import { reportService } from "@/services/report.service";
+import { createReportService } from "@/services/report.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
@@ -12,8 +12,9 @@ const getMonthlySalesReportSchema = z.object({
 
 export const getMonthlySalesReport = createSafeAction(
   getMonthlySalesReportSchema,
-  async ({ year, month }) => {
-    const report = await reportService.getMonthlySalesReport(year, month);
+  async ({ year, month }, { supabase }) => {
+    const service = createReportService(supabase);
+    const report = await service.getMonthlySalesReport(year, month);
     return report;
   }
 );
@@ -26,8 +27,9 @@ const getCastPerformanceReportSchema = z.object({
 
 export const getCastPerformanceReport = createSafeAction(
   getCastPerformanceReportSchema,
-  async ({ startDate, endDate }) => {
-    const report = await reportService.getCastPerformanceReport(
+  async ({ startDate, endDate }, { supabase }) => {
+    const service = createReportService(supabase);
+    const report = await service.getCastPerformanceReport(
       startDate,
       endDate
     );
@@ -42,8 +44,9 @@ const getCustomerReportSchema = z.object({
 
 export const getCustomerReport = createSafeAction(
   getCustomerReportSchema,
-  async ({ customerId }) => {
-    const report = await reportService.getCustomerReport(customerId);
+  async ({ customerId }, { supabase }) => {
+    const service = createReportService(supabase);
+    const report = await service.getCustomerReport(customerId);
     return report;
   }
 );
@@ -55,8 +58,9 @@ const getInventoryReportSchema = z.object({
 
 export const getInventoryReport = createSafeAction(
   getInventoryReportSchema,
-  async ({ date }) => {
-    const report = await reportService.getInventoryReport(date);
+  async ({ date }, { supabase }) => {
+    const service = createReportService(supabase);
+    const report = await service.getInventoryReport(date);
     return report;
   }
 );
@@ -68,8 +72,9 @@ const getDailyRevenueReportSchema = z.object({
 
 export const getDailyRevenueReport = createSafeAction(
   getDailyRevenueReportSchema,
-  async ({ date }) => {
-    const report = await reportService.generateDailySalesReport(date);
+  async ({ date }, { supabase }) => {
+    const service = createReportService(supabase);
+    const report = await service.generateDailySalesReport(date);
     return report;
   }
 );

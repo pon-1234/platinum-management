@@ -18,17 +18,45 @@ import type {
   ReorderSuggestion,
 } from "@/types/inventory.types";
 
+type SupabaseResolver = () => SupabaseClient<Database>;
+
+let browserSupabase: SupabaseClient<Database> | null = null;
+
+function resolveBrowserSupabase(): SupabaseClient<Database> {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "InventoryService requires an explicit Supabase client when used on the server"
+    );
+  }
+
+  if (!browserSupabase) {
+    browserSupabase = createClient();
+  }
+
+  return browserSupabase;
+}
+
 export class InventoryService extends BaseService {
-  private supabase: SupabaseClient<Database>;
-  constructor() {
-    super();
-    this.supabase = createClient();
+  private readonly resolveClient: SupabaseResolver;
+
+  constructor(
+    resolveClient: SupabaseResolver = resolveBrowserSupabase,
+    options?: { registerInstance?: boolean }
+  ) {
+    super(options);
+    this.resolveClient = resolveClient;
+  }
+
+  private getSupabase(): SupabaseClient<Database> {
+    return this.resolveClient();
   }
 
   // 商品管理
   async getProducts(filter?: InventorySearchFilter): Promise<Product[]> {
     try {
-      let query = this.supabase
+      const supabase = this.getSupabase();
+
+      let query = supabase
         .from("products")
         .select("*")
         // 古いデータで is_active が NULL のものも表示対象に含める
@@ -56,7 +84,7 @@ export class InventoryService extends BaseService {
 
       if (filter?.isLowStock) {
         // RPC関数で低在庫商品を取得
-        const { data: lowStockProducts, error } = await this.supabase.rpc(
+        const { data: lowStockProducts, error } = await supabase.rpc(
           "get_low_stock_products"
         );
 
@@ -128,7 +156,9 @@ export class InventoryService extends BaseService {
 
   async getProductById(id: number): Promise<Product | null> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = this.getSupabase();
+
+      const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("id", id)
@@ -150,14 +180,15 @@ export class InventoryService extends BaseService {
 
   async createProduct(data: CreateProductData): Promise<Product> {
     try {
-      const staffId = await this.getCurrentStaffId(this.supabase);
+      const supabase = this.getSupabase();
+      const staffId = await this.getCurrentStaffId(supabase);
       const insertData = {
         ...this.toSnakeCase(data),
         created_by: staffId,
         updated_by: staffId,
       };
 
-      const { data: product, error } = await this.supabase
+      const { data: product, error } = await supabase
         .from("products")
         .insert(insertData)
         .select()
@@ -178,13 +209,14 @@ export class InventoryService extends BaseService {
 
   async updateProduct(id: number, data: UpdateProductData): Promise<Product> {
     try {
-      const staffId = await this.getCurrentStaffId(this.supabase);
+      const supabase = this.getSupabase();
+      const staffId = await this.getCurrentStaffId(supabase);
       const updateData = {
         ...this.toSnakeCase(data),
         updated_by: staffId,
       };
 
-      const { data: product, error } = await this.supabase
+      const { data: product, error } = await supabase
         .from("products")
         .update(updateData)
         .eq("id", id)
@@ -206,7 +238,8 @@ export class InventoryService extends BaseService {
 
   async deleteProduct(id: number): Promise<void> {
     try {
-      const { error } = await this.supabase
+      const supabase = this.getSupabase();
+      const { error } = await supabase
         .from("products")
         .update({ is_active: false })
         .eq("id", id);
@@ -227,8 +260,9 @@ export class InventoryService extends BaseService {
     data: CreateInventoryMovementRequest
   ): Promise<InventoryMovement> {
     try {
+      const supabase = this.getSupabase();
       // RPC関数を使用してトランザクション内で在庫移動と在庫更新を実行
-      const { data: result, error } = await this.supabase.rpc(
+      const { data: result, error } = await supabase.rpc(
         "create_inventory_movement_with_stock_update",
         {
           p_product_id: data.productId,
@@ -245,7 +279,7 @@ export class InventoryService extends BaseService {
       }
 
       // 作成された在庫移動レコードを取得
-      const { data: movement, error: fetchError } = await this.supabase
+      const { data: movement, error: fetchError } = await supabase
         .from("inventory_movements")
         .select("*")
         .eq("id", result.movement_id)
@@ -287,7 +321,9 @@ export class InventoryService extends BaseService {
     limit?: number
   ): Promise<InventoryMovement[]> {
     try {
-      let query = this.supabase
+      const supabase = this.getSupabase();
+
+      let query = supabase
         .from("inventory_movements")
         .select(
           `
@@ -350,7 +386,8 @@ export class InventoryService extends BaseService {
   async getInventoryStats(): Promise<InventoryStats> {
     try {
       // RPC関数を使用してデータベース側で集計
-      const { data, error } = await this.supabase.rpc("get_inventory_stats");
+      const supabase = this.getSupabase();
+      const { data, error } = await supabase.rpc("get_inventory_stats");
 
       if (error) {
         logger.error("Inventory stats RPC error", error, "InventoryService");
@@ -377,7 +414,8 @@ export class InventoryService extends BaseService {
   async getInventoryAlerts(): Promise<InventoryAlert[]> {
     try {
       // RPC関数を使用してデータベース側でアラートを生成
-      const { data, error } = await this.supabase.rpc("get_inventory_alerts");
+      const supabase = this.getSupabase();
+      const { data, error } = await supabase.rpc("get_inventory_alerts");
 
       if (error) {
         logger.error("Inventory alerts RPC error", error, "InventoryService");
@@ -548,8 +586,9 @@ export class InventoryService extends BaseService {
   // カテゴリー一覧取得
   async getCategories(): Promise<string[]> {
     try {
+      const supabase = this.getSupabase();
       // RPC関数を使用してデータベース側で重複を除去
-      const { data, error } = await this.supabase.rpc(
+      const { data, error } = await supabase.rpc(
         "get_distinct_product_categories"
       );
 
@@ -576,9 +615,10 @@ export class InventoryService extends BaseService {
     filter?: InventorySearchFilter & { offset?: number; limit?: number }
   ) {
     try {
+      const supabase = this.getSupabase();
       // 最適化されたRPC関数を使用
       const functionName = "get_inventory_page_data_optimized";
-      const { data, error } = await this.supabase.rpc(functionName, {
+      const { data, error } = await supabase.rpc(functionName, {
         p_category: filter?.category || null,
         p_search_term: filter?.searchTerm || null,
         p_offset: filter?.offset || 0,
@@ -703,5 +743,12 @@ export class InventoryService extends BaseService {
   }
 }
 
-// Export singleton instance
+// Export singleton instance for client-side usage (relies on browser Supabase client)
 export const inventoryService = new InventoryService();
+
+// Helper for server-side contexts where Supabase client is provided per request
+export function createInventoryService(
+  supabase: SupabaseClient<Database>
+): InventoryService {
+  return new InventoryService(() => supabase, { registerInstance: false });
+}

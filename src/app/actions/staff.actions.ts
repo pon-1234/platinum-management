@@ -1,13 +1,14 @@
 "use server";
 
-import { staffService } from "@/services/staff.service";
+import { createStaffService } from "@/services/staff.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 
 export const getAvailableStaffForCast = createSafeAction(
   z.object({}),
-  async () => {
-    const availableStaff = await staffService.getAvailableStaffForCast();
+  async (_, { supabase }) => {
+    const service = createStaffService(supabase);
+    const availableStaff = await service.getAvailableStaffForCast();
 
     return availableStaff.map((staff) => ({
       id: staff.id,
@@ -27,7 +28,8 @@ const getUnregisteredStaffSchema = z.object({
 
 export const getUnregisteredStaff = createSafeAction(
   getUnregisteredStaffSchema,
-  async ({ page, limit, searchQuery }) => {
-    return staffService.getUnregisteredStaff(page, limit, searchQuery);
+  async ({ page, limit, searchQuery }, { supabase }) => {
+    const service = createStaffService(supabase);
+    return service.getUnregisteredStaff(page, limit, searchQuery);
   }
 );

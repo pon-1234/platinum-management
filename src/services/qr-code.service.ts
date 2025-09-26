@@ -20,13 +20,38 @@ import type {
   // LocationData,
 } from "@/types/qr-code.types";
 
+type SupabaseResolver = () => SupabaseClient<Database>;
+
+let browserSupabase: SupabaseClient<Database> | null = null;
+
+function resolveBrowserSupabase(): SupabaseClient<Database> {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "QRCodeService requires an explicit Supabase client when used on the server"
+    );
+  }
+
+  if (!browserSupabase) {
+    browserSupabase = createClient();
+  }
+
+  return browserSupabase;
+}
+
 export class QRCodeService extends BaseService {
-  private supabase: SupabaseClient<Database>;
+  private readonly resolveClient: SupabaseResolver;
   private secretKey: string | null = null;
 
-  constructor() {
-    super();
-    this.supabase = createClient();
+  constructor(
+    resolveClient: SupabaseResolver = resolveBrowserSupabase,
+    options?: { registerInstance?: boolean }
+  ) {
+    super(options);
+    this.resolveClient = resolveClient;
+  }
+
+  private get client(): SupabaseClient<Database> {
+    return this.resolveClient();
   }
 
   private getSecretKey(): string {
@@ -73,7 +98,7 @@ export class QRCodeService extends BaseService {
     const qrData = JSON.stringify({ ...payload, signature });
 
     // DB保存（失敗してもQR自体は返す）
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("qr_codes")
       .insert({
         staff_id: request.staffId,
@@ -142,7 +167,7 @@ export class QRCodeService extends BaseService {
       }
 
       // スタッフ存在確認
-      const { data: staff, error } = await this.supabase
+      const { data: staff, error } = await this.client
         .from("staffs")
         .select("id")
         .eq("id", staffId)
@@ -261,7 +286,7 @@ export class QRCodeService extends BaseService {
       );
 
       // スタッフ名を取得
-      const { data: staff } = await this.supabase
+      const { data: staff } = await this.client
         .from("staffs")
         .select("full_name")
         .eq("id", staffId)
@@ -307,19 +332,19 @@ export class QRCodeService extends BaseService {
       activeQRCodesResult,
       todayScansResult,
     ] = await Promise.all([
-      this.supabase
+      this.client
         .from("qr_attendance_logs")
         .select("id", { count: "exact", head: true }),
-      this.supabase
+      this.client
         .from("qr_attendance_logs")
         .select("id", { count: "exact", head: true })
         .eq("success", true),
-      this.supabase
+      this.client
         .from("qr_codes")
         .select("id", { count: "exact", head: true })
         .eq("is_active", true)
         .gt("expires_at", new Date().toISOString()),
-      this.supabase
+      this.client
         .from("qr_attendance_logs")
         .select("staff_id", { count: "exact", head: true })
         .gte("created_at", `${today}T00:00:00.000Z`)
@@ -327,7 +352,7 @@ export class QRCodeService extends BaseService {
     ]);
 
     // ユニークユーザー数を取得
-    const { data: uniqueUsersData } = await this.supabase
+    const { data: uniqueUsersData } = await this.client
       .from("qr_attendance_logs")
       .select("staff_id")
       .gte("created_at", `${today}T00:00:00.000Z`)
@@ -357,7 +382,7 @@ export class QRCodeService extends BaseService {
     endDate?: string,
     limit = 50
   ): Promise<QRAttendanceHistory[]> {
-    let query = this.supabase
+    let query = this.client
       .from("qr_attendance_logs")
       .select(
         `
@@ -397,8 +422,8 @@ export class QRCodeService extends BaseService {
   // スタッフQRコード情報取得
   async getStaffQRInfo(staffId: string): Promise<StaffQRInfo> {
     const [staffResult, qrCodeResult, historyResult] = await Promise.all([
-      this.supabase.from("staffs").select("*").eq("id", staffId).single(),
-      this.supabase
+      this.client.from("staffs").select("*").eq("id", staffId).single(),
+      this.client
         .from("qr_codes")
         .select("*")
         .eq("staff_id", staffId)
@@ -484,7 +509,7 @@ export class QRCodeService extends BaseService {
   }
 
   private async deactivateStaffQRCodes(staffId: string): Promise<void> {
-    await this.supabase
+    await this.client
       .from("qr_codes")
       .update({ is_active: false })
       .eq("staff_id", staffId)
@@ -559,7 +584,7 @@ export class QRCodeService extends BaseService {
   ): Promise<{ isValid: boolean; errorMessage?: string }> {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("qr_attendance_logs")
       .select("id")
       .eq("staff_id", staffId)
@@ -588,7 +613,7 @@ export class QRCodeService extends BaseService {
     const today = new Date().toISOString().split("T")[0];
 
     // 既存の勤怠記録を取得または作成
-    const { data: attendanceRecord, error } = await this.supabase
+    const { data: attendanceRecord, error } = await this.client
       .from("attendance_records")
       .select("*")
       .eq("staff_id", staffId)
@@ -609,7 +634,7 @@ export class QRCodeService extends BaseService {
         insertData.clock_in_time = now;
       }
 
-      await this.supabase.from("attendance_records").insert(insertData);
+      await this.client.from("attendance_records").insert(insertData);
     } else if (attendanceRecord) {
       // 更新
       const updateData: Record<string, unknown> = {};
@@ -629,7 +654,7 @@ export class QRCodeService extends BaseService {
           break;
       }
 
-      await this.supabase
+      await this.client
         .from("attendance_records")
         .update(updateData)
         .eq("id", attendanceRecord.id);
@@ -648,7 +673,7 @@ export class QRCodeService extends BaseService {
     // QRコードIDを取得（可能な場合）
     let qrCodeId: string | null = null;
     if (staffId) {
-      const { data } = await this.supabase
+      const { data } = await this.client
         .from("qr_codes")
         .select("id")
         .eq("staff_id", staffId)
@@ -660,7 +685,7 @@ export class QRCodeService extends BaseService {
       qrCodeId = data?.id || null;
     }
 
-    await this.supabase.from("qr_attendance_logs").insert({
+    await this.client.from("qr_attendance_logs").insert({
       staff_id: staffId || null,
       qr_code_id: qrCodeId,
       action_type: action as
@@ -677,7 +702,7 @@ export class QRCodeService extends BaseService {
 
   private async getActiveStaffsWithQR(): Promise<StaffQRInfo[]> {
     // スタッフ、QRコード、スキャン履歴を一度に取得
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("staffs")
       .select(
         `
@@ -748,7 +773,7 @@ export class QRCodeService extends BaseService {
   }
 
   async getScanHistory(params: { staffId?: string; limit?: number }) {
-    let query = this.supabase.from("qr_attendance_logs").select(`
+    let query = this.client.from("qr_attendance_logs").select(`
         *,
         staff:staffs!staff_id (
           id,
@@ -789,3 +814,9 @@ export class QRCodeService extends BaseService {
 
 // Export singleton instance
 export const qrCodeService = new QRCodeService();
+
+export function createQRCodeService(
+  supabase: SupabaseClient<Database>
+): QRCodeService {
+  return new QRCodeService(() => supabase, { registerInstance: false });
+}

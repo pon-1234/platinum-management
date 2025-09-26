@@ -13,15 +13,41 @@ import type {
 } from "@/types/staff.types";
 import type { UserRole } from "@/types/auth.types";
 
+type SupabaseResolver = () => SupabaseClient<Database>;
+
+let browserSupabase: SupabaseClient<Database> | null = null;
+
+function resolveBrowserSupabase(): SupabaseClient<Database> {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "StaffService requires an explicit Supabase client when used on the server"
+    );
+  }
+
+  if (!browserSupabase) {
+    browserSupabase = createClient();
+  }
+
+  return browserSupabase;
+}
+
 export class StaffService extends BaseService {
-  private supabase: SupabaseClient<Database>;
-  constructor() {
-    super();
-    this.supabase = createClient();
+  private readonly resolveClient: SupabaseResolver;
+
+  constructor(
+    resolveClient: SupabaseResolver = resolveBrowserSupabase,
+    options?: { registerInstance?: boolean }
+  ) {
+    super(options);
+    this.resolveClient = resolveClient;
+  }
+
+  private get client(): SupabaseClient<Database> {
+    return this.resolveClient();
   }
 
   async createStaff(data: CreateStaffData): Promise<Staff> {
-    const { data: staff, error } = await this.supabase
+    const { data: staff, error } = await this.client
       .from("staffs")
       .insert(
         this.toSnakeCase({
@@ -42,7 +68,7 @@ export class StaffService extends BaseService {
   }
 
   async getStaffById(id: string): Promise<Staff | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("staffs")
       .select("*")
       .eq("id", id)
@@ -59,7 +85,7 @@ export class StaffService extends BaseService {
   }
 
   async getStaffByUserId(userId: string): Promise<Staff | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("staffs")
       .select("*")
       .eq("user_id", userId)
@@ -87,7 +113,7 @@ export class StaffService extends BaseService {
     // Use optimized search if search query is provided
     if (searchQuery && searchQuery.length >= 2) {
       const { data: searchResults, error: searchError } =
-        await this.supabase.rpc("search_staffs_optimized", {
+        await this.client.rpc("search_staffs_optimized", {
           search_term: searchQuery,
           limit_count: limit,
           offset_count: from,
@@ -118,7 +144,7 @@ export class StaffService extends BaseService {
       }
 
       // Fetch complete staff data for matched IDs
-      let detailQuery = this.supabase
+      let detailQuery = this.client
         .from("staffs")
         .select("*")
         .in("id", staffIds);
@@ -154,10 +180,10 @@ export class StaffService extends BaseService {
     }
 
     // If no search query, use standard query
-    let countQuery = this.supabase
+    let countQuery = this.client
       .from("staffs")
       .select("*", { count: "exact", head: true });
-    let dataQuery = this.supabase.from("staffs").select("*");
+    let dataQuery = this.client.from("staffs").select("*");
 
     // Apply role filter
     if (roleFilter) {
@@ -189,7 +215,7 @@ export class StaffService extends BaseService {
   }
 
   async updateStaff(id: string, data: UpdateStaffData): Promise<Staff> {
-    const { data: staff, error } = await this.supabase
+    const { data: staff, error } = await this.client
       .from("staffs")
       .update(
         this.toSnakeCase({
@@ -210,7 +236,7 @@ export class StaffService extends BaseService {
   }
 
   async deleteStaff(id: string): Promise<void> {
-    const { error } = await this.supabase.from("staffs").delete().eq("id", id);
+    const { error } = await this.client.from("staffs").delete().eq("id", id);
 
     if (error) {
       this.handleError(error, "スタッフの削除に失敗しました");
@@ -219,7 +245,7 @@ export class StaffService extends BaseService {
 
   async getAvailableStaffForCast(): Promise<Staff[]> {
     // Get all staff that are not already casts and not admin
-    const { data: staffs, error } = await this.supabase
+    const { data: staffs, error } = await this.client
       .from("staffs")
       .select("*")
       .neq("role", "admin")
@@ -231,7 +257,7 @@ export class StaffService extends BaseService {
     }
 
     // Get all existing cast staff IDs
-    const { data: casts } = await this.supabase
+    const { data: casts } = await this.client
       .from("casts_profile")
       .select("staff_id");
 
@@ -249,7 +275,7 @@ export class StaffService extends BaseService {
     limit: number = 20,
     searchQuery?: string
   ): Promise<{ data: Staff[]; totalCount: number; hasMore: boolean }> {
-    const { data, error } = await this.supabase.rpc("get_unregistered_staff", {
+    const { data, error } = await this.client.rpc("get_unregistered_staff", {
       p_page: page,
       p_limit: limit,
       p_search_query: searchQuery || null,
@@ -285,7 +311,7 @@ export class StaffService extends BaseService {
   }
 
   async createCastProfile(data: CreateCastProfileData): Promise<CastProfile> {
-    const { data: profile, error } = await this.supabase
+    const { data: profile, error } = await this.client
       .from("casts_profile")
       .insert({
         staff_id: data.staffId,
@@ -306,7 +332,7 @@ export class StaffService extends BaseService {
   }
 
   async getCastProfile(staffId: string): Promise<CastProfile | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("casts_profile")
       .select("*")
       .eq("staff_id", staffId)
@@ -330,7 +356,7 @@ export class StaffService extends BaseService {
     const to = from + limit - 1;
 
     // Get total count
-    const { count, error: countError } = await this.supabase
+    const { count, error: countError } = await this.client
       .from("casts_profile")
       .select("*", { count: "exact", head: true });
 
@@ -342,7 +368,7 @@ export class StaffService extends BaseService {
     }
 
     // Get paginated data
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("casts_profile")
       .select("*")
       .order("created_at", { ascending: false })
@@ -373,7 +399,7 @@ export class StaffService extends BaseService {
     if (data.commissionRate !== undefined)
       updateData.back_percentage = data.commissionRate.shimei;
 
-    const { data: profile, error } = await this.supabase
+    const { data: profile, error } = await this.client
       .from("casts_profile")
       .update(updateData)
       .eq("staff_id", staffId)
@@ -433,3 +459,9 @@ export class StaffService extends BaseService {
 
 // Export singleton instance
 export const staffService = new StaffService();
+
+export function createStaffService(
+  supabase: SupabaseClient<Database>
+): StaffService {
+  return new StaffService(() => supabase, { registerInstance: false });
+}

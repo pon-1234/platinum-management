@@ -16,7 +16,7 @@ export abstract class BaseService {
   private readonly PERMISSION_CACHE_DURATION = 2 * 60 * 1000; // 2分間キャッシュ
 
   // Track all instances for global cache clearing
-  private static instances: BaseService[] = [];
+  private static instances: Set<BaseService> = new Set();
 
   /**
    * Clear caches across all service instances (for sign out)
@@ -27,8 +27,10 @@ export abstract class BaseService {
     });
   }
 
-  constructor() {
-    BaseService.instances.push(this);
+  constructor(options: { registerInstance?: boolean } = {}) {
+    if (options.registerInstance !== false) {
+      BaseService.instances.add(this);
+    }
   }
 
   /**

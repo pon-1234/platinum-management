@@ -88,7 +88,17 @@ export class BottleKeepService {
   private static resolveClient(
     supabaseClient?: SupabaseClient
   ): SupabaseClient {
-    return (supabaseClient as SupabaseClient) || createClient();
+    if (supabaseClient) {
+      return supabaseClient;
+    }
+
+    if (typeof window === "undefined") {
+      throw new Error(
+        "BottleKeepService requires a Supabase client when used on the server"
+      );
+    }
+
+    return createClient();
   }
   private static readonly EXPIRY_SOON_DAYS = 30;
   // ボトルキープ一覧取得

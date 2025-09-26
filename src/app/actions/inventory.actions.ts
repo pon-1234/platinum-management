@@ -1,6 +1,6 @@
 "use server";
 
-import { inventoryService } from "@/services/inventory.service";
+import { createInventoryService } from "@/services/inventory.service";
 import { createSafeAction } from "@/lib/safe-action";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -16,10 +16,14 @@ const getProductsSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
-export const getProducts = createSafeAction(getProductsSchema, async (data) => {
-  const products = await inventoryService.getProducts(data);
-  return products;
-});
+export const getProducts = createSafeAction(
+  getProductsSchema,
+  async (data, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const products = await service.getProducts(data);
+    return products;
+  }
+);
 
 const getProductByIdSchema = z.object({
   id: z.number(),
@@ -27,8 +31,9 @@ const getProductByIdSchema = z.object({
 
 export const getProductById = createSafeAction(
   getProductByIdSchema,
-  async ({ id }) => {
-    const product = await inventoryService.getProductById(id);
+  async ({ id }, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const product = await service.getProductById(id);
     if (!product) {
       throw new Error("商品が見つかりません");
     }
@@ -49,8 +54,9 @@ const createProductSchema = z.object({
 
 export const createProduct = createSafeAction(
   createProductSchema,
-  async (data) => {
-    const product = await inventoryService.createProduct(data);
+  async (data, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const product = await service.createProduct(data);
     // Invalidate inventory-related views
     revalidatePath("/inventory");
     return product;
@@ -72,8 +78,9 @@ const updateProductSchema = z.object({
 
 export const updateProduct = createSafeAction(
   updateProductSchema,
-  async ({ id, ...data }) => {
-    const product = await inventoryService.updateProduct(id, data);
+  async ({ id, ...data }, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const product = await service.updateProduct(id, data);
     revalidatePath("/inventory");
     return product;
   }
@@ -85,8 +92,9 @@ const deleteProductSchema = z.object({
 
 export const deleteProduct = createSafeAction(
   deleteProductSchema,
-  async ({ id }) => {
-    await inventoryService.deleteProduct(id);
+  async ({ id }, { supabase }) => {
+    const service = createInventoryService(supabase);
+    await service.deleteProduct(id);
     revalidatePath("/inventory");
     return null;
   }
@@ -105,8 +113,9 @@ const createInventoryMovementSchema = z.object({
 
 export const createInventoryMovement = createSafeAction(
   createInventoryMovementSchema,
-  async (data) => {
-    const movement = await inventoryService.createInventoryMovement(data);
+  async (data, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const movement = await service.createInventoryMovement(data);
     revalidatePath("/inventory");
     return movement;
   }
@@ -122,8 +131,9 @@ const getInventoryMovementsSchema = z.object({
 
 export const getInventoryMovements = createSafeAction(
   getInventoryMovementsSchema,
-  async ({ productId, startDate, endDate, offset, limit }) => {
-    const movements = await inventoryService.getInventoryMovements(
+  async ({ productId, startDate, endDate, offset, limit }, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const movements = await service.getInventoryMovements(
       productId,
       startDate,
       endDate,
@@ -143,8 +153,9 @@ const adjustInventorySchema = z.object({
 
 export const adjustInventory = createSafeAction(
   adjustInventorySchema,
-  async (data) => {
-    const movement = await inventoryService.adjustInventory(data);
+  async (data, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const movement = await service.adjustInventory(data);
     revalidatePath("/inventory");
     return movement;
   }
@@ -152,15 +163,23 @@ export const adjustInventory = createSafeAction(
 
 // ========== Statistics and Reports Actions ==========
 
-export const getInventoryStats = createSafeAction(z.object({}), async () => {
-  const stats = await inventoryService.getInventoryStats();
-  return stats;
-});
+export const getInventoryStats = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const stats = await service.getInventoryStats();
+    return stats;
+  }
+);
 
-export const getInventoryAlerts = createSafeAction(z.object({}), async () => {
-  const alerts = await inventoryService.getInventoryAlerts();
-  return alerts;
-});
+export const getInventoryAlerts = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const alerts = await service.getInventoryAlerts();
+    return alerts;
+  }
+);
 
 const getInventoryReportSchema = z.object({
   productId: z.number(),
@@ -168,8 +187,9 @@ const getInventoryReportSchema = z.object({
 
 export const getInventoryReport = createSafeAction(
   getInventoryReportSchema,
-  async ({ productId }) => {
-    const report = await inventoryService.getInventoryReport(productId);
+  async ({ productId }, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const report = await service.getInventoryReport(productId);
     return report;
   }
 );
@@ -181,24 +201,30 @@ const getPeriodReportSchema = z.object({
 
 export const getPeriodReport = createSafeAction(
   getPeriodReportSchema,
-  async ({ startDate, endDate }) => {
-    const report = await inventoryService.getPeriodReport(startDate, endDate);
+  async ({ startDate, endDate }, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const report = await service.getPeriodReport(startDate, endDate);
     return report;
   }
 );
 
 export const getReorderSuggestions = createSafeAction(
   z.object({}),
-  async () => {
-    const suggestions = await inventoryService.getReorderSuggestions();
+  async (_, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const suggestions = await service.getReorderSuggestions();
     return suggestions;
   }
 );
 
-export const getCategories = createSafeAction(z.object({}), async () => {
-  const categories = await inventoryService.getCategories();
-  return categories;
-});
+export const getCategories = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const categories = await service.getCategories();
+    return categories;
+  }
+);
 
 // Optimized action to get all inventory page data in one query
 const getInventoryPageDataSchema = z.object({
@@ -210,8 +236,9 @@ const getInventoryPageDataSchema = z.object({
 
 export const getInventoryPageData = createSafeAction(
   getInventoryPageDataSchema,
-  async (filter) => {
-    const data = await inventoryService.getInventoryPageData(filter);
+  async (filter, { supabase }) => {
+    const service = createInventoryService(supabase);
+    const data = await service.getInventoryPageData(filter);
     return data;
   }
 );
@@ -230,10 +257,12 @@ const batchUpdateStockSchema = z.object({
 
 export const batchUpdateStock = createSafeAction(
   batchUpdateStockSchema,
-  async ({ updates }) => {
+  async ({ updates }, { supabase }) => {
+    // batch update relies on server-side Supabase for each movement
+    const service = createInventoryService(supabase);
     const results = await Promise.all(
       updates.map(({ productId, quantity, reason }) =>
-        inventoryService.createInventoryMovement({
+        service.createInventoryMovement({
           productId,
           movementType: "adjustment",
           quantity,

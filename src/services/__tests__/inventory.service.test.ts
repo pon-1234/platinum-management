@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { InventoryService } from "../inventory.service";
+import { InventoryService, createInventoryService } from "../inventory.service";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Product,
@@ -66,7 +66,9 @@ describe("InventoryService", () => {
       mockSupabase as unknown as ReturnType<typeof createClient>
     );
 
-    service = new InventoryService();
+    service = createInventoryService(
+      mockSupabase as unknown as ReturnType<typeof createClient>
+    );
   });
 
   describe("Product Management", () => {

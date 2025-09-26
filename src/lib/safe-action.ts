@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -9,7 +11,7 @@ export function createSafeAction<TInput extends z.ZodTypeAny, TOutput>(
   schema: TInput,
   handler: (
     data: z.infer<TInput>,
-    context: { userId: string }
+    context: { userId: string; supabase: SupabaseClient<Database> }
   ) => Promise<TOutput>
 ) {
   return async (input: z.infer<TInput>): Promise<ActionResult<TOutput>> => {
@@ -28,7 +30,7 @@ export function createSafeAction<TInput extends z.ZodTypeAny, TOutput>(
       const validatedData = schema.parse(input);
 
       // Execute handler
-      const result = await handler(validatedData, { userId: user.id });
+      const result = await handler(validatedData, { userId: user.id, supabase });
       return { success: true, data: result };
     } catch (error) {
       if (error instanceof z.ZodError) {

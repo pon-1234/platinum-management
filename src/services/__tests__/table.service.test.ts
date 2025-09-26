@@ -39,7 +39,7 @@ describe("TableService", () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (createClient as any).mockReturnValue(mockSupabase);
-    tableService = new TableService();
+    tableService = new TableService(() => mockSupabase);
   });
 
   describe("createTable", () => {

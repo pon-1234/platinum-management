@@ -17,15 +17,55 @@ import {
   cancelReservationSchema,
   reservationSearchSchema,
 } from "@/lib/validations/reservation";
-import { TableService } from "./table.service";
+import { TableService, createTableService } from "./table.service";
+
+type SupabaseResolver = () => SupabaseClient<Database>;
+
+let browserSupabase: SupabaseClient<Database> | null = null;
+
+function resolveBrowserSupabase(): SupabaseClient<Database> {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "ReservationService requires an explicit Supabase client when used on the server"
+    );
+  }
+
+  if (!browserSupabase) {
+    browserSupabase = createClient();
+  }
+
+  return browserSupabase;
+}
 
 export class ReservationService {
-  private supabase: SupabaseClient<Database>;
-  private tableService: TableService;
+  private readonly resolveClient: SupabaseResolver;
+  private readonly tableServiceFactory: (
+    client: SupabaseClient<Database>
+  ) => TableService;
+  private tableServiceInstance: TableService | null = null;
 
-  constructor() {
-    this.supabase = createClient();
-    this.tableService = new TableService();
+  constructor(
+    resolveClient: SupabaseResolver = resolveBrowserSupabase,
+    options?: {
+      tableServiceFactory?: (
+        client: SupabaseClient<Database>
+      ) => TableService;
+    }
+  ) {
+    this.resolveClient = resolveClient;
+    this.tableServiceFactory =
+      options?.tableServiceFactory ?? ((client) => createTableService(client));
+  }
+
+  private get client(): SupabaseClient<Database> {
+    return this.resolveClient();
+  }
+
+  private get tableService(): TableService {
+    if (!this.tableServiceInstance) {
+      this.tableServiceInstance = this.tableServiceFactory(this.client);
+    }
+    return this.tableServiceInstance;
   }
 
   // Reservation CRUD operations
@@ -50,7 +90,7 @@ export class ReservationService {
         }
       }
 
-      const { data: reservation, error } = await this.supabase
+      const { data: reservation, error } = await this.client
         .from("reservations")
         .insert({
           customer_id: validatedData.customerId,
@@ -80,7 +120,7 @@ export class ReservationService {
 
   async getReservationById(id: string): Promise<Reservation | null> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.client
         .from("reservations")
         .select("*")
         .eq("id", id)
@@ -103,7 +143,7 @@ export class ReservationService {
   async getReservationWithDetails(
     id: string
   ): Promise<ReservationWithDetails | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.client
       .from("reservations")
       .select(
         `
@@ -190,7 +230,7 @@ export class ReservationService {
 
     updateData.updated_by = staffId;
 
-    const { data: reservation, error } = await this.supabase
+    const { data: reservation, error } = await this.client
       .from("reservations")
       .update(updateData)
       .eq("id", id)
@@ -205,7 +245,7 @@ export class ReservationService {
   }
 
   async deleteReservation(id: string): Promise<void> {
-    const { error } = await this.supabase
+    const { error } = await this.client
       .from("reservations")
       .delete()
       .eq("id", id);
@@ -221,7 +261,7 @@ export class ReservationService {
     // Validate search parameters
     const validatedParams = reservationSearchSchema.parse(params);
 
-    let query = this.supabase
+    let query = this.client
       .from("reservations")
       .select(
         `
@@ -283,7 +323,7 @@ export class ReservationService {
     // Validate search parameters
     const validatedParams = reservationSearchSchema.parse(params);
 
-    let query = this.supabase
+    let query = this.client
       .from("reservations")
       .select(
         `
@@ -436,7 +476,7 @@ export class ReservationService {
     time: string,
     excludeReservationId?: string
   ): Promise<boolean> {
-    const { data, error } = await this.supabase.rpc(
+    const { data, error } = await this.client.rpc(
       "check_table_availability",
       {
         p_table_id: tableId,
@@ -457,7 +497,7 @@ export class ReservationService {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const { data, error } = await this.supabase
+      const { data, error } = await this.client
         .from("reservations")
         .select(
           `
@@ -495,7 +535,7 @@ export class ReservationService {
       const {
         data: { user },
         error: authError,
-      } = await this.supabase.auth.getUser();
+      } = await this.client.auth.getUser();
 
       if (authError || !user) {
         if (authError) {
@@ -508,7 +548,7 @@ export class ReservationService {
         return null;
       }
 
-      const { data: staff, error } = await this.supabase
+      const { data: staff, error } = await this.client
         .from("staffs")
         .select("id")
         .eq("user_id", user.id)
@@ -600,6 +640,15 @@ export class ReservationService {
         : undefined,
     };
   }
+}
+
+export function createReservationService(
+  supabase: SupabaseClient<Database>,
+  options?: {
+    tableServiceFactory?: (client: SupabaseClient<Database>) => TableService;
+  }
+): ReservationService {
+  return new ReservationService(() => supabase, options);
 }
 
 // Export singleton instance

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { StaffService } from "../staff.service";
+import { StaffService, createStaffService } from "../staff.service";
 import { createClient } from "@/lib/supabase/client";
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -34,7 +34,9 @@ describe("StaffService", () => {
       mockSupabaseClient as unknown as ReturnType<typeof createClient>
     );
 
-    staffService = new StaffService();
+    staffService = createStaffService(
+      mockSupabaseClient as unknown as ReturnType<typeof createClient>
+    );
   });
 
   describe("createStaff", () => {

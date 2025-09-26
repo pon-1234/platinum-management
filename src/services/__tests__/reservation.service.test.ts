@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ReservationService } from "../reservation.service";
+import {
+  ReservationService,
+  createReservationService,
+} from "../reservation.service";
+import type { TableService } from "../table.service";
 import { createClient } from "@/lib/supabase/client";
 import type { CreateReservationData } from "@/types/reservation.types";
 
@@ -9,6 +13,9 @@ describe("ReservationService", () => {
   let reservationService: ReservationService;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any;
+  let tableServiceStub: {
+    getAvailableTables: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     mockSupabase = {
@@ -33,7 +40,13 @@ describe("ReservationService", () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (createClient as any).mockReturnValue(mockSupabase);
-    reservationService = new ReservationService();
+    tableServiceStub = {
+      getAvailableTables: vi.fn().mockResolvedValue([]),
+    };
+
+    reservationService = createReservationService(mockSupabase, {
+      tableServiceFactory: () => tableServiceStub as unknown as TableService,
+    });
   });
 
   describe("createReservation", () => {

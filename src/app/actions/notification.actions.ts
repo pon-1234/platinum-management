@@ -34,13 +34,16 @@ export const getUnsentAlerts = createSafeAction(z.object({}), async () => {
 /**
  * 期限切れボトルのステータスを更新
  */
-export const updateExpiredBottles = createSafeAction(z.object({}), async () => {
-  await BottleKeepService.updateExpiredBottles();
-  const updatedCount = 0;
+export const updateExpiredBottles = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    await BottleKeepService.updateExpiredBottles(supabase);
+    const updatedCount = 0;
 
   // 関連ページのキャッシュを無効化
   revalidatePath("/bottle-keep");
   revalidatePath("/dashboard");
 
   return { updatedCount };
-});
+  }
+);

@@ -23,10 +23,11 @@ const getBottleKeepsSchema = z.object({
 
 export const getBottleKeeps = createSafeAction(
   getBottleKeepsSchema,
-  async (filter) => {
+  async (filter, { supabase }) => {
     const bottleKeeps = await BottleKeepService.getBottleKeeps(
       filter.status,
-      filter.customerId
+      filter.customerId,
+      supabase
     );
     return bottleKeeps;
   }
@@ -38,8 +39,8 @@ const getBottleKeepByIdSchema = z.object({
 
 export const getBottleKeepById = createSafeAction(
   getBottleKeepByIdSchema,
-  async ({ id }) => {
-    const bottleKeep = await BottleKeepService.getBottleKeep(id);
+  async ({ id }, { supabase }) => {
+    const bottleKeep = await BottleKeepService.getBottleKeep(id, supabase);
     if (!bottleKeep) {
       throw new Error("ボトルキープが見つかりません");
     }
@@ -59,15 +60,18 @@ const createBottleKeepSchema = z.object({
 
 export const createBottleKeep = createSafeAction(
   createBottleKeepSchema,
-  async (data) => {
-    const bottleKeep = await BottleKeepService.createBottleKeep({
-      customer_id: data.customerId,
-      product_id: String(data.productId),
-      opened_date: data.openedDate,
-      expiry_date: data.expiryDate,
-      storage_location: data.storageLocation,
-      notes: data.notes,
-    });
+  async (data, { supabase }) => {
+    const bottleKeep = await BottleKeepService.createBottleKeep(
+      {
+        customer_id: data.customerId,
+        product_id: String(data.productId),
+        opened_date: data.openedDate,
+        expiry_date: data.expiryDate,
+        storage_location: data.storageLocation,
+        notes: data.notes,
+      },
+      supabase
+    );
     revalidatePath("/bottle-keep");
     return bottleKeep;
   }
@@ -84,13 +88,17 @@ const updateBottleKeepSchema = z.object({
 
 export const updateBottleKeep = createSafeAction(
   updateBottleKeepSchema,
-  async ({ id, ...data }) => {
-    const bottleKeep = await BottleKeepService.updateBottleKeep(id, {
-      status: data.status,
-      storage_location: data.storageLocation,
-      remaining_percentage: data.remainingAmount,
-      notes: data.notes,
-    });
+  async ({ id, ...data }, { supabase }) => {
+    const bottleKeep = await BottleKeepService.updateBottleKeep(
+      id,
+      {
+        status: data.status,
+        storage_location: data.storageLocation,
+        remaining_percentage: data.remainingAmount,
+        notes: data.notes,
+      },
+      supabase
+    );
     revalidatePath("/bottle-keep");
     return bottleKeep;
   }
@@ -105,13 +113,16 @@ const useBottleKeepSchema = z.object({
 
 export const useBottleKeep = createSafeAction(
   useBottleKeepSchema,
-  async (data) => {
-    await BottleKeepService.serveBottle({
-      bottle_keep_id: data.bottleKeepId,
-      visit_id: data.visitId,
-      served_amount: data.amountUsed,
-      notes: data.notes,
-    });
+  async (data, { supabase }) => {
+    await BottleKeepService.serveBottle(
+      {
+        bottle_keep_id: data.bottleKeepId,
+        visit_id: data.visitId,
+        served_amount: data.amountUsed,
+        notes: data.notes,
+      },
+      supabase
+    );
     revalidatePath("/bottle-keep");
     return null;
   }
@@ -119,10 +130,13 @@ export const useBottleKeep = createSafeAction(
 
 // ========== Statistics and Reports Actions ==========
 
-export const getBottleKeepStats = createSafeAction(z.object({}), async () => {
-  const stats = await BottleKeepService.getStatistics();
-  return stats;
-});
+export const getBottleKeepStats = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    const stats = await BottleKeepService.getStatistics(supabase);
+    return stats;
+  }
+);
 
 export const getBottleKeepAlerts = createSafeAction(z.object({}), async () => {
   // TODO: Implement getBottleKeepAlerts in BottleKeepService
@@ -135,9 +149,12 @@ const getCustomerBottleKeepSummarySchema = z.object({
 
 export const getCustomerBottleKeepSummary = createSafeAction(
   getCustomerBottleKeepSummarySchema,
-  async ({ customerId }) => {
+  async ({ customerId }, { supabase }) => {
     // TODO: Implement getCustomerBottleKeepSummary in BottleKeepService
-    const summary = await BottleKeepService.getCustomerStatistics(customerId);
+    const summary = await BottleKeepService.getCustomerStatistics(
+      customerId,
+      supabase
+    );
     return summary;
   }
 );
@@ -157,10 +174,13 @@ export const getBottleKeepInventory = createSafeAction(
   }
 );
 
-export const updateExpiredBottles = createSafeAction(z.object({}), async () => {
-  const count = await BottleKeepService.updateExpiredBottles();
-  return { updatedCount: count };
-});
+export const updateExpiredBottles = createSafeAction(
+  z.object({}),
+  async (_, { supabase }) => {
+    const count = await BottleKeepService.updateExpiredBottles(supabase);
+    return { updatedCount: count };
+  }
+);
 
 export const getStorageLocations = createSafeAction(z.object({}), async () => {
   // TODO: Implement getStorageLocations in BottleKeepService
