@@ -23,11 +23,10 @@ const getBottleKeepsSchema = z.object({
 
 export const getBottleKeeps = createSafeAction(
   getBottleKeepsSchema,
-  async (filter, { supabase }) => {
+  async (filter) => {
     const bottleKeeps = await BottleKeepService.getBottleKeeps(
       filter.status,
-      filter.customerId,
-      supabase
+      filter.customerId
     );
     return bottleKeeps;
   }
@@ -39,8 +38,8 @@ const getBottleKeepByIdSchema = z.object({
 
 export const getBottleKeepById = createSafeAction(
   getBottleKeepByIdSchema,
-  async ({ id }, { supabase }) => {
-    const bottleKeep = await BottleKeepService.getBottleKeep(id, supabase);
+  async ({ id }) => {
+    const bottleKeep = await BottleKeepService.getBottleKeep(id);
     if (!bottleKeep) {
       throw new Error("ボトルキープが見つかりません");
     }
@@ -60,18 +59,15 @@ const createBottleKeepSchema = z.object({
 
 export const createBottleKeep = createSafeAction(
   createBottleKeepSchema,
-  async (data, { supabase }) => {
-    const bottleKeep = await BottleKeepService.createBottleKeep(
-      {
-        customer_id: data.customerId,
-        product_id: String(data.productId),
-        opened_date: data.openedDate,
-        expiry_date: data.expiryDate,
-        storage_location: data.storageLocation,
-        notes: data.notes,
-      },
-      supabase
-    );
+  async (data) => {
+    const bottleKeep = await BottleKeepService.createBottleKeep({
+      customer_id: data.customerId,
+      product_id: String(data.productId),
+      opened_date: data.openedDate,
+      expiry_date: data.expiryDate,
+      storage_location: data.storageLocation,
+      notes: data.notes,
+    });
     revalidatePath("/bottle-keep");
     return bottleKeep;
   }
@@ -88,17 +84,13 @@ const updateBottleKeepSchema = z.object({
 
 export const updateBottleKeep = createSafeAction(
   updateBottleKeepSchema,
-  async ({ id, ...data }, { supabase }) => {
-    const bottleKeep = await BottleKeepService.updateBottleKeep(
-      id,
-      {
-        status: data.status,
-        storage_location: data.storageLocation,
-        remaining_percentage: data.remainingAmount,
-        notes: data.notes,
-      },
-      supabase
-    );
+  async ({ id, ...data }) => {
+    const bottleKeep = await BottleKeepService.updateBottleKeep(id, {
+      status: data.status,
+      storage_location: data.storageLocation,
+      remaining_percentage: data.remainingAmount,
+      notes: data.notes,
+    });
     revalidatePath("/bottle-keep");
     return bottleKeep;
   }
@@ -106,23 +98,20 @@ export const updateBottleKeep = createSafeAction(
 
 const useBottleKeepSchema = z.object({
   bottleKeepId: z.string(),
-  visitId: z.string(),
+  visitId: z.string().optional(),
   amountUsed: z.number().min(0).max(1),
   notes: z.string().optional(),
 });
 
 export const useBottleKeep = createSafeAction(
   useBottleKeepSchema,
-  async (data, { supabase }) => {
-    await BottleKeepService.serveBottle(
-      {
-        bottle_keep_id: data.bottleKeepId,
-        visit_id: data.visitId,
-        served_amount: data.amountUsed,
-        notes: data.notes,
-      },
-      supabase
-    );
+  async (data) => {
+    await BottleKeepService.serveBottle({
+      bottle_keep_id: data.bottleKeepId,
+      visit_id: data.visitId,
+      served_amount: data.amountUsed,
+      notes: data.notes,
+    });
     revalidatePath("/bottle-keep");
     return null;
   }
@@ -130,17 +119,14 @@ export const useBottleKeep = createSafeAction(
 
 // ========== Statistics and Reports Actions ==========
 
-export const getBottleKeepStats = createSafeAction(
-  z.object({}),
-  async (_, { supabase }) => {
-    const stats = await BottleKeepService.getStatistics(supabase);
-    return stats;
-  }
-);
+export const getBottleKeepStats = createSafeAction(z.object({}), async () => {
+  const stats = await BottleKeepService.getStatistics();
+  return stats;
+});
 
 export const getBottleKeepAlerts = createSafeAction(z.object({}), async () => {
-  // TODO: Implement getBottleKeepAlerts in BottleKeepService
-  return [] as never[];
+  const alerts = await BottleKeepService.getAlerts();
+  return alerts;
 });
 
 const getCustomerBottleKeepSummarySchema = z.object({
@@ -149,59 +135,47 @@ const getCustomerBottleKeepSummarySchema = z.object({
 
 export const getCustomerBottleKeepSummary = createSafeAction(
   getCustomerBottleKeepSummarySchema,
-  async ({ customerId }, { supabase }) => {
-    // TODO: Implement getCustomerBottleKeepSummary in BottleKeepService
-    const summary = await BottleKeepService.getCustomerStatistics(
-      customerId,
-      supabase
-    );
+  async ({ customerId }) => {
+    const summary = await BottleKeepService.getCustomerStatistics(customerId);
     return summary;
   }
 );
 
 export const getExpiryManagement = createSafeAction(z.object({}), async () => {
-  // TODO: Implement getExpiryManagement in BottleKeepService
-  const expiry = { expiring_soon: [] as never[], expired: [] as never[] };
+  const expiry = await BottleKeepService.getExpiryManagement();
   return expiry;
 });
 
 export const getBottleKeepInventory = createSafeAction(
   z.object({}),
   async () => {
-    // TODO: Implement getBottleKeepInventory in BottleKeepService
-    const inventory: never[] = [];
+    const inventory = await BottleKeepService.getInventory();
     return inventory;
   }
 );
 
-export const updateExpiredBottles = createSafeAction(
-  z.object({}),
-  async (_, { supabase }) => {
-    const count = await BottleKeepService.updateExpiredBottles(supabase);
-    return { updatedCount: count };
-  }
-);
+export const updateExpiredBottles = createSafeAction(z.object({}), async () => {
+  const updatedCount = await BottleKeepService.updateExpiredBottles();
+  return { updatedCount };
+});
 
 export const getStorageLocations = createSafeAction(z.object({}), async () => {
-  // TODO: Implement getStorageLocations in BottleKeepService
-  const locations: string[] = [];
+  const locations = await BottleKeepService.getStorageLocations();
   return locations;
 });
 
 // ========== Alert Actions ==========
 
 export const sendExpiryAlerts = createSafeAction(z.object({}), async () => {
-  // TODO: Implement sendExpiryAlerts in BottleKeepService
-  const result = { sent: 0, failed: 0 };
+  const result = await BottleKeepService.sendExpiryAlerts();
   return {
     sentCount: result.sent,
-    alerts: [] as never[],
+    alerts: result.results,
   };
 });
 
 export const getUnsentAlerts = createSafeAction(z.object({}), async () => {
-  // TODO: Implement getUnsentAlerts in BottleKeepService
-  const alerts: never[] = [];
+  const alerts = await BottleKeepService.getAlerts();
   return alerts;
 });
 

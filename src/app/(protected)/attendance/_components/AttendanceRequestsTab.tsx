@@ -1,7 +1,6 @@
 "use client";
 
 import { memo } from "react";
-import { RoleGate } from "@/components/auth/RoleGate";
 import { Access } from "@/components/auth/Access";
 import { ShiftRequestList } from "@/components/attendance/ShiftRequestList";
 

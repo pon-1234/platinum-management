@@ -101,28 +101,6 @@ function groupByDate<T extends { ts: Date }>(items: T[]) {
     }));
 }
 
-function collapseDuplicates(items: ReturnType<typeof normalize>[]) {
-  const collapsed: Array<ReturnType<typeof normalize> & { count?: number }> =
-    [];
-  const windowMs = 2 * 60 * 1000;
-  for (const i of items) {
-    const last = collapsed[collapsed.length - 1];
-    if (
-      last &&
-      last.type === i.type &&
-      last.title === i.title &&
-      Math.abs(last.ts.getTime() - i.ts.getTime()) <= windowMs
-    ) {
-      last.count = (last.count ?? 1) + 1;
-      if (typeof last.amount === "number" && typeof i.amount === "number")
-        last.amount += i.amount;
-    } else {
-      collapsed.push({ ...i });
-    }
-  }
-  return collapsed;
-}
-
 function iconFor(type: ActivityType) {
   const cls = "h-5 w-5 text-white";
   switch (type) {

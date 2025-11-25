@@ -67,6 +67,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- search_staffs_optimized: read-only -> invoker
+DROP FUNCTION IF EXISTS search_staffs_optimized(TEXT, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION search_staffs_optimized(
   search_term TEXT,
   limit_count INTEGER DEFAULT 20,

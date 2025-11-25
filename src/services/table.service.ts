@@ -18,38 +18,13 @@ import {
   tableSearchSchema,
 } from "@/lib/validations/reservation";
 
-type SupabaseResolver = () => SupabaseClient<Database>;
-
-let browserSupabase: SupabaseClient<Database> | null = null;
-
-function resolveBrowserSupabase(): SupabaseClient<Database> {
-  if (typeof window === "undefined") {
-    throw new Error(
-      "TableService requires an explicit Supabase client when used on the server"
-    );
-  }
-
-  if (!browserSupabase) {
-    browserSupabase = createClient();
-  }
-
-  return browserSupabase;
-}
-
 export class TableService extends BaseService {
-  private readonly resolveClient: SupabaseResolver;
+  private supabase: SupabaseClient<Database>;
   private realtimeChannel: RealtimeChannel | null = null;
 
-  constructor(
-    resolveClient: SupabaseResolver = resolveBrowserSupabase,
-    options?: { registerInstance?: boolean }
-  ) {
-    super(options);
-    this.resolveClient = resolveClient;
-  }
-
-  private get client(): SupabaseClient<Database> {
-    return this.resolveClient();
+  constructor() {
+    super();
+    this.supabase = createClient();
   }
 
   // Table CRUD operations
@@ -57,7 +32,7 @@ export class TableService extends BaseService {
     // Validate input
     const validatedData = createTableSchema.parse(data);
 
-    const { data: table, error } = await this.client
+    const { data: table, error } = await this.supabase
       .from("tables")
       .insert({
         table_number: validatedData.tableName,
@@ -81,7 +56,7 @@ export class TableService extends BaseService {
   async getTableById(id: string): Promise<Table | null> {
     // tables.id は UUID、visit_table_segments.table_id は数値（テーブル番号）
     // ここではUUIDによる主キー検索を維持
-    const { data, error } = await this.client
+    const { data, error } = await this.supabase
       .from("tables")
       .select("*")
       .eq("id", id)
@@ -110,7 +85,7 @@ export class TableService extends BaseService {
     // visit_table_segmentsから現在アクティブな来店を取得
     const tableIdNumber = parseInt(id, 10);
     if (!isNaN(tableIdNumber)) {
-      let segQuery = this.client
+      let segQuery = this.supabase
         .from("visit_table_segments")
         .select(
           `
@@ -143,7 +118,7 @@ export class TableService extends BaseService {
 
     // 予約情報のチェック（既存ロジック）
     if (table.currentStatus === "reserved") {
-      const { data: reservations } = await this.client
+      const { data: reservations } = await this.supabase
         .from("reservations")
         .select("*")
         .eq("table_id", id)
@@ -208,7 +183,7 @@ export class TableService extends BaseService {
     delete updateData.currentStatus;
     delete updateData.currentVisitId;
 
-    const { data: table, error } = await this.client
+    const { data: table, error } = await this.supabase
       .from("tables")
       .update(updateData)
       .eq("id", id)
@@ -225,7 +200,7 @@ export class TableService extends BaseService {
   }
 
   async deleteTable(id: string): Promise<void> {
-    const { error } = await this.client.from("tables").delete().eq("id", id);
+    const { error } = await this.supabase.from("tables").delete().eq("id", id);
 
     if (error) {
       throw new Error(
@@ -238,7 +213,7 @@ export class TableService extends BaseService {
     // Validate search parameters
     const validatedParams = tableSearchSchema.parse(params);
 
-    let query = this.client
+    let query = this.supabase
       .from("tables")
       .select("*")
       .order("table_number", { ascending: true });
@@ -289,7 +264,7 @@ export class TableService extends BaseService {
       const tableIdNumber = parseInt(id, 10);
       if (!isNaN(tableIdNumber)) {
         // 既存のアクティブなセグメントを終了
-        let endSeg = this.client
+        let endSeg = this.supabase
           .from("visit_table_segments")
           .update({ ended_at: new Date().toISOString() })
           .eq("table_id", tableIdNumber);
@@ -297,7 +272,7 @@ export class TableService extends BaseService {
         await endSeg;
 
         // 新しいセグメントを作成
-        await this.client.from("visit_table_segments").insert({
+        await this.supabase.from("visit_table_segments").insert({
           visit_id: visitId,
           table_id: tableIdNumber,
           reason: "check_in",
@@ -308,7 +283,7 @@ export class TableService extends BaseService {
       // テーブルが空席になった場合、アクティブなセグメントを終了
       const tableIdNumber = parseInt(id, 10);
       if (!isNaN(tableIdNumber)) {
-        let endSeg2 = this.client
+        let endSeg2 = this.supabase
           .from("visit_table_segments")
           .update({ ended_at: new Date().toISOString() })
           .eq("table_id", tableIdNumber);
@@ -339,7 +314,7 @@ export class TableService extends BaseService {
   ): Promise<Table[]> {
     // 日時が指定されている場合は一括チェック用のRPCを使用
     if (date && time) {
-      const { data: availableTableIds, error } = await this.client.rpc(
+      const { data: availableTableIds, error } = await this.supabase.rpc(
         "get_available_tables",
         {
           p_reservation_date: date,
@@ -362,7 +337,7 @@ export class TableService extends BaseService {
 
         const availableTableIdsList: string[] = [];
         for (const table of tables) {
-          const isAvailable = await this.client.rpc(
+          const isAvailable = await this.supabase.rpc(
             "check_table_availability",
             {
               p_table_id: table.id,
@@ -383,7 +358,7 @@ export class TableService extends BaseService {
 
       // RPCが成功した場合、返されたIDでテーブルを取得
       if (availableTableIds && availableTableIds.length > 0) {
-        const { data: tablesData, error: tableError } = await this.client
+        const { data: tablesData, error: tableError } = await this.supabase
           .from("tables")
           .select("*")
           .in("id", availableTableIds)
@@ -410,7 +385,7 @@ export class TableService extends BaseService {
 
   // Realtime subscriptions
   subscribeToTableUpdates(callback: (table: Table) => void): () => void {
-    this.realtimeChannel = this.client
+    this.realtimeChannel = this.supabase
       .channel("table-updates")
       .on(
         "postgres_changes",
@@ -433,7 +408,7 @@ export class TableService extends BaseService {
     // Return unsubscribe function
     return () => {
       if (this.realtimeChannel) {
-        this.client.removeChannel(this.realtimeChannel);
+        void this.supabase.removeChannel(this.realtimeChannel);
         this.realtimeChannel = null;
       }
     };
@@ -445,9 +420,9 @@ export class TableService extends BaseService {
       "TableService"
     );
     // Initial load
-    this.searchTables({ isActive: true }).then(callback);
+    void this.searchTables({ isActive: true }).then(callback);
 
-    this.realtimeChannel = this.client
+    this.realtimeChannel = this.supabase
       .channel("all-table-updates")
       .on(
         "postgres_changes",
@@ -467,7 +442,7 @@ export class TableService extends BaseService {
     // Return unsubscribe function
     return () => {
       if (this.realtimeChannel) {
-        this.client.removeChannel(this.realtimeChannel);
+        void this.supabase.removeChannel(this.realtimeChannel);
         this.realtimeChannel = null;
       }
     };
@@ -480,9 +455,9 @@ export class TableService extends BaseService {
     onInitialLoad: (allTables: Table[]) => void
   ): () => void {
     // Initial load with visit_table_segments status
-    this.getTablesWithActiveVisits().then(onInitialLoad);
+    void this.getTablesWithActiveVisits().then(onInitialLoad);
 
-    this.realtimeChannel = this.client
+    this.realtimeChannel = this.supabase
       .channel("table-differential-updates", {
         config: { broadcast: { ack: true }, presence: { key: "tables" } },
       })
@@ -555,7 +530,7 @@ export class TableService extends BaseService {
     // Return unsubscribe function
     return () => {
       if (this.realtimeChannel) {
-        this.client.removeChannel(this.realtimeChannel);
+        void this.supabase.removeChannel(this.realtimeChannel);
         this.realtimeChannel = null;
       }
     };
@@ -563,7 +538,7 @@ export class TableService extends BaseService {
 
   // 新しいヘルパーメソッド：アクティブな来店情報を含むテーブルリストを取得
   private async getTablesWithActiveVisits(): Promise<Table[]> {
-    const { data: tables } = await this.client
+    const { data: tables } = await this.supabase
       .from("tables")
       .select("*")
       .eq("is_active", true)
@@ -580,7 +555,7 @@ export class TableService extends BaseService {
   private async getTableWithActiveVisit(
     tableId: string
   ): Promise<Table | null> {
-    const { data: table } = await this.client
+    const { data: table } = await this.supabase
       .from("tables")
       .select("*")
       .eq("id", tableId)
@@ -614,9 +589,3 @@ export class TableService extends BaseService {
 
 // Export singleton instance
 export const tableService = new TableService();
-
-export function createTableService(
-  supabase: SupabaseClient<Database>
-): TableService {
-  return new TableService(() => supabase, { registerInstance: false });
-}

@@ -8,6 +8,17 @@ import {
 import { DashboardClient } from "./_components/DashboardClient";
 import { DashboardFilterProvider } from "./_components/DashboardFilterProvider";
 
+type KpiTrends = {
+  sales: { today: number; d1: number | null; dow: number | null };
+  reservations: { today: number; d1: number | null; dow: number | null };
+};
+
+type DashboardAlerts = {
+  lowStockCount: number;
+  expiringBottles: number;
+  pendingShifts: number;
+};
+
 export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const [statsResult, activitiesResult, salesResult, kpiTrends, alerts] =
@@ -36,8 +47,16 @@ export default async function DashboardPage() {
         recentActivities={activitiesResult.success ? activitiesResult.data : []}
         hourlySales={salesResult.success ? salesResult.data : []}
         error={error || null}
-        kpiTrends={kpiTrends.success ? (kpiTrends.data as any) : undefined}
-        alerts={alerts.success ? (alerts.data as any) : undefined}
+        kpiTrends={
+          (kpiTrends.success ? (kpiTrends.data as KpiTrends) : undefined) as
+            | KpiTrends
+            | undefined
+        }
+        alerts={
+          (alerts.success ? (alerts.data as DashboardAlerts) : undefined) as
+            | DashboardAlerts
+            | undefined
+        }
       />
     </DashboardFilterProvider>
   );

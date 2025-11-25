@@ -6,10 +6,11 @@ import { BottleKeepDashboard } from "@/components/bottle-keep/BottleKeepDashboar
 import { BottleKeepList } from "@/components/bottle-keep/BottleKeepList";
 import { BottleKeepForm } from "@/components/bottle-keep/BottleKeepForm";
 import { BottleKeepUsageForm } from "@/components/bottle-keep/BottleKeepUsageForm";
-import Link from "next/link";
 import {
   getBottleKeeps,
   getStorageLocations,
+  getBottleKeepAlerts,
+  getExpiryManagement,
   createBottleKeep,
   useBottleKeep as recordBottleKeepUsage,
 } from "@/app/actions/bottle-keep.actions";
@@ -17,9 +18,11 @@ import { searchCustomers } from "@/app/actions/customer.actions";
 import { getProducts } from "@/app/actions/inventory.actions";
 import type {
   BottleKeepDetail,
+  BottleKeepAlert,
   BottleKeepSearchFilter,
   CreateBottleKeepRequest,
   UseBottleKeepRequest,
+  ExpiryManagement,
 } from "@/types/bottle-keep.types";
 import type { Customer } from "@/types/customer.types";
 import type { Product } from "@/types/inventory.types";
@@ -37,7 +40,10 @@ type ViewMode = "dashboard" | "list" | "alerts" | "expiry";
 export default function BottleKeepPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("dashboard");
   const [isLoading, setIsLoading] = useState(false);
+  const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [bottleKeeps, setBottleKeeps] = useState<BottleKeepDetail[]>([]);
+  const [alerts, setAlerts] = useState<BottleKeepAlert[]>([]);
+  const [expiryData, setExpiryData] = useState<ExpiryManagement | null>(null);
   const [storageLocations, setStorageLocations] = useState<string[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -152,12 +158,12 @@ export default function BottleKeepPage() {
 
   const handleViewAlerts = () => {
     setViewMode("alerts");
-    // アラート表示の実装
+    loadAlerts();
   };
 
   const handleViewExpiry = () => {
     setViewMode("expiry");
-    // 期限管理表示の実装
+    loadExpiry();
   };
 
   const handleEditBottleKeep = (bottleKeep: BottleKeepDetail) => {
@@ -171,6 +177,44 @@ export default function BottleKeepPage() {
     // 現在は来店IDなしで使用記録を作成
     setCurrentVisitId(undefined);
     setShowUsageForm(true);
+  };
+
+  const loadAlerts = async () => {
+    try {
+      setSecondaryLoading(true);
+      const result = await getBottleKeepAlerts({});
+      if (result.success) {
+        setAlerts(result.data);
+      } else {
+        toast.error(result.error || "アラートの取得に失敗しました");
+      }
+    } catch (error) {
+      toast.error("アラートの取得中にエラーが発生しました");
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
+    } finally {
+      setSecondaryLoading(false);
+    }
+  };
+
+  const loadExpiry = async () => {
+    try {
+      setSecondaryLoading(true);
+      const result = await getExpiryManagement({});
+      if (result.success) {
+        setExpiryData(result.data);
+      } else {
+        toast.error(result.error || "期限データの取得に失敗しました");
+      }
+    } catch (error) {
+      toast.error("期限データの取得中にエラーが発生しました");
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
+    } finally {
+      setSecondaryLoading(false);
+    }
   };
 
   const renderContent = () => {
@@ -237,8 +281,174 @@ export default function BottleKeepPage() {
                 onUse={handleUseBottleKeepClick}
                 onFilterChange={handleFilterChange}
                 storageLocations={storageLocations}
-                loading={isLoading}
               />
+            )}
+          </div>
+        );
+
+      case "alerts":
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">
+                  期限/残量アラート
+                </h2>
+                <p className="text-sm text-gray-500">
+                  期限切れ・期限間近・残量わずかのボトルを確認します
+                </p>
+              </div>
+              <button
+                onClick={() => setViewMode("dashboard")}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                ダッシュボードに戻る
+              </button>
+            </div>
+
+            {secondaryLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : alerts.length === 0 ? (
+              <EmptyState
+                title="アラートはありません"
+                description="期限や残量の警告はありません。"
+                icon={<BeakerIcon className="h-12 w-12" />}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="border rounded-lg p-4 bg-white shadow-sm space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-xs font-semibold px-2 py-1 rounded ${
+                          alert.severity === "critical"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {alert.alertType === "low_amount"
+                          ? "残量不足"
+                          : alert.alertType === "expired"
+                            ? "期限切れ"
+                            : "期限間近"}
+                      </span>
+                      {alert.expiryDate && (
+                        <span className="text-xs text-gray-500">
+                          期限: {alert.expiryDate}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">
+                        {alert.customerName}
+                      </p>
+                      <p className="font-semibold text-gray-900">
+                        {alert.productName}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-700">{alert.message}</p>
+                    {typeof alert.remainingAmount === "number" && (
+                      <p className="text-xs text-gray-500">
+                        残量: {Math.round(alert.remainingAmount * 100)}%
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
+      case "expiry":
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">期限管理</h2>
+                <p className="text-sm text-gray-500">
+                  期限が近いボトルを期日別に表示します
+                </p>
+              </div>
+              <button
+                onClick={() => setViewMode("dashboard")}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                ダッシュボードに戻る
+              </button>
+            </div>
+
+            {secondaryLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : !expiryData ? (
+              <EmptyState
+                title="期限データがありません"
+                description="期限が設定されたボトルを登録すると表示されます。"
+                icon={<AdjustmentsHorizontalIcon className="h-12 w-12" />}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  {
+                    title: "今日期限",
+                    data: expiryData.expiringToday,
+                    tone: "text-red-700 bg-red-50",
+                  },
+                  {
+                    title: "7日以内",
+                    data: expiryData.expiringThisWeek,
+                    tone: "text-amber-700 bg-amber-50",
+                  },
+                  {
+                    title: "今月中",
+                    data: expiryData.expiringThisMonth,
+                    tone: "text-indigo-700 bg-indigo-50",
+                  },
+                  {
+                    title: "期限切れ",
+                    data: expiryData.expired,
+                    tone: "text-gray-700 bg-gray-50",
+                  },
+                ].map((section) => (
+                  <div
+                    key={section.title}
+                    className="border rounded-lg bg-white"
+                  >
+                    <div
+                      className={`px-4 py-3 border-b font-semibold ${section.tone}`}
+                    >
+                      {section.title} ({section.data.length})
+                    </div>
+                    <div className="divide-y">
+                      {section.data.length === 0 ? (
+                        <p className="p-4 text-sm text-gray-500">該当なし</p>
+                      ) : (
+                        section.data.map((bottle) => (
+                          <div key={bottle.id} className="p-4 space-y-1">
+                            <p className="text-sm text-gray-500">
+                              {bottle.customer?.name}
+                            </p>
+                            <p className="font-medium text-gray-900">
+                              {bottle.product?.name || "商品名不明"}
+                            </p>
+                            {bottle.expiry_date && (
+                              <p className="text-xs text-gray-500">
+                                期限: {bottle.expiry_date}
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         );

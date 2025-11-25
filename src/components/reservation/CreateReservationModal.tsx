@@ -66,7 +66,7 @@ export function CreateReservationModal({
         setValue("customerId", initialCustomerId);
       }
     }
-  }, [isOpen, initialDate, setValue]);
+  }, [isOpen, initialDate, initialCustomerId, setValue]);
 
   useEffect(() => {
     if (watchedDate && watchedTime) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type Primitive = string | number | boolean;
@@ -54,9 +54,10 @@ export function useSavedFilters<T extends Record<string, Primitive>>(
   // Persist to URL and LocalStorage when values change
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() || "");
+    const initialRecord = initial as Record<keyof T, unknown>;
     (Object.keys(values) as Array<keyof T>).forEach((k) => {
       const v = values[k];
-      if (v === undefined || v === null || v === (initial as any)[k]) {
+      if (v === undefined || v === null || v === initialRecord[k]) {
         params.delete(String(k));
       } else {
         params.set(String(k), String(v));
@@ -71,9 +72,15 @@ export function useSavedFilters<T extends Record<string, Primitive>>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(values), pathname]);
 
-  const setPartial = (patch: Partial<T>) => {
-    setValues((prev) => ({ ...prev, ...patch }));
-  };
+  const setPartial = useCallback(
+    (patch: Partial<T>) => {
+      setValues((prev) => ({ ...prev, ...patch }));
+    },
+    [setValues]
+  );
 
-  return useMemo(() => ({ values, setValues, setPartial }), [values]);
+  return useMemo(
+    () => ({ values, setValues, setPartial }),
+    [values, setPartial, setValues]
+  );
 }

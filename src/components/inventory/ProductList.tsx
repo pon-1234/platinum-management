@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, memo, forwardRef } from "react";
+import { useMemo, useState, memo, type CSSProperties } from "react";
 import { Product, InventorySearchFilter } from "@/types/inventory.types";
 import { SelectionPanel } from "@/components/table/SelectionPanel";
 import { convertToCSV, downloadCSV } from "@/lib/utils/export";
@@ -11,7 +11,6 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
-import { FixedSizeList, ListChildComponentProps } from "react-window";
 import { DataTable, DataTableColumn } from "@/components/table/DataTable";
 
 interface ProductListProps {
@@ -21,7 +20,6 @@ interface ProductListProps {
   onView?: (product: Product) => void;
   onFilterChange?: (filter: InventorySearchFilter) => void;
   categories?: string[];
-  loading?: boolean;
 }
 
 export function ProductList({
@@ -31,7 +29,6 @@ export function ProductList({
   onView,
   onFilterChange,
   categories = [],
-  loading = false,
 }: ProductListProps) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -91,104 +88,93 @@ export function ProductList({
   const rows = useMemo(() => products, [products]);
 
   // Virtualized table row as TR
-  const Row = memo(({ index, style }: ListChildComponentProps) => {
-    const product = rows[index];
-    const stockStatus = getStockStatus(product);
-    const isSelected = selectedIds.includes(product.id);
-    return (
-      <tr style={style as React.CSSProperties} className="hover:bg-gray-50">
-        <td className="px-6 py-4">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={() => handleSelectOne(product.id)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <div>
-              <div className="text-sm font-medium text-gray-900">
-                {product.name}
+  const Row = memo(
+    ({ index, style }: { index: number; style: CSSProperties }) => {
+      const product = rows[index];
+      const stockStatus = getStockStatus(product);
+      const isSelected = selectedIds.includes(product.id);
+      return (
+        <tr style={style as React.CSSProperties} className="hover:bg-gray-50">
+          <td className="px-6 py-4">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => handleSelectOne(product.id)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap">
+            <div className="flex items-center">
+              <div>
+                <div className="text-sm font-medium text-gray-900">
+                  {product.name}
+                </div>
               </div>
             </div>
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {product.category}
-          </span>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}
-            >
-              {stockStatus.label}
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              {product.category}
             </span>
-            {(product.stock_quantity === 0 ||
-              product.stock_quantity <= product.low_stock_threshold) && (
-              <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-400" />
-            )}
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {product.stock_quantity} / {product.max_stock}
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {formatCurrency(product.price)}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {formatCurrency(product.cost)}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          {formatDate(product.updated_at)}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <div className="flex space-x-2">
-            {onView && (
-              <button
-                onClick={() => onView(product)}
-                className="text-blue-600 hover:text-blue-900"
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap">
+            <div className="flex items-center">
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}
               >
-                <EyeIcon className="h-4 w-4" />
-              </button>
-            )}
-            {onEdit && (
-              <button
-                onClick={() => onEdit(product)}
-                className="text-indigo-600 hover:text-indigo-900"
-              >
-                <PencilIcon className="h-4 w-4" />
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={() => onDelete(product)}
-                className="text-red-600 hover:text-red-900"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </td>
-      </tr>
-    );
-  });
+                {stockStatus.label}
+              </span>
+              {(product.stock_quantity === 0 ||
+                product.stock_quantity <= product.low_stock_threshold) && (
+                <ExclamationTriangleIcon className="ml-2 h-4 w-4 text-yellow-400" />
+              )}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {product.stock_quantity} / {product.max_stock}
+            </div>
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            {formatCurrency(product.price)}
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            {formatCurrency(product.cost)}
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            {formatDate(product.updated_at)}
+          </td>
+          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <div className="flex space-x-2">
+              {onView && (
+                <button
+                  onClick={() => onView(product)}
+                  className="text-blue-600 hover:text-blue-900"
+                >
+                  <EyeIcon className="h-4 w-4" />
+                </button>
+              )}
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(product)}
+                  className="text-indigo-600 hover:text-indigo-900"
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(product)}
+                  className="text-red-600 hover:text-red-900"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </td>
+        </tr>
+      );
+    }
+  );
   Row.displayName = "Row";
-
-  // Use tbody as outer/inner elements for correct semantics
-  const TBodyOuter = forwardRef<HTMLTableSectionElement, any>(
-    function TBodyOuter(props, ref) {
-      return <tbody ref={ref} {...props} />;
-    }
-  );
-
-  const TBodyInner = forwardRef<HTMLTableSectionElement, any>(
-    function TBodyInner(props, ref) {
-      return <tbody ref={ref} {...props} />;
-    }
-  );
 
   return (
     <div className="space-y-4">
@@ -363,7 +349,6 @@ export function ProductList({
         }
         rows={products}
         getRowKey={(p) => p.id}
-        rowHeight={68}
         selection={{
           isAllSelected:
             selectedIds.length === products.length && products.length > 0,

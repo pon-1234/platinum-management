@@ -235,10 +235,8 @@ export async function getKpiTrends() {
         .gte("created_at", from)
         .lte("created_at", to);
       if (error) return 0;
-      return (data || []).reduce(
-        (sum, r: any) => sum + Number(r.total_price || 0),
-        0
-      );
+      const rows = (data || []) as Array<{ total_price: number | null }>;
+      return rows.reduce((sum, r) => sum + Number(r.total_price ?? 0), 0);
     };
 
     const fetchReservationCount = async (from: string, to: string) => {
@@ -301,9 +299,14 @@ export async function getDashboardAlerts() {
       const { data } = await supabase
         .from("products")
         .select("id,stock_quantity,low_stock_threshold");
-      lowStockCount = (data || []).filter(
-        (p: any) =>
-          Number(p.stock_quantity || 0) <= Number(p.low_stock_threshold || 0)
+      const rows =
+        (data as Array<{
+          stock_quantity: number | null;
+          low_stock_threshold: number | null;
+        }>) || [];
+      lowStockCount = rows.filter(
+        (p) =>
+          Number(p.stock_quantity ?? 0) <= Number(p.low_stock_threshold ?? 0)
       ).length;
     }
     // Note: Some environments may use RPC get_low_stock_products; fallback above is minimal

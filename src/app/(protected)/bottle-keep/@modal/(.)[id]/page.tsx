@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Drawer } from "@/components/ui/Drawer";
 import { BottleKeepForm } from "@/components/bottle-keep/BottleKeepForm";
 import { BottleKeepService } from "@/services/bottle-keep.service";
-import type { BottleKeep } from "@/services/bottle-keep.service";
+import type { BottleKeepDetail } from "@/types/bottle-keep.types";
 import { Access } from "@/components/auth/Access";
 import { toast } from "react-hot-toast";
 import { updateBottleKeep } from "@/app/actions/bottle-keep.actions";
@@ -15,13 +15,26 @@ export default function BottleKeepDrawer() {
   const params = useParams();
   const id = params?.id as string;
   const [open, setOpen] = useState(true);
-  const [bottleKeep, setBottleKeep] = useState<BottleKeep | null>(null);
+  const [bottleKeep, setBottleKeep] = useState<BottleKeepDetail | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const data = await BottleKeepService.getBottleKeep(id);
-        setBottleKeep(data as any);
+        if (data) {
+          setBottleKeep({
+            ...(data as unknown as BottleKeepDetail),
+            product_id: Number(data.product_id),
+            remaining_amount:
+              (data as { remaining_amount?: number }).remaining_amount ??
+              (data as { remaining_percentage?: number })
+                .remaining_percentage ??
+              0,
+            bottle_number: data.bottle_number || "",
+          });
+        } else {
+          setBottleKeep(null);
+        }
       } catch {
         setBottleKeep(null);
       }
@@ -60,7 +73,7 @@ export default function BottleKeepDrawer() {
           fallback={<div className="p-4">権限がありません。</div>}
         >
           <BottleKeepForm
-            bottleKeep={bottleKeep as any}
+            bottleKeep={bottleKeep}
             onSubmit={async (_form) => {
               if (!bottleKeep) return;
               try {

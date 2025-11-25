@@ -1,4 +1,4 @@
-import { BaseService } from "../base.service";
+import { BaseService } from "@/services/base.service";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";

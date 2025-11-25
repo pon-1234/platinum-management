@@ -10,6 +10,22 @@ import type {
   CreateShiftRequestInput,
   ShiftRequestSearchInput,
 } from "@/types/attendance.types";
+import type { PostgrestError } from "@supabase/supabase-js";
+
+type LegacyAttendanceRecord = {
+  id?: string;
+  attendance_date?: string | null;
+  date?: string | null;
+  clock_in?: string | null;
+  clock_in_time?: string | null;
+  clock_out?: string | null;
+  clock_out_time?: string | null;
+  break_start?: string | null;
+  break_start_time?: string | null;
+  break_end?: string | null;
+  break_end_time?: string | null;
+  notes?: string | null;
+};
 
 /**
  * 勤怠ダッシュボードのデータを取得するサーバーアクション
@@ -109,7 +125,14 @@ export async function getAttendanceDashboardAction(): Promise<
     let totalWorkHours = 0;
     let totalOvertimeHours = 0;
     if (weekDataResult.data) {
-      for (const record of weekDataResult.data as any[]) {
+      type WeekRecord = {
+        clock_in_time?: string | null;
+        clock_out_time?: string | null;
+        clock_in?: string | null;
+        clock_out?: string | null;
+      };
+      const weekRecords = weekDataResult.data as WeekRecord[];
+      for (const record of weekRecords) {
         const ci = record.clock_in_time || record.clock_in;
         const co = record.clock_out_time || record.clock_out;
         if (ci && co) {
@@ -192,8 +215,8 @@ export async function getTodayAttendanceAction(): Promise<
     const today = new Date().toISOString().split("T")[0];
 
     // 新旧カラム両対応で取得
-    let data: any | null = null;
-    let error: any | null = null;
+    let data: AttendanceRecord | null = null;
+    let error: PostgrestError | null = null;
     const r1 = await supabase
       .from("attendance_records")
       .select("*")
@@ -260,7 +283,7 @@ export async function clockInAction(
     const clockInTime = now.toISOString();
 
     // Check if already clocked in today（新旧カラム対応）
-    let existing: any | null = null;
+    let existing: LegacyAttendanceRecord | null = null;
     const e1 = await supabase
       .from("attendance_records")
       .select("id, clock_in_time")
@@ -283,8 +306,8 @@ export async function clockInAction(
     }
 
     // 新旧カラムへ upsert 試行
-    let data: any | null = null;
-    let error: any | null = null;
+    let data: AttendanceRecord | null = null;
+    let error: PostgrestError | null = null;
     const u1 = await supabase
       .from("attendance_records")
       .upsert({
@@ -317,7 +340,8 @@ export async function clockInAction(
     if (error) throw error;
 
     revalidatePath("/attendance");
-    return { success: true, data };
+    const result = data ?? (existing as unknown as AttendanceRecord);
+    return { success: true, data: result };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "出勤打刻に失敗しました";
@@ -359,8 +383,8 @@ export async function clockOutAction(
 
     // Get today's record
     // 新旧カラムで本日の記録取得
-    let existing: any | null = null;
-    let fetchError: any | null = null;
+    let existing: LegacyAttendanceRecord | null = null;
+    let fetchError: PostgrestError | null = null;
     const f1 = await supabase
       .from("attendance_records")
       .select("*")
@@ -392,8 +416,8 @@ export async function clockOutAction(
     }
 
     // 新旧カラムで更新
-    let data: any | null = null;
-    let error: any | null = null;
+    let data: AttendanceRecord | null = null;
+    let error: PostgrestError | null = null;
     const uo1 = await supabase
       .from("attendance_records")
       .update({
@@ -421,7 +445,8 @@ export async function clockOutAction(
     if (error) throw error;
 
     revalidatePath("/attendance");
-    return { success: true, data };
+    const result = data ?? (existing as unknown as AttendanceRecord);
+    return { success: true, data: result };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "退勤打刻に失敗しました";
@@ -462,8 +487,8 @@ export async function startBreakAction(
     const breakStartTime = now.toISOString();
 
     // 新旧カラムで取得
-    let existing: any | null = null;
-    let fetchError: any | null = null;
+    let existing: LegacyAttendanceRecord | null = null;
+    let fetchError: PostgrestError | null = null;
     const sb1 = await supabase
       .from("attendance_records")
       .select("*")
@@ -502,8 +527,8 @@ export async function startBreakAction(
     }
 
     // 新旧カラムで更新
-    let data: any | null = null;
-    let error: any | null = null;
+    let data: AttendanceRecord | null = null;
+    let error: PostgrestError | null = null;
     const bs1 = await supabase
       .from("attendance_records")
       .update({
@@ -533,7 +558,8 @@ export async function startBreakAction(
     if (error) throw error;
 
     revalidatePath("/attendance");
-    return { success: true, data };
+    const result = data ?? (existing as unknown as AttendanceRecord);
+    return { success: true, data: result };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "休憩開始打刻に失敗しました";
@@ -574,8 +600,8 @@ export async function endBreakAction(
     const breakEndTime = now.toISOString();
 
     // 新旧カラムで取得
-    let existing: any | null = null;
-    let fetchError: any | null = null;
+    let existing: LegacyAttendanceRecord | null = null;
+    let fetchError: PostgrestError | null = null;
     const be1 = await supabase
       .from("attendance_records")
       .select("*")
@@ -607,8 +633,8 @@ export async function endBreakAction(
     }
 
     // 新旧カラムで更新
-    let data: any | null = null;
-    let error: any | null = null;
+    let data: AttendanceRecord | null = null;
+    let error: PostgrestError | null = null;
     const beu1 = await supabase
       .from("attendance_records")
       .update({
@@ -636,7 +662,11 @@ export async function endBreakAction(
     if (error) throw error;
 
     revalidatePath("/attendance");
-    return { success: true, data };
+    const result = data ?? (existing as unknown as AttendanceRecord);
+    if (!result) {
+      return { success: false, error: "休憩終了の記録に失敗しました" };
+    }
+    return { success: true, data: result };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "休憩終了打刻に失敗しました";

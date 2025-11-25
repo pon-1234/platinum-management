@@ -13,7 +13,11 @@ import {
 import { NominationTypeService } from "@/services/nomination-type.service";
 import { VisitSessionService } from "@/services/visit-session.service";
 import type { Table } from "@/types/reservation.types";
-import type { Product, PaymentMethod } from "@/types/billing.types";
+import type {
+  Product,
+  PaymentMethod,
+  CreateVisitData,
+} from "@/types/billing.types";
 import { toast } from "react-hot-toast";
 import { createClient } from "@/lib/supabase/client";
 import { inventoryService } from "@/services/inventory.service";
@@ -39,9 +43,6 @@ export default function ManualEntryPage() {
   const [casts, setCasts] = useState<
     Array<{ id: string; stageName: string; staffId?: string }>
   >([]);
-  const [presentStaffIds, setPresentStaffIds] = useState<Set<string>>(
-    new Set()
-  );
   const [customerBottles, setCustomerBottles] = useState<BottleKeep[]>([]);
   const [queuedBottleServes, setQueuedBottleServes] = useState<
     Array<{ bottleKeepId: string; amount: number }>
@@ -305,7 +306,6 @@ export default function ManualEntryPage() {
           const present = new Set(
             (attendance || []).map((r: { staff_id: string }) => r.staff_id)
           );
-          setPresentStaffIds(present);
           setCasts((prev) => {
             const next = [...prev];
             next.sort((a, b) => {
@@ -623,7 +623,7 @@ export default function ManualEntryPage() {
 
       // 1) 来店作成（指定日時でチェックイン）
       const checkInIso = new Date(`${visitDate}T${visitTime}:00`).toISOString();
-      const payload: any = {
+      const payload: CreateVisitData = {
         tableId: parseInt(tableId, 10),
         numGuests,
         checkInAt: checkInIso,

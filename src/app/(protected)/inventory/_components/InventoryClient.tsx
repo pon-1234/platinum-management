@@ -17,10 +17,11 @@ import type {
   Product,
   InventoryStats,
   InventoryAlert,
+  InventoryMovement,
 } from "@/types/inventory.types";
 import { toast } from "react-hot-toast";
-import { ProductFormModal } from "../components/ProductFormModal";
-import { InventoryMovementModal } from "../components/InventoryMovementModal";
+import { ProductFormModal } from "@/app/(protected)/inventory/components/ProductFormModal";
+import { InventoryMovementModal } from "@/app/(protected)/inventory/components/InventoryMovementModal";
 import { getInventoryPageData } from "@/app/actions/inventory.actions";
 import { getInventoryMovements } from "@/app/actions/inventory.actions";
 import { Modal } from "@/components/ui/Modal";
@@ -61,7 +62,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     initialData.totalCount ?? initialData.products.length
   );
   const [showHistoryFor, setShowHistoryFor] = useState<Product | null>(null);
-  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyItems, setHistoryItems] = useState<InventoryMovement[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyStart, setHistoryStart] = useState<string>(
     new Date(new Date().setDate(new Date().getDate() - 30))
@@ -165,7 +166,7 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
     // 保存フィルタへ反映
     setInvFilter({ q: searchTerm, category: selectedCategory });
     refreshData();
-  }, [refreshData]);
+  }, [refreshData, searchTerm, selectedCategory, setInvFilter]);
 
   const lowStockAlerts = alerts.filter(
     (alert) =>
@@ -548,7 +549,9 @@ export function InventoryClient({ initialData, error }: InventoryClientProps) {
                         offset: 0,
                         limit: 1000,
                       });
-                      const rows = (res.success ? res.data : []) as any[];
+                      const rows = res.success
+                        ? (res.data as InventoryMovement[] | undefined) || []
+                        : [];
                       const header = [
                         ["日時", "区分", "数量", "理由"],
                         ...rows.map((r) => [

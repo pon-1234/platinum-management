@@ -29,9 +29,9 @@ export function useAsyncData<T>(
   }, [asyncFn]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [fetchData, ...deps]);
 
   return { data, loading, error, refetch: fetchData };
 }

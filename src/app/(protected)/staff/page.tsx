@@ -12,7 +12,6 @@ import type {
 import type { UserRole } from "@/types/auth.types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { usePermission } from "@/hooks/usePermission";
-import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 import { Access } from "@/components/auth/Access";
 
 export default function StaffPage() {

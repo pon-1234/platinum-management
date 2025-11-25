@@ -1,4 +1,4 @@
-import { BaseService } from "../base.service";
+import { BaseService } from "@/services/base.service";
 import { logger } from "@/lib/logger";
 import { attendanceTrackingService } from "./attendance-tracking.service";
 import { shiftRequestService } from "./shift-request.service";

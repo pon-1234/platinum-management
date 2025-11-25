@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { customerService } from "@/services/customer.service";
 import type { Customer, Visit } from "@/types/customer.types";
 import { Drawer } from "@/components/ui/Drawer";
-import { CustomerDetailClient } from "../../[id]/_components/CustomerDetailClient";
+import { CustomerDetailClient } from "@/app/(protected)/customers/[id]/_components/CustomerDetailClient";
 
 export default function CustomerDetailModal() {
   const router = useRouter();

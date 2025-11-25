@@ -32,7 +32,7 @@ export interface CreateBottleKeepRequest {
 // ボトルキープ使用リクエスト
 export interface UseBottleKeepRequest {
   bottleKeepId: string;
-  visitId: string;
+  visitId?: string;
   amountUsed: number;
   notes?: string;
 }

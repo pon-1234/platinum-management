@@ -115,10 +115,10 @@ export function ActiveVisitsWithBottleKeep() {
           .in("table_number", tableNumbers);
         (tablesRows || []).forEach((t) => {
           // キーはテーブル番号（文字列化）として保持
-          tableMap.set(
-            String((t as any).table_number),
-            (t as any).table_number as string
+          const tableNum = String(
+            (t as { table_number: number | string }).table_number
           );
+          tableMap.set(tableNum, tableNum);
         });
       }
 

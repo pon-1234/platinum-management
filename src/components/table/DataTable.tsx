@@ -2,34 +2,32 @@
 
 import React from "react";
 
-export interface DataTableColumn<T = any> {
+export interface DataTableColumn<T = unknown> {
   key: string;
   header: string;
   className?: string;
   cell: (row: T) => React.ReactNode;
 }
 
-export interface DataTableSelection<T = any> {
+export interface DataTableSelection<T = unknown> {
   isAllSelected: boolean;
   isSelected: (row: T) => boolean;
   onToggleAll: () => void;
   onToggleOne: (row: T) => void;
 }
 
-interface DataTableProps<T = any> {
+interface DataTableProps<T = unknown> {
   columns: DataTableColumn<T>[];
   rows: T[];
   getRowKey: (row: T) => string | number;
-  rowHeight?: number; // default 64
   selection?: DataTableSelection<T>;
   tableClassName?: string;
 }
 
-export function DataTable<T = any>({
+export function DataTable<T = unknown>({
   columns,
   rows,
   getRowKey,
-  rowHeight = 64, // reserved for future virtualization
   selection,
   tableClassName,
 }: DataTableProps<T>) {

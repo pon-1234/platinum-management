@@ -112,9 +112,7 @@ function HeaderQuickActions() {
   const { user } = useAuthStore();
   const items = useMemo(() => {
     if (!user) return quickActions;
-    return quickActions.filter(
-      (q) => !q.roles || q.roles.includes(user.role as any)
-    );
+    return quickActions.filter((q) => !q.roles || q.roles.includes(user.role));
   }, [user]);
 
   return (

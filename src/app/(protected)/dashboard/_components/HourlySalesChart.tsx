@@ -95,15 +95,17 @@ export default function HourlySalesChart({
           aria-label="表示期間"
           className="inline-flex rounded-md shadow-sm ring-1 ring-gray-300"
         >
-          {[
-            { k: "today", label: "今日" },
-            { k: "yesterday", label: "昨日" },
-            { k: "7d", label: "直近7日平均" },
-          ].map(({ k, label }) => (
+          {(
+            [
+              { k: "today", label: "今日" },
+              { k: "yesterday", label: "昨日" },
+              { k: "7d", label: "直近7日平均" },
+            ] as Array<{ k: "today" | "yesterday" | "7d"; label: string }>
+          ).map(({ k, label }) => (
             <button
               key={k}
               role="tab"
-              aria-selected={range === (k as any)}
+              aria-selected={range === k}
               onClick={() => setRange(k as "today" | "yesterday" | "7d")}
               className={`px-3 py-1.5 text-sm ${
                 range === k

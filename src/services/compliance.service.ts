@@ -377,7 +377,12 @@ export class ComplianceService extends BaseService {
         pending: data?.filter((v) => !v.is_verified).length || 0,
         byType: {} as Record<string, number>,
       };
-      (data || []).forEach((verification: any) => {
+      const verifications =
+        (data as Array<{
+          id_type: string | null;
+          is_verified: boolean | null;
+        }>) || [];
+      verifications.forEach((verification) => {
         const t = verification.id_type || "unknown";
         stats.byType[t] = (stats.byType[t] || 0) + 1;
       });
@@ -399,7 +404,12 @@ export class ComplianceService extends BaseService {
         byType: {} as Record<string, number>,
         byStatus: {} as Record<string, number>,
       };
-      (data || []).forEach((report: any) => {
+      const reports =
+        (data as Array<{
+          report_type: string | null;
+          status: string | null;
+        }>) || [];
+      reports.forEach((report) => {
         const t = report.report_type || "unknown";
         const s = report.status || "generated";
         stats.byType[t] = (stats.byType[t] || 0) + 1;

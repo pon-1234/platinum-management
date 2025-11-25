@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { InventoryService, createInventoryService } from "../inventory.service";
 import { createClient } from "@/lib/supabase/client";

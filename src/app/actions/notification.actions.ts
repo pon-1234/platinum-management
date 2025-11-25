@@ -11,14 +11,13 @@ import { z } from "zod";
 export const sendBottleKeepExpiryAlerts = createSafeAction(
   z.object({}),
   async () => {
-    // TODO: Implement sendExpiryAlerts in BottleKeepService
-    const result = { sent: 0, failed: 0 };
+    const result = await BottleKeepService.sendExpiryAlerts();
 
     // 関連ページのキャッシュを無効化
     revalidatePath("/bottle-keep");
     revalidatePath("/dashboard");
 
-    return result;
+    return { sent: result.sent, failed: result.failed };
   }
 );
 
@@ -26,24 +25,19 @@ export const sendBottleKeepExpiryAlerts = createSafeAction(
  * 未送信アラート一覧を取得
  */
 export const getUnsentAlerts = createSafeAction(z.object({}), async () => {
-  // TODO: Implement getUnsentAlerts in BottleKeepService
-  const alerts: never[] = [];
+  const alerts = await BottleKeepService.getAlerts();
   return alerts;
 });
 
 /**
  * 期限切れボトルのステータスを更新
  */
-export const updateExpiredBottles = createSafeAction(
-  z.object({}),
-  async (_, { supabase }) => {
-    await BottleKeepService.updateExpiredBottles(supabase);
-    const updatedCount = 0;
+export const updateExpiredBottles = createSafeAction(z.object({}), async () => {
+  const updatedCount = await BottleKeepService.updateExpiredBottles();
 
   // 関連ページのキャッシュを無効化
   revalidatePath("/bottle-keep");
   revalidatePath("/dashboard");
 
   return { updatedCount };
-  }
-);
+});

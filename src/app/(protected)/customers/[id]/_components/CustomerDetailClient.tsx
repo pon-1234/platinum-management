@@ -24,7 +24,6 @@ import {
   CakeIcon,
   CalendarIcon,
 } from "@heroicons/react/24/outline";
-import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 import { Access } from "@/components/auth/Access";
 
 interface CustomerDetailClientProps {

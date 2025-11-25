@@ -753,7 +753,8 @@ export class BillingService extends BaseService {
     }
 
     // 指名料を計算
-    let nominationData: any[] | null = null;
+    let nominationData: Array<{ total_nomination_fee: number | null }> | null =
+      null;
     const nom = await this.supabase.rpc("calculate_nomination_fees", {
       p_visit_id: visitId,
     });
@@ -765,7 +766,9 @@ export class BillingService extends BaseService {
       );
       nominationData = [{ total_nomination_fee: 0 }];
     } else {
-      nominationData = nom.data as any[];
+      nominationData = (nom.data || []) as Array<{
+        total_nomination_fee: number | null;
+      }>;
     }
 
     const nominationFee = nominationData?.[0]?.total_nomination_fee || 0;
@@ -980,7 +983,14 @@ export class BillingService extends BaseService {
         limit_count: 5,
       });
       if (!tp.error && tp.data) {
-        topProductsList = (tp.data as any[]).map((p) => ({
+        topProductsList = (
+          tp.data as Array<{
+            product_id: number | string;
+            product_name: string;
+            quantity_sold: number | string;
+            revenue: number | string;
+          }>
+        ).map((p) => ({
           productId: Number(p.product_id),
           productName: p.product_name,
           quantity: Number(p.quantity_sold),
@@ -1001,7 +1011,14 @@ export class BillingService extends BaseService {
           number,
           { name: string; qty: number; amt: number }
         >();
-        (rows || []).forEach((r: any) => {
+        const orderRows =
+          (rows as Array<{
+            product_id: number | string;
+            quantity: number | null;
+            total_price: number | null;
+            product?: { name?: string | null } | null;
+          }>) || [];
+        orderRows.forEach((r) => {
           const id = Number(r.product_id);
           const name = r.product?.name || String(id);
           const cur = byProduct.get(id) || { name, qty: 0, amt: 0 };
@@ -1042,7 +1059,13 @@ export class BillingService extends BaseService {
           string,
           { name: string; count: number; amt: number }
         >();
-        (rows || []).forEach((r: any) => {
+        const castRows =
+          (rows as Array<{
+            cast_id: string;
+            fee_amount: number | null;
+            cast?: { stage_name?: string | null } | null;
+          }> | null) || [];
+        castRows.forEach((r) => {
           const id = r.cast_id as string;
           const name = r.cast?.stage_name || id;
           const cur = byCast.get(id) || { name, count: 0, amt: 0 };
@@ -1383,13 +1406,13 @@ export class BillingService extends BaseService {
 
     if (existing?.id) {
       // Optionally sync price
-      if ((existing as any).price !== unitPrice) {
+      if (existing.price !== unitPrice) {
         await this.supabase
           .from("products")
           .update({ price: unitPrice, updated_at: new Date().toISOString() })
-          .eq("id", (existing as any).id);
+          .eq("id", existing.id);
       }
-      return (existing as any).id as number;
+      return existing.id;
     }
 
     // Create a new system product (category: other)
@@ -1409,10 +1432,14 @@ export class BillingService extends BaseService {
       .select("id")
       .single();
 
-    if (error) {
-      this.handleError(error, "システム用商品作成に失敗しました");
+    if (error || !created) {
+      this.handleError(
+        error || new Error("product insert failed"),
+        "システム用商品作成に失敗しました"
+      );
+      return 0;
     }
-    return (created as any).id as number;
+    return created.id;
   }
 
   async applyQuoteToVisit(
@@ -1576,12 +1603,8 @@ export function quoteSession(req: PricingRequest): PriceQuote {
   }
 
   // Room (VIP only)
-  if ((req.useRoom ?? false) && (cfg as any).room) {
-    const roomCfg = (cfg as any).room as {
-      baseMinutes: number;
-      basePrice: number;
-      ext: { stepMinutes: number; pricePerStep: number };
-    };
+  if ((req.useRoom ?? false) && "room" in cfg && cfg.room) {
+    const roomCfg = cfg.room;
 
     lines.push({
       code: `ROOM_${req.plan}`,

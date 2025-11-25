@@ -11,7 +11,6 @@ import { ReservationList } from "@/components/reservation/ReservationList";
 import { ReservationCalendar } from "@/components/reservation/ReservationCalendar";
 import { CreateReservationModal } from "@/components/reservation/CreateReservationModal";
 import { ReservationDetailModal } from "@/components/reservation/ReservationDetailModal";
-import Link from "next/link";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { Access } from "@/components/auth/Access";
 import { format } from "date-fns";

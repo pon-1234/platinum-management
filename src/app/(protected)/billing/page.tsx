@@ -50,7 +50,15 @@ export default function BillingPage() {
     Record<number, { quantity: number; unitPrice: number; notes?: string }>
   >({});
   // Engagements state
-  const [engagements, setEngagements] = useState<Array<any>>([]);
+  type CastEngagement = {
+    id: string;
+    cast_id?: string | null;
+    cast?: { stage_name?: string | null } | null;
+    role?: string | null;
+    nomination_type?: { display_name?: string | null } | null;
+    is_active?: boolean | null;
+  };
+  const [engagements, setEngagements] = useState<CastEngagement[]>([]);
   const [engagementLoading, setEngagementLoading] = useState(false);
   const [allCasts, setAllCasts] = useState<
     Array<{ id: string; stageName: string }>
@@ -309,9 +317,7 @@ export default function BillingPage() {
                       {dayVisits.map((v) => (
                         <tr key={v.id}>
                           <td className="px-4 py-2">{v.tableId ?? "-"}</td>
-                          <td className="px-4 py-2">
-                            {(v as any).customer?.name ?? "-"}
-                          </td>
+                          <td className="px-4 py-2">{v.customerId || "-"}</td>
                           <td className="px-4 py-2">
                             {new Date(v.checkInAt).toLocaleTimeString("ja-JP", {
                               hour: "2-digit",

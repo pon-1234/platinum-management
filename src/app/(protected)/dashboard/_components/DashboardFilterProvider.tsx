@@ -29,13 +29,13 @@ export function DashboardFilterProvider({
     return isNaN(d.getTime()) ? undefined : d;
   };
 
-  const range: DateRange = {
-    from: parse(sp.get("from")),
-    to: parse(sp.get("to")),
-  };
+  const value = useMemo<Filters>(() => {
+    const range: DateRange = {
+      from: parse(sp.get("from")),
+      to: parse(sp.get("to")),
+    };
 
-  const value = useMemo<Filters>(
-    () => ({
+    return {
       storeId: sp.get("store") ?? undefined,
       range,
       castId: sp.get("cast") ?? undefined,
@@ -52,9 +52,8 @@ export function DashboardFilterProvider({
         if (p.range?.to) next.set("to", p.range.to.toISOString().slice(0, 10));
         router.replace(`${pathname}?${next.toString()}`);
       },
-    }),
-    [sp, pathname, router, range]
-  );
+    };
+  }, [sp, pathname, router]);
 
   return (
     <DashboardFilterContext.Provider value={value}>

@@ -1,4 +1,4 @@
-import { BaseService } from "../base.service";
+import { BaseService } from "@/services/base.service";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -181,11 +181,15 @@ export class ShiftRequestService extends BaseService {
   private mapToShiftRequest(
     data: Database["public"]["Tables"]["shift_requests"]["Row"]
   ): ShiftRequest {
+    const row = data as {
+      staff_id?: string | null;
+      requested_date?: string | null;
+    };
     return this.toCamelCase({
       id: data.id,
-      staffId: (data as any).staff_id,
+      staffId: row.staff_id,
       shiftTemplateId: null,
-      requestedDate: (data as any).requested_date,
+      requestedDate: row.requested_date,
       startTime: data.start_time,
       endTime: data.end_time,
       status: data.status as "pending" | "approved" | "rejected",

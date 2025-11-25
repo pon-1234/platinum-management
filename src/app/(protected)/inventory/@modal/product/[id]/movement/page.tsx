@@ -5,13 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { Drawer } from "@/components/ui/Drawer";
 import { InventoryMovementModal } from "@/app/(protected)/inventory/components/InventoryMovementModal";
 import { createClient } from "@/lib/supabase/client";
+import type { Product } from "@/types/inventory.types";
 
 export default function ProductMovementModal() {
   const router = useRouter();
   const params = useParams();
   const productId = Number(params?.id as string);
   const [open, setOpen] = useState(true);
-  const [product, setProduct] = useState<any | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     (async () => {

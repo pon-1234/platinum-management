@@ -26,7 +26,6 @@ interface BottleKeepListProps {
   customers?: Array<{ id: string; name: string }>;
   products?: Array<{ id: number; name: string }>;
   storageLocations?: string[];
-  loading?: boolean;
 }
 
 export function BottleKeepList({
@@ -36,7 +35,6 @@ export function BottleKeepList({
   onUse,
   onFilterChange,
   storageLocations = [],
-  loading = false,
 }: BottleKeepListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<BottleKeepSearchFilter>({
@@ -303,14 +301,15 @@ export function BottleKeepList({
               cell: (b: BottleKeepDetail) => (
                 <div>
                   <div
-                    className={`text-sm font-medium ${getRemainingAmountColor((b as any).remaining_amount)}`}
+                    className={`text-sm font-medium ${getRemainingAmountColor(
+                      b.remaining_amount ?? 0
+                    )}`}
                   >
-                    {Math.round((b as any).remaining_amount * 100)}%
+                    {Math.round((b.remaining_amount ?? 0) * 100)}%
                   </div>
                   <div className="text-xs text-gray-500">
                     {formatCurrency(
-                      ((b.product?.price || 0) *
-                        (b as any).remaining_amount) as number
+                      (b.product?.price || 0) * (b.remaining_amount ?? 0)
                     )}
                   </div>
                 </div>
@@ -327,11 +326,11 @@ export function BottleKeepList({
               key: "expiry",
               header: "期限日",
               cell: (b: BottleKeepDetail) => {
-                const expiryStatus = getExpiryStatus(b.expiry_date as any);
+                const expiryStatus = getExpiryStatus(b.expiry_date);
                 return (
                   <div>
                     <div className="text-sm text-gray-900">
-                      {formatDate(b.expiry_date as any)}
+                      {formatDate(b.expiry_date)}
                     </div>
                     {expiryStatus && (
                       <div
@@ -413,7 +412,6 @@ export function BottleKeepList({
         }
         rows={bottleKeeps}
         getRowKey={(b) => b.id}
-        rowHeight={68}
         selection={{
           isAllSelected:
             selectedIds.length === bottleKeeps.length && bottleKeeps.length > 0,
@@ -435,7 +433,7 @@ export function BottleKeepList({
                 bottle_number: b.bottle_number,
                 customer: b.customer?.name,
                 product: b.product?.name,
-                remaining: Math.round((b as any).remaining_amount * 100),
+                remaining: Math.round((b.remaining_amount ?? 0) * 100),
                 opened_date: b.opened_date,
                 expiry_date: b.expiry_date || "",
                 storage_location: b.storage_location || "",

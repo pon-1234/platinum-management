@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, memo, useEffect } from "react";
-import Link from "next/link";
 // import { FixedSizeList } from "react-window";
 import { DataTable, DataTableColumn } from "@/components/table/DataTable";
 import { Customer } from "@/types/customer.types";
@@ -117,11 +116,9 @@ export function CustomerList({
     }
   };
 
-  // Notify parent on selection change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     onSelectionChange?.(selectedIds);
-  }, [selectedIds]);
+  }, [onSelectionChange, selectedIds]);
 
   const columns: DataTableColumn<Customer>[] = [
     {
@@ -200,7 +197,6 @@ export function CustomerList({
       columns={columns}
       rows={customers}
       getRowKey={(c) => c.id}
-      rowHeight={65}
       selection={{
         isAllSelected:
           selectedIds.length > 0 && selectedIds.length === customers.length,

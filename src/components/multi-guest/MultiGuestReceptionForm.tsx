@@ -1,1 +1,1 @@
-export { MultiGuestReceptionForm } from "../visits/MultiGuestReceptionForm";
+export { MultiGuestReceptionForm } from "@/components/visits/MultiGuestReceptionForm";

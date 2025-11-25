@@ -5,7 +5,6 @@ import { useCastStore } from "@/stores/cast.store";
 import { PayrollExport } from "@/components/cast/PayrollExport";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { Access } from "@/components/auth/Access";
-import { usePermission } from "@/hooks/usePermission";
 import {
   PlusIcon,
   PencilIcon,
@@ -21,7 +20,6 @@ import type { Cast } from "@/types/cast.types";
 
 export default function CastManagementPage() {
   const { casts, isLoading, error, fetchCasts } = useCastStore();
-  const { can } = usePermission();
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

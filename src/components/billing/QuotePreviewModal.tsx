@@ -65,6 +65,8 @@ export default function QuotePreviewModal({
     applyHouseFee,
     applySingleCharge,
     drinkTotal,
+    serviceRate,
+    taxRate,
   ]);
 
   return (

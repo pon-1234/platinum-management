@@ -10,6 +10,7 @@ import { createBottleKeep } from "@/app/actions/bottle-keep.actions";
 import { getProducts } from "@/app/actions/inventory.actions";
 import { searchCustomers } from "@/app/actions/customer.actions";
 import { getStorageLocations } from "@/app/actions/bottle-keep.actions";
+import type { BottleKeepDetail } from "@/types/bottle-keep.types";
 
 export default function NewBottleKeepDrawer() {
   const router = useRouter();
@@ -37,9 +38,28 @@ export default function NewBottleKeepDrawer() {
           getProducts({}),
           getStorageLocations({}),
         ]);
-        if (customersRes.success) setCustomers(customersRes.data as any);
-        if (productsRes.success) setProducts(productsRes.data as any);
-        if (locationsRes.success) setStorageLocations(locationsRes.data as any);
+        if (customersRes.success) {
+          setCustomers(
+            customersRes.data as Array<{
+              id: string;
+              name: string;
+              phone_number?: string;
+            }>
+          );
+        }
+        if (productsRes.success) {
+          setProducts(
+            productsRes.data as Array<{
+              id: number;
+              name: string;
+              category: string;
+              price: number;
+            }>
+          );
+        }
+        if (locationsRes.success) {
+          setStorageLocations(locationsRes.data as string[]);
+        }
       } catch (e) {
         if (process.env.NODE_ENV === "development") console.error(e);
         toast.error("初期データの読み込みに失敗しました");
@@ -87,17 +107,26 @@ export default function NewBottleKeepDrawer() {
             bottleKeep={
               initialCustomerId || initialProductId || initialStorageLocation
                 ? ({
+                    id: "",
                     customer_id: (initialCustomerId as string) || "",
                     product_id: (initialProductId as unknown as number) || 0,
                     opened_date: "",
-                    expiry_date: undefined,
+                    expiry_date: null,
                     bottle_number: "",
-                    remaining_percentage: 100,
+                    remaining_amount: 1,
                     storage_location: initialStorageLocation,
+                    notes: null,
                     status: "active",
                     created_at: "",
                     updated_at: "",
-                  } as any)
+                    remaining_percentage: 100,
+                    last_served_date: null,
+                    table_number: null,
+                    host_staff_id: null,
+                    tags: null,
+                    created_by: null,
+                    updated_by: null,
+                  } as BottleKeepDetail)
                 : undefined
             }
             onSubmit={async (form) => {

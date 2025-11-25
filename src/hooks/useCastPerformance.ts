@@ -48,7 +48,7 @@ export const useCastPerformance = (castId?: string) => {
   // Automatically fetch performances when castId changes
   useEffect(() => {
     if (castId) {
-      fetchPerformances({ castId });
+      void fetchPerformances({ castId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [castId, refreshKey]);

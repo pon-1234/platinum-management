@@ -61,7 +61,7 @@ export function BottleKeepUsageForm({
     try {
       const submitData: UseBottleKeepRequest = {
         bottleKeepId: bottleKeep.id,
-        visitId: visitId || "temp-visit", // 一時的な対応
+        visitId,
         amountUsed: formData.amountUsed,
         notes: formData.notes || undefined,
       };

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CastPerformanceMetrics } from "../CastPerformanceMetrics";
 import { CastService } from "@/services/cast.service";
@@ -122,7 +122,7 @@ describe("CastPerformanceMetrics", () => {
     expect(screen.getByText("20")).toBeInTheDocument(); // 10 + 10
   });
 
-  it("should display loading state", () => {
+  it("should display loading state", async () => {
     const mockGetCastById = vi.fn().mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -161,9 +161,11 @@ describe("CastPerformanceMetrics", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    render(
-      <CastPerformanceMetrics castId="123e4567-e89b-12d3-a456-426614174000" />
-    );
+    await act(async () => {
+      render(
+        <CastPerformanceMetrics castId="123e4567-e89b-12d3-a456-426614174000" />
+      );
+    });
 
     expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
   });

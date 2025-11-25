@@ -19,7 +19,6 @@ import { usePermission } from "@/hooks/usePermission";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSavedFilters } from "@/hooks/useSavedFilters";
 import { useCustomers } from "@/hooks/useCustomers";
-import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
 import { Access } from "@/components/auth/Access";
 import { convertToCSV, downloadCSV } from "@/lib/utils/export";
 import { SelectionPanel } from "@/components/table/SelectionPanel";

@@ -14,7 +14,8 @@ export default function BulkCustomerStatusModal() {
     () => (sp.get("ids") || "").split(",").filter(Boolean),
     [sp]
   );
-  const [status, setStatus] = useState<"active" | "vip" | "blocked">("active");
+  type CustomerStatus = "active" | "vip" | "blocked";
+  const [status, setStatus] = useState<CustomerStatus>("active");
 
   const handleClose = () => {
     setOpen(false);
@@ -64,7 +65,7 @@ export default function BulkCustomerStatusModal() {
           <label className="block text-sm font-medium mb-1">ステータス</label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as any)}
+            onChange={(e) => setStatus(e.target.value as CustomerStatus)}
             className="w-full border rounded px-2 py-1"
           >
             <option value="active">通常</option>
