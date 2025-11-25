@@ -17,7 +17,7 @@ import {
   cancelReservationSchema,
   reservationSearchSchema,
 } from "@/lib/validations/reservation";
-import { TableService, createTableService } from "./table.service";
+import { TableService } from "./table.service";
 
 type SupabaseResolver = () => SupabaseClient<Database>;
 
@@ -47,14 +47,12 @@ export class ReservationService {
   constructor(
     resolveClient: SupabaseResolver = resolveBrowserSupabase,
     options?: {
-      tableServiceFactory?: (
-        client: SupabaseClient<Database>
-      ) => TableService;
+      tableServiceFactory?: (client: SupabaseClient<Database>) => TableService;
     }
   ) {
     this.resolveClient = resolveClient;
     this.tableServiceFactory =
-      options?.tableServiceFactory ?? ((client) => createTableService(client));
+      options?.tableServiceFactory ?? (() => new TableService());
   }
 
   private get client(): SupabaseClient<Database> {
@@ -476,15 +474,12 @@ export class ReservationService {
     time: string,
     excludeReservationId?: string
   ): Promise<boolean> {
-    const { data, error } = await this.client.rpc(
-      "check_table_availability",
-      {
-        p_table_id: tableId,
-        p_reservation_date: date,
-        p_reservation_time: time,
-        p_exclude_reservation_id: excludeReservationId,
-      }
-    );
+    const { data, error } = await this.client.rpc("check_table_availability", {
+      p_table_id: tableId,
+      p_reservation_date: date,
+      p_reservation_time: time,
+      p_exclude_reservation_id: excludeReservationId,
+    });
 
     if (error) {
       throw new Error(`利用可能性の確認に失敗しました: ${error.message}`);
